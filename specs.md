@@ -1,78 +1,85 @@
-Learning Contracts Specification
-1. Purpose
+# Learning Contracts Specification
 
-Learning Contracts define explicit, enforceable agreements governing what a learning co-worker/assistant is allowed to learn, how it may generalize that learning, how long it may retain it, and under what conditions it may be recalled or revoked.
+## 1. Purpose
 
-If the Memory Vault is storage and the Boundary Daemon is space, Learning Contracts are consent for cognition.
+Learning Contracts define **explicit, enforceable agreements** governing what a learning co-worker/assistant is allowed to learn, how it may generalize that learning, how long it may retain it, and under what conditions it may be recalled or revoked.
+
+If the Memory Vault is *storage* and the Boundary Daemon is *space*, Learning Contracts are **consent for cognition**.
 
 Nothing is learned by default.
 
-2. Design Principles
+---
 
-Explicit Consent – Learning requires an affirmative contract.
+## 2. Design Principles
 
-Scope Before Storage – Permissions are bound before memory creation.
+1. **Explicit Consent** – Learning requires an affirmative contract.
+2. **Scope Before Storage** – Permissions are bound *before* memory creation.
+3. **Revocability** – Forgetting is a first-class operation.
+4. **Non-Emergence by Default** – No silent generalization.
+5. **Human Supremacy** – The owner can override or nullify any contract.
+6. **Composable with Security** – Contracts stack with Vault + Boundary.
 
-Revocability – Forgetting is a first-class operation.
+---
 
-Non-Emergence by Default – No silent generalization.
+## 3. Contract Lifecycle
 
-Human Supremacy – The owner can override or nullify any contract.
-
-Composable with Security – Contracts stack with Vault + Boundary.
-
-3. Contract Lifecycle
+```
 Draft → Review → Activate → Enforce → Expire | Revoke | Amend
+```
 
 All transitions are logged and irreversible in audit history.
 
-4. Contract Types
-4.1 Observation Contract
+---
 
-May observe signals
+## 4. Contract Types
 
-May NOT store memory
+### 4.1 Observation Contract
 
-May NOT generalize
+* May observe signals
+* May NOT store memory
+* May NOT generalize
 
-4.2 Episodic Learning Contract
+### 4.2 Episodic Learning Contract
 
-May store specific episodes
+* May store specific episodes
+* No cross-context generalization
 
-No cross-context generalization
+### 4.3 Procedural Learning Contract
 
-4.3 Procedural Learning Contract
+* May derive reusable heuristics
+* Scope-limited
 
-May derive reusable heuristics
+### 4.4 Strategic Learning Contract
 
-Scope-limited
+* May infer long-term strategies
+* Requires high-trust boundary mode
 
-4.4 Strategic Learning Contract
+### 4.5 Prohibited Domain Contract
 
-May infer long-term strategies
+* Explicitly forbids learning
+* Overrides all other contracts
 
-Requires high-trust boundary mode
+---
 
-4.5 Prohibited Domain Contract
-
-Explicitly forbids learning
-
-Overrides all other contracts
-
-5. Learning Scope Dimensions
+## 5. Learning Scope Dimensions
 
 Each contract defines its scope across dimensions:
 
-Dimension	Examples
-Domain	Finance, design, personal
-Temporal	Session-only, time-bound
-Contextual	Project, toolchain
-Abstraction	Raw data → heuristic
-Transferability	This system only
+| Dimension       | Examples                  |
+| --------------- | ------------------------- |
+| Domain          | Finance, design, personal |
+| Temporal        | Session-only, time-bound  |
+| Contextual      | Project, toolchain        |
+| Abstraction     | Raw data → heuristic      |
+| Transferability | This system only          |
 
-Unspecified dimensions default to deny.
+Unspecified dimensions default to **deny**.
 
-6. Core Contract Schema
+---
+
+## 6. Core Contract Schema
+
+```json
 {
   "contract_id": "uuid",
   "created_at": "timestamp",
@@ -101,100 +108,110 @@ Unspecified dimensions default to deny.
   "expiration": "timestamp|null",
   "revocable": true
 }
-7. Enforcement Points
+```
 
-Learning Contracts are enforced at four mandatory hooks:
+---
 
-Before Memory Creation – permission check
+## 7. Enforcement Points
 
-During Abstraction – generalization gate
+Learning Contracts are enforced at **four mandatory hooks**:
 
-Before Recall – scope revalidation
+1. **Before Memory Creation** – permission check
+2. **During Abstraction** – generalization gate
+3. **Before Recall** – scope revalidation
+4. **During Export** – transfer prohibition
 
-During Export – transfer prohibition
+Violation results in **hard failure**, not warning.
 
-Violation results in hard failure, not warning.
+---
 
-8. Default Rules (Fail-Closed)
+## 8. Default Rules (Fail-Closed)
 
-No contract → no learning
+* No contract → no learning
+* Ambiguous scope → deny
+* Expired contract → freeze memory
+* Revoked contract → tombstone memory
 
-Ambiguous scope → deny
+---
 
-Expired contract → freeze memory
-
-Revoked contract → tombstone memory
-
-9. Revocation & Forgetting
+## 9. Revocation & Forgetting
 
 Revocation does NOT delete audit traces.
 
-Effects
+### Effects
 
-Memory marked inaccessible
-
-Derived memories quarantined
-
-Heuristics invalidated
+* Memory marked inaccessible
+* Derived memories quarantined
+* Heuristics invalidated
 
 Optional deep purge requires owner ceremony.
 
-10. Interaction with Memory Vault
+---
 
-Contract ID is stored in every Memory Object
+## 10. Interaction with Memory Vault
 
-Classification may not exceed contract cap
+* Contract ID is stored in every Memory Object
+* Classification may not exceed contract cap
+* Vault refuses writes without valid contract
 
-Vault refuses writes without valid contract
+---
 
-11. Interaction with Boundary Daemon
+## 11. Interaction with Boundary Daemon
 
-Certain contract types require minimum boundary modes
-
-Boundary downgrade suspends learning
+* Certain contract types require minimum boundary modes
+* Boundary downgrade suspends learning
 
 Example:
 
+```
 Strategic Learning → requires Trusted or higher
-12. Threat Model
-Threats
+```
 
-Silent over-learning
+---
 
-Concept drift
+## 12. Threat Model
 
-Knowledge laundering
+### Threats
 
-Model curiosity
+* Silent over-learning
+* Concept drift
+* Knowledge laundering
+* Model curiosity
+* Owner over-sharing
 
-Owner over-sharing
+### Mitigations
 
-Mitigations
-Threat	Mitigation
-Over-generalization	Abstraction caps
-Drift	Contract expiration
-Leakage	Non-transferable flag
-Curiosity	Observation-only contracts
-13. Human UX Requirements
+| Threat              | Mitigation                 |
+| ------------------- | -------------------------- |
+| Over-generalization | Abstraction caps           |
+| Drift               | Contract expiration        |
+| Leakage             | Non-transferable flag      |
+| Curiosity           | Observation-only contracts |
 
-Contracts must be readable in plain language
+---
 
-Changes require confirmation
+## 13. Human UX Requirements
 
-Active contracts visible at all times
+* Contracts must be readable in plain language
+* Changes require confirmation
+* Active contracts visible at all times
 
 No dark patterns. No implicit consent.
 
-14. Non-Goals
+---
 
-Autonomous contract creation
+## 14. Non-Goals
 
-Self-expanding permissions
+* Autonomous contract creation
+* Self-expanding permissions
+* Retroactive consent
 
-Retroactive consent
+---
 
-15. Design Constraint
+## 15. Design Constraint
 
-Learning without consent is surveillance. Intelligence without restraint is theft.
+> Learning without consent is surveillance.
+> Intelligence without restraint is theft.
 
 Learning Contracts exist to prevent both.
+
