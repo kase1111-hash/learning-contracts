@@ -353,6 +353,182 @@ npm run test:watch
 npm run lint
 ```
 
+Trust & Execution Assumptions
+
+This protocol is designed to maximize on-chain cryptographic enforcement while explicitly documenting cases where operational trust or off-chain verification is required. The following sections describe known trust boundaries and execution modes to prevent silent degradation or implicit assumptions.
+
+ComplianceCouncil Execution Model
+Overview
+
+The ComplianceCouncil module is responsible for validating multi-party compliance decisions (e.g., approvals, attestations, or releases) using aggregated signatures.
+
+Where supported, the protocol relies on on-chain BLS signature verification to provide cryptographic finality. In environments where required precompiles are unavailable, alternative execution paths may be used only when explicitly enabled.
+
+BLS Verification Dependency
+
+On supported EVM chains, ComplianceCouncil uses BLS signature aggregation and on-chain pairing checks.
+
+This provides:
+
+Compact proof size
+
+Deterministic verification
+
+No reliance on off-chain trust
+
+Some execution environments (e.g., certain L2s or non-standard EVMs) do not expose the required BLS precompiles.
+
+Execution Modes
+
+The ComplianceCouncil operates under one of the following explicit execution modes, configurable at deployment or via governance:
+
+1. STRICT_ONCHAIN
+
+Requires BLS precompiles to be available
+
+Reverts if on-chain verification is not possible
+
+Recommended for mainnet and high-value deployments
+
+2. HYBRID_CONFIRMATION
+
+Uses on-chain BLS verification where available
+
+Allows off-chain verification only with explicit operator confirmation
+
+Emits events referencing off-chain verification artifacts
+
+3. OFFCHAIN_ATTESTED
+
+Relies entirely on off-chain verification
+
+Intended only for testing, research, or constrained environments
+
+Introduces additional trust assumptions
+
+The protocol does not silently downgrade execution modes. Any deviation from strict on-chain verification requires explicit configuration and emits on-chain events.
+
+Off-Chain Verification Risks
+
+When operating without on-chain BLS verification:
+
+Additional trust is placed in verifiers or relayers
+
+Execution finality becomes operational rather than cryptographic
+
+Mismatches between off-chain and on-chain state are possible
+
+These risks are acknowledged and intentionally gated to prevent accidental use.
+
+Operator & Monitoring Guidance
+
+Operators SHOULD:
+
+Monitor execution mode events
+
+Validate availability of required precompiles on target chains
+
+Avoid deploying ComplianceCouncil in non-strict modes for critical funds or irreversible actions
+
+Oracle Trust Model (ILRM)
+Overview
+
+The ILRM (Incentive / Integrity / Reputation Layer Module) depends on external data supplied by one or more oracles. Oracles are a known trust boundary in decentralized systems and are treated as such within this protocol.
+
+Oracle Role & Responsibilities
+
+The oracle(s) may provide:
+
+Reputation or scoring updates
+
+Off-chain event confirmations
+
+External settlement or validation signals
+
+Oracles are considered governed actors, not neutral infrastructure.
+
+Trust Assumptions
+
+The protocol assumes:
+
+Oracle data may be delayed, incorrect, or unavailable
+
+Oracle keys may be compromised
+
+Oracle operators may act maliciously or collude
+
+These risks are mitigated but not eliminated.
+
+Recommended Oracle Security Practices
+
+Implementations SHOULD adopt the following safeguards:
+
+Key Management
+
+Hardware Security Modules (HSMs) or MPC wallets
+
+Multi-signature control for oracle updates
+
+Periodic key rotation with audit trails
+
+Decentralization
+
+Multiple independent oracle operators
+
+Medianized or quorum-based data aggregation
+
+Slashable bonds or economic penalties for misbehavior
+
+On-Chain Mitigations
+
+The protocol supports or recommends:
+
+Time-weighted averages or median filters
+
+Circuit breakers for anomalous or missing updates
+
+Pausing of critical actions on oracle failure
+
+All oracle updates SHOULD emit:
+
+Raw payload data
+
+Signer identity or key ID
+
+Timestamp and sequence metadata
+
+Oracle Failure Handling
+
+Oracle failures are categorized as:
+
+Byzantine (malicious or incorrect data)
+
+Silent (no updates)
+
+Compromised (key leakage)
+
+Governance capture (collusion)
+
+Mitigations are designed to limit blast radius rather than assume infallibility.
+
+Summary of Trust Boundaries
+Component	Trust Type	Mitigation
+ComplianceCouncil (BLS)	Cryptographic	On-chain verification
+ComplianceCouncil (off-chain)	Operational	Explicit mode gating
+Oracle	Governed trust	Multi-oracle, slashing, monitoring
+Design Philosophy
+
+This protocol prioritizes:
+
+Explicit trust assumptions
+
+Observable execution modes
+
+Fail-closed behavior for critical operations
+
+Where trust is required, it is declared, gated, and auditable, not implicit.
+
+
 ## License
 
 MIT - See LICENSE file for details
