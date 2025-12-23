@@ -20,12 +20,22 @@ import {
 } from '../types';
 import { ContractLifecycleManager } from '../contracts/lifecycle';
 import { AuditLogger } from '../audit/logger';
+import { EmergencyOverrideManager } from '../emergency-override/manager';
 
 export class EnforcementEngine {
+  private emergencyOverrideManager?: EmergencyOverrideManager;
+
   constructor(
     private lifecycleManager: ContractLifecycleManager,
     private auditLogger: AuditLogger
   ) {}
+
+  /**
+   * Sets the emergency override manager for this engine
+   */
+  setEmergencyOverrideManager(manager: EmergencyOverrideManager): void {
+    this.emergencyOverrideManager = manager;
+  }
 
   /**
    * Hook 1: Before Memory Creation
@@ -36,6 +46,19 @@ export class EnforcementEngine {
     classification: number
   ): EnforcementResult {
     const contract = context.contract;
+
+    // Check emergency override first
+    if (this.emergencyOverrideManager) {
+      const blockReason = this.emergencyOverrideManager.checkOperation(
+        'memory_creation',
+        contract.contract_id
+      );
+      if (blockReason) {
+        const result = this.deny(contract.contract_id, blockReason);
+        this.auditLogger.logEnforcementCheck('memory_creation', context, result);
+        return result;
+      }
+    }
 
     // Contract must be active and not expired
     if (!this.lifecycleManager.isEnforceable(contract)) {
@@ -99,6 +122,19 @@ export class EnforcementEngine {
   ): EnforcementResult {
     const contract = context.contract;
 
+    // Check emergency override first
+    if (this.emergencyOverrideManager) {
+      const blockReason = this.emergencyOverrideManager.checkOperation(
+        'abstraction',
+        contract.contract_id
+      );
+      if (blockReason) {
+        const result = this.deny(contract.contract_id, blockReason);
+        this.auditLogger.logEnforcementCheck('abstraction', context, result);
+        return result;
+      }
+    }
+
     // Contract must be active and not expired
     if (!this.lifecycleManager.isEnforceable(contract)) {
       const result = this.deny(
@@ -157,6 +193,19 @@ export class EnforcementEngine {
    */
   checkRecall(context: EnforcementContext): EnforcementResult {
     const contract = context.contract;
+
+    // Check emergency override first
+    if (this.emergencyOverrideManager) {
+      const blockReason = this.emergencyOverrideManager.checkOperation(
+        'recall',
+        contract.contract_id
+      );
+      if (blockReason) {
+        const result = this.deny(contract.contract_id, blockReason);
+        this.auditLogger.logEnforcementCheck('recall', context, result);
+        return result;
+      }
+    }
 
     // Contract must be active (expired contracts freeze memory)
     if (contract.state === ContractState.EXPIRED) {
@@ -230,6 +279,19 @@ export class EnforcementEngine {
    */
   checkExport(context: EnforcementContext): EnforcementResult {
     const contract = context.contract;
+
+    // Check emergency override first
+    if (this.emergencyOverrideManager) {
+      const blockReason = this.emergencyOverrideManager.checkOperation(
+        'export',
+        contract.contract_id
+      );
+      if (blockReason) {
+        const result = this.deny(contract.contract_id, blockReason);
+        this.auditLogger.logEnforcementCheck('export', context, result);
+        return result;
+      }
+    }
 
     // Contract must be active and not expired
     if (!this.lifecycleManager.isEnforceable(contract)) {

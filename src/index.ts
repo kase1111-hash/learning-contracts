@@ -182,3 +182,18 @@ export type {
   TimeboundExpiryManagerConfig,
   ExpiryManagerStats,
 } from './expiry';
+
+// Emergency Override
+export { EmergencyOverrideManager } from './emergency-override';
+
+export type {
+  EmergencyOverrideConfig,
+  EmergencyOverrideStatus,
+  OverrideTriggerEvent,
+  OverrideDisableEvent,
+  OverrideTriggerResult,
+  OverrideDisableResult,
+  OverrideTriggerListener,
+  OverrideDisableListener,
+  BlockedOperationListener,
+} from './emergency-override';

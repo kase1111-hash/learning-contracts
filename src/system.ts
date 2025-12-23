@@ -52,6 +52,15 @@ import {
   ExpiryCheckResult,
   ExpiryManagerStats,
 } from './expiry';
+import {
+  EmergencyOverrideManager,
+  EmergencyOverrideStatus,
+  OverrideTriggerResult,
+  OverrideDisableResult,
+  OverrideTriggerListener,
+  OverrideDisableListener,
+  BlockedOperationListener,
+} from './emergency-override';
 
 export class LearningContractsSystem {
   private auditLogger: AuditLogger;
@@ -64,6 +73,7 @@ export class LearningContractsSystem {
   private parser: PlainLanguageParser;
   private sessionManager: SessionManager;
   private expiryManager: TimeboundExpiryManager;
+  private emergencyOverrideManager: EmergencyOverrideManager;
 
   constructor() {
     this.auditLogger = new AuditLogger();
@@ -74,6 +84,10 @@ export class LearningContractsSystem {
       this.auditLogger
     );
     this.memoryForgetting = new MemoryForgetting(this.auditLogger);
+
+    // Initialize emergency override manager and connect to enforcement engine
+    this.emergencyOverrideManager = new EmergencyOverrideManager(this.auditLogger);
+    this.enforcementEngine.setEmergencyOverrideManager(this.emergencyOverrideManager);
     this.conversationBuilder = new ConversationalContractBuilder();
     this.summarizer = new PlainLanguageSummarizer();
     this.parser = new PlainLanguageParser();
@@ -955,5 +969,100 @@ export class LearningContractsSystem {
    */
   resetTimeboundExpiryStats(): void {
     this.expiryManager.resetStats();
+  }
+
+  // ==========================================
+  // Emergency Override Methods
+  // ==========================================
+
+  /**
+   * Triggers an emergency override that blocks all learning operations.
+   *
+   * When triggered:
+   * - All memory creation is blocked
+   * - All abstraction/generalization is blocked
+   * - All recall operations are blocked
+   * - All export operations are blocked
+   *
+   * This implements the "pause all learning" command for human supremacy.
+   *
+   * @param triggeredBy - Identifier of who/what triggered the override
+   * @param reason - Reason for triggering the override
+   * @returns Result of the trigger operation
+   */
+  triggerEmergencyOverride(
+    triggeredBy: string,
+    reason: string
+  ): OverrideTriggerResult {
+    const activeContracts = this.repository.query({ active_only: true });
+    return this.emergencyOverrideManager.triggerOverride(
+      triggeredBy,
+      reason,
+      activeContracts.length
+    );
+  }
+
+  /**
+   * Disables an active emergency override, resuming normal operation.
+   *
+   * @param disabledBy - Identifier of who/what is disabling the override
+   * @param reason - Optional reason for disabling
+   * @returns Result of the disable operation
+   */
+  disableEmergencyOverride(
+    disabledBy: string,
+    reason?: string
+  ): OverrideDisableResult {
+    return this.emergencyOverrideManager.disableOverride(disabledBy, reason);
+  }
+
+  /**
+   * Gets the current status of the emergency override.
+   *
+   * @returns Current emergency override status
+   */
+  getEmergencyOverrideStatus(): EmergencyOverrideStatus {
+    return this.emergencyOverrideManager.getStatus();
+  }
+
+  /**
+   * Checks if emergency override is currently active.
+   *
+   * @returns True if emergency override is active
+   */
+  isEmergencyOverrideActive(): boolean {
+    return this.emergencyOverrideManager.isActive();
+  }
+
+  /**
+   * Registers a listener for emergency override trigger events.
+   *
+   * @param listener - Callback to invoke when override is triggered
+   * @returns Unsubscribe function
+   */
+  onEmergencyOverrideTrigger(listener: OverrideTriggerListener): () => void {
+    return this.emergencyOverrideManager.onTrigger(listener);
+  }
+
+  /**
+   * Registers a listener for emergency override disable events.
+   *
+   * @param listener - Callback to invoke when override is disabled
+   * @returns Unsubscribe function
+   */
+  onEmergencyOverrideDisable(listener: OverrideDisableListener): () => void {
+    return this.emergencyOverrideManager.onDisable(listener);
+  }
+
+  /**
+   * Registers a listener for blocked operation events during emergency override.
+   *
+   * @param listener - Callback to invoke when an operation is blocked
+   * @returns Unsubscribe function
+   */
+  onEmergencyOverrideBlockedOperation(
+    listener: BlockedOperationListener
+  ): () => void {
+    return this.emergencyOverrideManager.onBlockedOperation(listener);
   }
 }
