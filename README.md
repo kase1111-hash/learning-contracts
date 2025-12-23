@@ -339,22 +339,179 @@ const violations = system.getViolations();
 
 ## Integration with Memory Vault
 
-Learning Contracts are designed to integrate with a Memory Vault system:
+Learning Contracts integrate with the Memory Vault storage system to enforce contract rules on all memory operations.
 
-- Contract ID is stored in every Memory Object
+### Creating a Contract-Enforced Vault
+
+```typescript
+import {
+  LearningContractsSystem,
+  MockMemoryVaultAdapter,
+  BoundaryMode,
+  ClassificationLevel
+} from 'learning-contracts';
+
+// Initialize system and vault adapter
+const system = new LearningContractsSystem();
+const adapter = new MockMemoryVaultAdapter(); // Or your production adapter
+
+// Create a contract-enforced vault
+const vault = system.createContractEnforcedVault(
+  adapter,
+  BoundaryMode.NORMAL,
+  'my-agent'
+);
+
+// Create and activate a contract
+let contract = system.createEpisodicContract('alice', {
+  domains: ['coding'],
+  contexts: ['project-x'],
+});
+contract = system.submitForReview(contract.contract_id, 'alice');
+contract = system.activateContract(contract.contract_id, 'alice');
+
+// Store memory with contract enforcement
+const storeResult = await vault.storeMemory(
+  {
+    content: 'Learned a new coding pattern',
+    classification: ClassificationLevel.LOW,
+    domain: 'coding',
+    context: 'project-x',
+  },
+  contract.contract_id
+);
+
+if (storeResult.success) {
+  console.log('Memory stored:', storeResult.result?.memory_id);
+} else {
+  console.log('Denied:', storeResult.enforcement.reason);
+}
+
+// Recall memory with contract enforcement
+const recallResult = await vault.recallMemory({
+  memory_id: storeResult.result!.memory_id!,
+  requester: 'alice',
+  justification: 'Need to review pattern',
+  domain: 'coding',
+});
+```
+
+### Contract Enforcement Rules
+
+The vault enforces these rules before any memory operation:
+
+- **Contract must be active** - Draft, expired, or revoked contracts deny all operations
+- **Classification cap** - Memory classification cannot exceed contract cap
+- **Domain/context scope** - Operations must be within contract scope
+- **Boundary mode** - Strategic contracts require TRUSTED or higher mode
+- **No storage for observation contracts** - Observation contracts can only observe
+
+### Automatic Contract Discovery
+
+If you don't specify a contract_id, the vault will find an applicable contract:
+
+```typescript
+// Vault will find contract matching domain and context
+const result = await vault.storeMemory({
+  content: 'Data',
+  classification: ClassificationLevel.LOW,
+  domain: 'coding',
+  context: 'project-x',
+});
+```
+
+### Vault Adapters
+
+The integration provides:
+
+- **MemoryVaultAdapter** interface - For implementing production adapters
+- **MockMemoryVaultAdapter** - In-memory adapter for testing
+- **BaseMemoryVaultAdapter** - Abstract base class with common functionality
+
+### Key Features
+
+- Contract ID stored in every Memory Object
 - Classification may not exceed contract cap
 - Vault refuses writes without valid contract
+- All operations logged for audit compliance
+- Boundary mode changes are respected
 
 ## Integration with Boundary Daemon
 
-Certain contract types require minimum boundary modes:
+Learning Contracts integrate with the Boundary Daemon to automatically suspend/resume contracts based on boundary mode changes.
+
+### Creating a Boundary-Enforced System
+
+```typescript
+import {
+  LearningContractsSystem,
+  MockBoundaryDaemonAdapter,
+  DaemonBoundaryMode
+} from 'learning-contracts';
+
+// Initialize system and boundary adapter
+const system = new LearningContractsSystem();
+const adapter = new MockBoundaryDaemonAdapter();
+
+// Create a boundary-enforced system
+const boundarySystem = system.createBoundaryEnforcedSystem(adapter);
+await boundarySystem.initialize();
+
+// Check if contract can operate in current mode
+const canOperate = boundarySystem.canContractOperate(contract);
+
+// Check recall gate before memory access
+const recallResult = await boundarySystem.checkRecallGate({
+  memory_id: 'mem-123',
+  memory_class: 3,
+  requester: 'user',
+});
+
+// Check tool gate before tool execution
+const toolResult = await boundarySystem.checkToolGate({
+  tool_name: 'web-search',
+  requires_network: true,
+});
+
+// Listen for contract suspension/resume events
+boundarySystem.onSuspension((event) => {
+  console.log(`Contract ${event.contract_id} suspended: ${event.reason}`);
+});
+
+boundarySystem.onResume((event) => {
+  console.log(`Contract ${event.contract_id} resumed`);
+});
+
+// Trigger emergency lockdown (suspends ALL contracts)
+await boundarySystem.triggerLockdown('Security breach detected', 'admin');
+```
+
+### Boundary Modes
+
+The Boundary Daemon defines six security modes (least to most restrictive):
+
+| Mode | Description | Classification Cap |
+|------|-------------|-------------------|
+| OPEN | Full network access | 1 |
+| RESTRICTED | Limited network, monitored | 2 |
+| TRUSTED | VPN/encrypted only | 3 |
+| AIRGAP | No network, local only | 4 |
+| COLDROOM | Encrypted storage only | 5 |
+| LOCKDOWN | Emergency shutdown | -1 (none) |
+
+### Contract Mode Requirements
 
 - **Strategic Learning** → requires Trusted or Privileged
 - **Procedural Learning** → requires Normal or higher
 - **Episodic Learning** → requires Normal or higher
 - **Observation** → requires Normal or higher
 
-Boundary downgrade suspends learning.
+### Automatic Contract Suspension
+
+- When boundary mode decreases, contracts requiring higher modes are suspended
+- When boundary upgrades, suspended contracts are automatically resumed
+- LOCKDOWN mode suspends ALL contracts immediately
+- All suspension/resume events are logged to the audit trail
 
 ## Default Rules (Fail-Closed)
 
@@ -415,6 +572,12 @@ class LearningContractsSystem {
   parseNaturalLanguage(input): ParseResult
   getContractTemplates(): ContractTemplate[]
   searchContractTemplates(query): ContractTemplate[]
+
+  // Memory Vault Integration
+  createContractEnforcedVault(adapter, boundaryMode, defaultActor?): ContractEnforcedVault
+
+  // Boundary Daemon Integration
+  createBoundaryEnforcedSystem(adapter, autoResumeOnUpgrade?): BoundaryEnforcedSystem
 }
 ```
 

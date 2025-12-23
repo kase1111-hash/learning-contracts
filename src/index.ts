@@ -59,3 +59,92 @@ export type {
   SummaryOptions,
   BuilderResponse,
 } from './plain-language';
+
+// Memory Vault Integration
+export {
+  // Types
+  ClassificationLevel,
+  KeySource,
+  // Adapter
+  MockMemoryVaultAdapter,
+  // Contract-enforced vault
+  ContractEnforcedVault,
+} from './vault-integration';
+
+export type {
+  // Types
+  MemoryObject,
+  AccessPolicy,
+  EncryptionProfile,
+  RecallRequest,
+  StoreResult,
+  RecallResult,
+  LockdownStatus,
+  BackupMetadata,
+  TombstoneInfo,
+  MemoryQuery,
+  IntegrityResult,
+  EnforcementCheckResult,
+  ContractEnforcedStoreOptions,
+  ContractEnforcedRecallOptions,
+  // Adapter
+  MemoryVaultAdapter,
+  VaultStoreOptions,
+  VaultRecallOptions,
+  VaultTombstoneOptions,
+  VaultBackupOptions,
+  VaultConnectionStatus,
+  // Contract-enforced vault
+  ContractEnforcedVaultConfig,
+  ContractResolver,
+  ContractFinder,
+  VaultAuditEvent,
+  EnforcedOperationResult,
+  AuditLogger as VaultAuditLogger,
+} from './vault-integration';
+
+// Boundary Daemon Integration
+export {
+  // Types
+  DaemonBoundaryMode,
+  NetworkStatus,
+  TripwireType,
+  BOUNDARY_CLASSIFICATION_CAPS,
+  BOUNDARY_NETWORK_STATUS,
+  // Adapter
+  MockBoundaryDaemonAdapter,
+  // Boundary-enforced system
+  BoundaryEnforcedSystem,
+} from './boundary-integration';
+
+export type {
+  // Types
+  TripwireEvent,
+  RecallGateRequest,
+  RecallGateResult,
+  ToolGateRequest,
+  ToolGateResult,
+  BoundaryStatus,
+  ModeTransitionRequest,
+  ModeTransitionResult,
+  OverrideCeremonyRequest,
+  OverrideCeremonyResult,
+  BoundaryAuditEntry,
+  AuditVerificationResult,
+  ContractSuspensionEvent,
+  ContractResumeEvent,
+  BoundaryEnforcedOptions,
+  // Adapter
+  BoundaryDaemonAdapter,
+  DaemonConnectionStatus,
+  ModeChangeListener,
+  TripwireListener,
+  // Boundary-enforced system
+  BoundaryEnforcedSystemConfig,
+  ActiveContractsProvider,
+  SuspensionListener,
+  ResumeListener,
+  BoundaryAuditLogger,
+  BoundaryAuditEvent,
+  ContractResolver as BoundaryContractResolver,
+} from './boundary-integration';

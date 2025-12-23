@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0] - 2025-12-23
+
+### Added
+- **Memory Vault Integration** - Complete integration with Memory Vault storage system
+  - `ContractEnforcedVault` - Wraps vault adapter with contract enforcement
+  - `MemoryVaultAdapter` interface - Abstract adapter for vault communication
+  - `MockMemoryVaultAdapter` - In-memory adapter for testing
+  - TypeScript types matching memory-vault Python package
+  - Automatic contract discovery based on domain/context
+  - Full enforcement of classification caps and scope restrictions
+  - Boundary mode verification for strategic contracts
+  - Vault audit logging integrated with main audit system
+- New `createContractEnforcedVault()` method on `LearningContractsSystem`
+- New test suite for vault integration (28 tests)
+
+### Changed
+- Updated main exports to include vault integration components
+- Updated README with comprehensive vault integration documentation
+- Updated specs.md to version 3.0
+
 ## [2.0.0] - 2025-12-23
 
 ### Added
