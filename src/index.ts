@@ -165,3 +165,20 @@ export type {
   SessionContractExpirer,
   SessionMemoryFreezer,
 } from './session';
+
+// Timebound Expiry
+export { TimeboundExpiryManager } from './expiry';
+
+export type {
+  ExpiryCheckResult,
+  ExpiryCycleResult,
+  ExpiryListener,
+  CycleCompletionListener,
+  ExpiryContractResolver,
+  ExpiryContractExpirer,
+  TimeboundExpiredFinder,
+  ExpiryMemoryFreezer,
+  ContractMemoryProvider,
+  TimeboundExpiryManagerConfig,
+  ExpiryManagerStats,
+} from './expiry';

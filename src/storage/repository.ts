@@ -184,7 +184,7 @@ export class ContractRepository {
   }
 
   /**
-   * Gets expired contracts
+   * Gets expired contracts (contract-level expiration)
    */
   getExpiredContracts(): LearningContract[] {
     const now = new Date();
@@ -193,6 +193,21 @@ export class ContractRepository {
         c.state === ContractState.ACTIVE &&
         c.expiration &&
         c.expiration < now
+    );
+  }
+
+  /**
+   * Gets contracts with expired timebound retention
+   * These are contracts where retention_until has passed but contract is still active
+   */
+  getTimeboundExpiredContracts(): LearningContract[] {
+    const now = new Date();
+    return this.getAll().filter(
+      (c) =>
+        c.state === ContractState.ACTIVE &&
+        c.memory_permissions.retention === 'timebound' &&
+        c.memory_permissions.retention_until &&
+        c.memory_permissions.retention_until < now
     );
   }
 
