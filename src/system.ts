@@ -294,6 +294,7 @@ export class LearningContractsSystem {
       domain?: string;
       context?: string;
       tool?: string;
+      requester?: string;
     } = {}
   ): EnforcementResult {
     const contract = this.getContract(contractId);

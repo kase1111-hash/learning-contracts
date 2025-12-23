@@ -271,7 +271,7 @@ describe('LearningContractsSystem', () => {
       const result = system.checkRecall(
         contract.contract_id,
         BoundaryMode.TRUSTED,
-        { domain: 'test' }
+        { domain: 'test', requester: 'alice' }
       );
 
       expect(result.allowed).toBe(true);
@@ -288,7 +288,7 @@ describe('LearningContractsSystem', () => {
       const result = system.checkRecall(
         contract.contract_id,
         BoundaryMode.NORMAL,
-        { domain: 'test' }
+        { domain: 'test', requester: 'alice' }
       );
 
       expect(result.allowed).toBe(false);
@@ -307,7 +307,7 @@ describe('LearningContractsSystem', () => {
       const result = system.checkRecall(
         contract.contract_id,
         BoundaryMode.NORMAL,
-        { domain: 'test' }
+        { domain: 'test', requester: 'alice' }
       );
 
       expect(result.allowed).toBe(false);

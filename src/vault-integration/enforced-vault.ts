@@ -709,17 +709,20 @@ export class ContractEnforcedVault {
       }
     }
 
-    // Note: requires_owner check would need external approval flow
-    // This is a placeholder for that integration
-    const warnings: string[] = [];
+    // Check owner presence requirement
     if (contract.recall_rules.requires_owner) {
-      warnings.push('This contract requires owner approval for recall');
+      if (options.requester !== contract.created_by) {
+        return {
+          allowed: false,
+          contract_id: contract.contract_id,
+          reason: `Recall requires owner presence: requester '${options.requester}' is not the contract owner '${contract.created_by}'`,
+        };
+      }
     }
 
     return {
       allowed: true,
       contract_id: contract.contract_id,
-      warnings: warnings.length > 0 ? warnings : undefined,
     };
   }
 }

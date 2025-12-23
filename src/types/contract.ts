@@ -175,6 +175,8 @@ export interface EnforcementContext {
   abstraction_level?: AbstractionLevel;
   /** Whether this is a transfer operation */
   is_transfer?: boolean;
+  /** Identity of the requester (for owner presence validation) */
+  requester?: string;
 }
 
 /**
