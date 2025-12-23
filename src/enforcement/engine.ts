@@ -11,7 +11,6 @@
  */
 
 import {
-  LearningContract,
   ContractType,
   ContractState,
   EnforcementContext,

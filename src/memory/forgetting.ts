@@ -224,7 +224,7 @@ export class MemoryForgetting {
    * Checks if a memory is accessible given contract state
    */
   isMemoryAccessible(
-    memory: MemoryReference,
+    _memory: MemoryReference,
     contract: LearningContract
   ): { accessible: boolean; reason?: string } {
     if (contract.state === ContractState.EXPIRED) {

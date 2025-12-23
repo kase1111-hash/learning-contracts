@@ -203,7 +203,7 @@ export class ContractValidator {
    */
   private static validateGeneralizationRules(
     contract: LearningContract,
-    errors: string[],
+    _errors: string[],
     warnings: string[]
   ): void {
     if (
@@ -221,7 +221,7 @@ export class ContractValidator {
   private static validateRecallRules(
     contract: LearningContract,
     errors: string[],
-    warnings: string[]
+    _warnings: string[]
   ): void {
     if (!Object.values(BoundaryMode).includes(contract.recall_rules.boundary_mode_min)) {
       errors.push(

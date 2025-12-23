@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2025-12-23
+
+### Added
+- **Plain-Language Interface** - Complete implementation of conversational contract creation
+  - `PlainLanguageParser` - Natural language parsing with keyword extraction and intent detection
+  - `PlainLanguageSummarizer` - Generate human-readable contract summaries (prose and bullet formats)
+  - `ConversationalContractBuilder` - Interactive conversation flow for building contracts
+  - 7 contract templates: Coding Best Practices, Gaming/Streaming, Personal Journal, Work Projects, Prohibited Domains, Study Sessions, Strategic Planning
+  - System integration via `startPlainLanguageConversation()`, `processConversationInput()`, `getContractSummary()` methods
+- New test suite for plain-language interface (35+ tests)
+
+### Changed
+- Updated `LearningContractsSystem` with plain-language methods
+- Updated main exports to include plain-language components
+- Fixed episodic contract factory to provide default retention_until date for timebound contracts
+
 ## [1.2.0] - 2025-12-23
 
 ### Added

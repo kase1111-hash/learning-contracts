@@ -59,6 +59,92 @@ if (canStore.allowed) {
 }
 ```
 
+## Plain-Language Interface
+
+Create contracts using natural language instead of code:
+
+```typescript
+// Start a conversation
+const response = system.startPlainLanguageConversation('alice');
+console.log(response.message);
+// "Let's create a Learning Contract. What would you like the assistant to learn about?"
+
+// Describe what you want in plain language
+const result = system.processConversationInput(
+  conversationId,
+  'Learn coding best practices from my Python sessions permanently'
+);
+
+// The system parses your intent and may ask clarifying questions
+if (result.questions.length > 0) {
+  // Answer questions...
+}
+
+// When complete, create the contract from the draft
+if (result.isComplete && result.draft) {
+  const contract = system.createContractFromPlainLanguage(result.draft);
+}
+```
+
+### Using Templates
+
+7 pre-built templates for common use cases:
+
+```typescript
+// Get all available templates
+const templates = system.getContractTemplates();
+
+// Search templates
+const codingTemplates = system.searchContractTemplates('coding');
+
+// Use a template in conversation
+system.useTemplateInConversation(conversationId, 'coding-best-practices');
+```
+
+Available templates:
+- **Coding Best Practices** - Learn reusable coding patterns
+- **Gaming & Streaming** - Capture gameplay moments
+- **Personal Journal** - Observation-only for private reflection
+- **Work Projects** - Professional learning with protection
+- **Prohibited Domains** - Block learning in sensitive areas
+- **Study Sessions** - Capture learning insights
+- **Strategic Planning** - Long-term strategy building
+
+### Getting Contract Summaries
+
+Convert contracts to plain language:
+
+```typescript
+// Full summary (prose or bullets)
+const summary = system.getContractSummary(contractId, { format: 'prose' });
+// "This is a Procedural Learning contract (active). You allow the assistant
+//  to learn reusable tips and patterns and apply them in similar future
+//  situations. This applies in coding. Memories are kept permanently..."
+
+// Short summary
+const short = system.getContractShortSummary(contractId);
+// "Procedural Learning for coding (Active)"
+
+// Bullet format with warnings
+const detailed = system.getContractSummary(contractId, {
+  format: 'bullets',
+  includeWarnings: true,
+  includeTechnical: true
+});
+```
+
+### Parse Natural Language (No Conversation)
+
+```typescript
+const parsed = system.parseNaturalLanguage(
+  'Never learn anything about my medical or financial records'
+);
+
+console.log(parsed.intent.contractType); // 'prohibited'
+console.log(parsed.intent.domains);      // ['medical', 'finance']
+console.log(parsed.suggestedTemplate);   // Prohibited Domains template
+```
+
 ## Contract Types
 
 ### 1. Observation Contract
@@ -318,6 +404,17 @@ class LearningContractsSystem {
   getAuditLog(): AuditEvent[]
   getContractHistory(contractId): AuditEvent[]
   getViolations(): AuditEvent[]
+
+  // Plain-Language Interface
+  startPlainLanguageConversation(userId: string): BuilderResponse
+  processConversationInput(conversationId, input): BuilderResponse
+  useTemplateInConversation(conversationId, templateId): BuilderResponse
+  createContractFromPlainLanguage(draft): LearningContract
+  getContractSummary(contractId, options?): string | null
+  getContractShortSummary(contractId): string | null
+  parseNaturalLanguage(input): ParseResult
+  getContractTemplates(): ContractTemplate[]
+  searchContractTemplates(query): ContractTemplate[]
 }
 ```
 

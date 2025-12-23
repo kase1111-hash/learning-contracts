@@ -4,7 +4,7 @@
  * All contract transitions are logged and irreversible in audit history.
  */
 
-import { ContractState, ContractType } from './contract';
+import { ContractState } from './contract';
 
 /**
  * Audit event types

@@ -113,7 +113,7 @@ describe('LearningContractsSystem', () => {
       const result = system.amendContract(
         contract.contract_id,
         'alice',
-        { scope: { domains: ['updated'], contexts: [], tools: [] } },
+        { scope: { domains: ['updated'], contexts: [], tools: [], max_abstraction: AbstractionLevel.RAW, transferable: false } },
         'Expanding scope'
       );
 
