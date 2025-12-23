@@ -35,6 +35,11 @@ import {
   MemoryVaultAdapter,
   VaultAuditEvent,
 } from './vault-integration';
+import {
+  BoundaryEnforcedSystem,
+  BoundaryDaemonAdapter,
+  BoundaryAuditEvent,
+} from './boundary-integration';
 
 export class LearningContractsSystem {
   private auditLogger: AuditLogger;
@@ -583,6 +588,83 @@ export class LearningContractsSystem {
 
       case 'query':
         // Queries don't have a specific log method, they're not sensitive
+        break;
+    }
+  }
+
+  /**
+   * Boundary Daemon Integration Methods
+   */
+
+  /**
+   * Create a boundary-enforced system instance
+   *
+   * The returned system monitors boundary mode changes and automatically
+   * suspends/resumes contracts based on their required boundary modes.
+   *
+   * @param adapter - The boundary daemon adapter to use
+   * @param autoResumeOnUpgrade - Whether to auto-resume suspended contracts on upgrade
+   */
+  createBoundaryEnforcedSystem(
+    adapter: BoundaryDaemonAdapter,
+    autoResumeOnUpgrade: boolean = true
+  ): BoundaryEnforcedSystem {
+    return new BoundaryEnforcedSystem({
+      adapter,
+      contractResolver: (contractId: string) => this.getContract(contractId),
+      activeContractsProvider: () => this.getActiveContracts(),
+      auditLogger: (event: BoundaryAuditEvent) => this.logBoundaryEvent(event),
+      autoResumeOnUpgrade,
+    });
+  }
+
+  /**
+   * Log a boundary audit event to the main audit log
+   */
+  private logBoundaryEvent(event: BoundaryAuditEvent): void {
+    switch (event.event_type) {
+      case 'suspension':
+        if (event.contract_id) {
+          this.auditLogger.logStateTransition(
+            event.contract_id,
+            event.actor,
+            this.getContract(event.contract_id)?.state as any,
+            this.getContract(event.contract_id)?.state as any,
+            {
+              boundary_event_id: event.event_id,
+              boundary_event_type: 'suspension',
+              reason: event.details?.reason,
+              previous_mode: event.details?.previous_mode,
+              new_mode: event.details?.new_mode,
+            }
+          );
+        }
+        break;
+
+      case 'resume':
+        if (event.contract_id) {
+          this.auditLogger.logStateTransition(
+            event.contract_id,
+            event.actor,
+            this.getContract(event.contract_id)?.state as any,
+            this.getContract(event.contract_id)?.state as any,
+            {
+              boundary_event_id: event.event_id,
+              boundary_event_type: 'resume',
+              reason: event.details?.reason,
+            }
+          );
+        }
+        break;
+
+      case 'mode_change':
+        // Mode changes are logged but don't need contract-specific logging
+        break;
+
+      case 'recall_gate':
+      case 'tool_gate':
+      case 'tripwire':
+        // These are informational events
         break;
     }
   }

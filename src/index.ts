@@ -102,3 +102,49 @@ export type {
   EnforcedOperationResult,
   AuditLogger as VaultAuditLogger,
 } from './vault-integration';
+
+// Boundary Daemon Integration
+export {
+  // Types
+  DaemonBoundaryMode,
+  NetworkStatus,
+  TripwireType,
+  BOUNDARY_CLASSIFICATION_CAPS,
+  BOUNDARY_NETWORK_STATUS,
+  // Adapter
+  MockBoundaryDaemonAdapter,
+  // Boundary-enforced system
+  BoundaryEnforcedSystem,
+} from './boundary-integration';
+
+export type {
+  // Types
+  TripwireEvent,
+  RecallGateRequest,
+  RecallGateResult,
+  ToolGateRequest,
+  ToolGateResult,
+  BoundaryStatus,
+  ModeTransitionRequest,
+  ModeTransitionResult,
+  OverrideCeremonyRequest,
+  OverrideCeremonyResult,
+  BoundaryAuditEntry,
+  AuditVerificationResult,
+  ContractSuspensionEvent,
+  ContractResumeEvent,
+  BoundaryEnforcedOptions,
+  // Adapter
+  BoundaryDaemonAdapter,
+  DaemonConnectionStatus,
+  ModeChangeListener,
+  TripwireListener,
+  // Boundary-enforced system
+  BoundaryEnforcedSystemConfig,
+  ActiveContractsProvider,
+  SuspensionListener,
+  ResumeListener,
+  BoundaryAuditLogger,
+  BoundaryAuditEvent,
+  ContractResolver as BoundaryContractResolver,
+} from './boundary-integration';

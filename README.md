@@ -438,14 +438,80 @@ The integration provides:
 
 ## Integration with Boundary Daemon
 
-Certain contract types require minimum boundary modes:
+Learning Contracts integrate with the Boundary Daemon to automatically suspend/resume contracts based on boundary mode changes.
+
+### Creating a Boundary-Enforced System
+
+```typescript
+import {
+  LearningContractsSystem,
+  MockBoundaryDaemonAdapter,
+  DaemonBoundaryMode
+} from 'learning-contracts';
+
+// Initialize system and boundary adapter
+const system = new LearningContractsSystem();
+const adapter = new MockBoundaryDaemonAdapter();
+
+// Create a boundary-enforced system
+const boundarySystem = system.createBoundaryEnforcedSystem(adapter);
+await boundarySystem.initialize();
+
+// Check if contract can operate in current mode
+const canOperate = boundarySystem.canContractOperate(contract);
+
+// Check recall gate before memory access
+const recallResult = await boundarySystem.checkRecallGate({
+  memory_id: 'mem-123',
+  memory_class: 3,
+  requester: 'user',
+});
+
+// Check tool gate before tool execution
+const toolResult = await boundarySystem.checkToolGate({
+  tool_name: 'web-search',
+  requires_network: true,
+});
+
+// Listen for contract suspension/resume events
+boundarySystem.onSuspension((event) => {
+  console.log(`Contract ${event.contract_id} suspended: ${event.reason}`);
+});
+
+boundarySystem.onResume((event) => {
+  console.log(`Contract ${event.contract_id} resumed`);
+});
+
+// Trigger emergency lockdown (suspends ALL contracts)
+await boundarySystem.triggerLockdown('Security breach detected', 'admin');
+```
+
+### Boundary Modes
+
+The Boundary Daemon defines six security modes (least to most restrictive):
+
+| Mode | Description | Classification Cap |
+|------|-------------|-------------------|
+| OPEN | Full network access | 1 |
+| RESTRICTED | Limited network, monitored | 2 |
+| TRUSTED | VPN/encrypted only | 3 |
+| AIRGAP | No network, local only | 4 |
+| COLDROOM | Encrypted storage only | 5 |
+| LOCKDOWN | Emergency shutdown | -1 (none) |
+
+### Contract Mode Requirements
 
 - **Strategic Learning** → requires Trusted or Privileged
 - **Procedural Learning** → requires Normal or higher
 - **Episodic Learning** → requires Normal or higher
 - **Observation** → requires Normal or higher
 
-Boundary downgrade suspends learning.
+### Automatic Contract Suspension
+
+- When boundary mode decreases, contracts requiring higher modes are suspended
+- When boundary upgrades, suspended contracts are automatically resumed
+- LOCKDOWN mode suspends ALL contracts immediately
+- All suspension/resume events are logged to the audit trail
 
 ## Default Rules (Fail-Closed)
 
@@ -509,6 +575,9 @@ class LearningContractsSystem {
 
   // Memory Vault Integration
   createContractEnforcedVault(adapter, boundaryMode, defaultActor?): ContractEnforcedVault
+
+  // Boundary Daemon Integration
+  createBoundaryEnforcedSystem(adapter, autoResumeOnUpgrade?): BoundaryEnforcedSystem
 }
 ```
 

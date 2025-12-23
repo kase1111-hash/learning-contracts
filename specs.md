@@ -1,6 +1,6 @@
 # Learning Contracts Specification
 
-> Version 3.0 | Last Updated: 2025-12-23
+> Version 4.0 | Last Updated: 2025-12-23
 
 ## Table of Contents
 
@@ -302,7 +302,22 @@ const recall = await vault.recallMemory({
 
 ## 11. Boundary Daemon Integration
 
-Contracts integrate with boundary modes for trust-level enforcement:
+Learning Contracts integrate with the Boundary Daemon through the `BoundaryEnforcedSystem` wrapper, providing automatic contract suspension based on boundary mode changes.
+
+### Boundary Modes
+
+The Boundary Daemon defines six security modes (least to most restrictive):
+
+| Mode | Description | Classification Cap |
+|------|-------------|-------------------|
+| OPEN | Full network access | 1 |
+| RESTRICTED | Limited network, monitored | 2 |
+| TRUSTED | VPN/encrypted only | 3 |
+| AIRGAP | No network, local only | 4 |
+| COLDROOM | Encrypted storage only | 5 |
+| LOCKDOWN | Emergency shutdown | -1 (none) |
+
+### Contract Mode Requirements
 
 | Contract Type | Minimum Boundary Mode |
 |---------------|----------------------|
@@ -312,7 +327,64 @@ Contracts integrate with boundary modes for trust-level enforcement:
 | Observation | Normal or higher |
 | Prohibited | Restricted (any mode) |
 
-**Downgrading the boundary automatically suspends learning** under affected contracts.
+### Automatic Contract Suspension
+
+**Downgrading the boundary automatically suspends learning** under affected contracts:
+
+- When boundary mode decreases, contracts requiring higher modes are suspended
+- When boundary upgrades, suspended contracts are automatically resumed
+- LOCKDOWN mode suspends ALL contracts immediately
+- All suspension/resume events are logged to the audit trail
+
+### Gate Enforcement
+
+| Gate | Purpose |
+|------|---------|
+| **RecallGate** | Validates memory recall against classification caps |
+| **ToolGate** | Validates tool execution against network requirements |
+
+### Usage
+
+```typescript
+import { LearningContractsSystem, MockBoundaryDaemonAdapter, DaemonBoundaryMode } from 'learning-contracts';
+
+const system = new LearningContractsSystem();
+const adapter = new MockBoundaryDaemonAdapter();
+
+// Create boundary-enforced system
+const boundarySystem = system.createBoundaryEnforcedSystem(adapter);
+await boundarySystem.initialize();
+
+// Check if contract can operate in current mode
+const canOperate = boundarySystem.canContractOperate(contract);
+
+// Check recall gate before memory access
+const recallResult = await boundarySystem.checkRecallGate({
+  memory_id: 'mem-123',
+  memory_class: 3,
+  requester: 'user',
+});
+
+// Check tool gate before tool execution
+const toolResult = await boundarySystem.checkToolGate({
+  tool_name: 'web-search',
+  requires_network: true,
+});
+
+// Listen for suspension events
+boundarySystem.onSuspension((event) => {
+  console.log(`Contract ${event.contract_id} suspended: ${event.reason}`);
+});
+
+// Trigger emergency lockdown
+await boundarySystem.triggerLockdown('Security breach detected', 'admin');
+```
+
+### Available Adapters
+
+- **BoundaryDaemonAdapter** - Interface for implementing production adapters
+- **MockBoundaryDaemonAdapter** - In-memory adapter for testing
+- **BaseBoundaryDaemonAdapter** - Abstract base class with common functionality
 
 ---
 
@@ -379,12 +451,18 @@ The following are explicitly **NOT** goals of Learning Contracts:
 | MemoryVaultAdapter interface | ✅ Complete | `src/vault-integration/adapter.ts` |
 | MockMemoryVaultAdapter | ✅ Complete | `src/vault-integration/adapter.ts` |
 | Vault audit logging | ✅ Complete | `src/system.ts` |
+| Boundary Daemon Integration | ✅ Complete | `src/boundary-integration/` |
+| BoundaryEnforcedSystem wrapper | ✅ Complete | `src/boundary-integration/enforced-system.ts` |
+| BoundaryDaemonAdapter interface | ✅ Complete | `src/boundary-integration/adapter.ts` |
+| MockBoundaryDaemonAdapter | ✅ Complete | `src/boundary-integration/adapter.ts` |
+| Automatic contract suspension | ✅ Complete | `src/boundary-integration/enforced-system.ts` |
+| RecallGate & ToolGate enforcement | ✅ Complete | `src/boundary-integration/enforced-system.ts` |
+| Boundary audit logging | ✅ Complete | `src/system.ts` |
 
 ### Not Implemented
 
 | Feature | Priority | Description |
 |---------|----------|-------------|
-| Boundary Daemon Integration | High | Full Boundary Daemon component; automatic suspension on boundary downgrade |
 | Session Retention Cleanup | Medium | Automatic cleanup when session-scoped contracts end |
 | Timebound Auto-Expiry | Medium | Automatic background enforcement of `retention_until` timestamps (manual trigger exists) |
 | Owner Presence Validation | Medium | `requires_owner` field defined but not enforced during recall |
