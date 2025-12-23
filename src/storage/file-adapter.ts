@@ -5,7 +5,7 @@
  * Uses atomic writes to prevent data corruption.
  */
 
-import * as fs from 'fs';
+import * as fsPromises from 'fs/promises';
 import * as path from 'path';
 import { LearningContract } from '../types';
 import {
@@ -58,17 +58,22 @@ export class FileStorageAdapter implements StorageAdapter {
 
     // Ensure directory exists
     const dir = path.dirname(this.filePath);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
+    try {
+      await fsPromises.access(dir);
+    } catch {
+      await fsPromises.mkdir(dir, { recursive: true });
     }
 
     // Load existing data or create new file
-    if (fs.existsSync(this.filePath)) {
+    try {
+      await fsPromises.access(this.filePath);
       await this.loadFromFile();
-    } else if (this.createIfMissing) {
-      await this.saveToFile();
-    } else {
-      throw new Error(`Storage file not found: ${this.filePath}`);
+    } catch {
+      if (this.createIfMissing) {
+        await this.saveToFile();
+      } else {
+        throw new Error(`Storage file not found: ${this.filePath}`);
+      }
     }
 
     this.initialized = true;
@@ -136,7 +141,7 @@ export class FileStorageAdapter implements StorageAdapter {
    */
   private async loadFromFile(): Promise<void> {
     try {
-      const content = fs.readFileSync(this.filePath, 'utf-8');
+      const content = await fsPromises.readFile(this.filePath, 'utf-8');
       const data: StorageFileFormat = JSON.parse(content);
 
       // Validate version
@@ -179,14 +184,13 @@ export class FileStorageAdapter implements StorageAdapter {
     // Atomic write: write to temp file, then rename
     const tempPath = `${this.filePath}.tmp`;
     try {
-      fs.writeFileSync(tempPath, content, 'utf-8');
-      fs.renameSync(tempPath, this.filePath);
+      await fsPromises.writeFile(tempPath, content, 'utf-8');
+      await fsPromises.rename(tempPath, this.filePath);
     } catch (error) {
       // Clean up temp file if it exists
       try {
-        if (fs.existsSync(tempPath)) {
-          fs.unlinkSync(tempPath);
-        }
+        await fsPromises.access(tempPath);
+        await fsPromises.unlink(tempPath);
       } catch {
         // Ignore cleanup errors
       }

@@ -13,21 +13,64 @@ import {
 } from './types';
 
 /**
+ * Validates an ID string for security
+ * IDs must be non-empty strings containing only safe characters
+ */
+function validateId(id: string, type: 'contract' | 'user'): void {
+  if (!id || typeof id !== 'string') {
+    throw new Error(`Invalid ${type} ID: must be a non-empty string`);
+  }
+  if (id.length > 256) {
+    throw new Error(`Invalid ${type} ID: exceeds maximum length of 256 characters`);
+  }
+  // Allow alphanumeric, hyphens, underscores, and periods
+  if (!/^[a-zA-Z0-9_\-\.]+$/.test(id)) {
+    throw new Error(`Invalid ${type} ID: contains invalid characters`);
+  }
+}
+
+/** Symbol for internal owner setting - only accessible within the module */
+const INTERNAL_SET_OWNER = Symbol('internal-set-owner');
+
+/**
  * Manages permissions for contracts
  */
 export class PermissionManager {
   /** Map of contract_id -> permissions array */
   private permissions: Map<string, ContractPermission[]> = new Map();
   private auditLogger?: UserAuditLogger;
+  private internalToken: symbol;
 
   constructor(auditLogger?: UserAuditLogger) {
     this.auditLogger = auditLogger;
+    this.internalToken = INTERNAL_SET_OWNER;
   }
 
   /**
-   * Sets the owner of a contract (should be called when contract is created)
+   * Gets the internal token for secure owner setting
+   * @internal This should only be used by LearningContractsSystem
    */
-  setOwner(contractId: string, ownerId: string): void {
+  getInternalToken(): symbol {
+    return this.internalToken;
+  }
+
+  /**
+   * Sets the owner of a contract (requires internal token for security)
+   * @param contractId - Contract ID
+   * @param ownerId - Owner user ID
+   * @param token - Internal security token (must match)
+   * @throws Error if token is invalid
+   */
+  setOwner(contractId: string, ownerId: string, token?: symbol): void {
+    // Validate the security token
+    if (token !== this.internalToken) {
+      throw new Error('Unauthorized: setOwner requires internal authorization token');
+    }
+
+    // Validate IDs
+    validateId(contractId, 'contract');
+    validateId(ownerId, 'user');
+
     const perms = this.permissions.get(contractId) || [];
 
     // Remove any existing owner permission
@@ -66,6 +109,18 @@ export class PermissionManager {
     level: PermissionLevel,
     options: GrantPermissionOptions = {}
   ): PermissionCheckResult {
+    // Validate IDs
+    try {
+      validateId(contractId, 'contract');
+      validateId(granterId, 'user');
+      validateId(userId, 'user');
+    } catch (error) {
+      return {
+        allowed: false,
+        reason: error instanceof Error ? error.message : 'Invalid ID',
+      };
+    }
+
     // Check if granter is owner
     const granterLevel = this.getUserPermissionLevel(contractId, granterId);
     if (granterLevel !== PermissionLevel.OWNER) {
@@ -131,6 +186,18 @@ export class PermissionManager {
     revokerId: string,
     userId: string
   ): PermissionCheckResult {
+    // Validate IDs
+    try {
+      validateId(contractId, 'contract');
+      validateId(revokerId, 'user');
+      validateId(userId, 'user');
+    } catch (error) {
+      return {
+        allowed: false,
+        reason: error instanceof Error ? error.message : 'Invalid ID',
+      };
+    }
+
     // Check if revoker is owner
     const revokerLevel = this.getUserPermissionLevel(contractId, revokerId);
     if (revokerLevel !== PermissionLevel.OWNER) {
@@ -189,6 +256,18 @@ export class PermissionManager {
     currentOwnerId: string,
     newOwnerId: string
   ): PermissionCheckResult {
+    // Validate IDs
+    try {
+      validateId(contractId, 'contract');
+      validateId(currentOwnerId, 'user');
+      validateId(newOwnerId, 'user');
+    } catch (error) {
+      return {
+        allowed: false,
+        reason: error instanceof Error ? error.message : 'Invalid ID',
+      };
+    }
+
     // Verify current owner
     const currentLevel = this.getUserPermissionLevel(contractId, currentOwnerId);
     if (currentLevel !== PermissionLevel.OWNER) {

@@ -304,7 +304,7 @@ describe('Multi-User Support', () => {
 
     describe('Owner Management', () => {
       test('should set owner of a contract', () => {
-        permissionManager.setOwner('contract-1', 'alice');
+        permissionManager.setOwner('contract-1', 'alice', permissionManager.getInternalToken());
 
         const owner = permissionManager.getOwner('contract-1');
         expect(owner).toBe('alice');
@@ -316,7 +316,7 @@ describe('Multi-User Support', () => {
       });
 
       test('should get user permission level', () => {
-        permissionManager.setOwner('contract-1', 'alice');
+        permissionManager.setOwner('contract-1', 'alice', permissionManager.getInternalToken());
 
         const level = permissionManager.getUserPermissionLevel('contract-1', 'alice');
         expect(level).toBe(PermissionLevel.OWNER);
@@ -325,7 +325,7 @@ describe('Multi-User Support', () => {
 
     describe('Granting Permissions', () => {
       test('should allow owner to grant delegate permission', () => {
-        permissionManager.setOwner('contract-1', 'alice');
+        permissionManager.setOwner('contract-1', 'alice', permissionManager.getInternalToken());
 
         const result = permissionManager.grantPermission(
           'contract-1',
@@ -341,7 +341,7 @@ describe('Multi-User Support', () => {
       });
 
       test('should allow owner to grant reader permission', () => {
-        permissionManager.setOwner('contract-1', 'alice');
+        permissionManager.setOwner('contract-1', 'alice', permissionManager.getInternalToken());
 
         const result = permissionManager.grantPermission(
           'contract-1',
@@ -357,7 +357,7 @@ describe('Multi-User Support', () => {
       });
 
       test('should not allow non-owner to grant permissions', () => {
-        permissionManager.setOwner('contract-1', 'alice');
+        permissionManager.setOwner('contract-1', 'alice', permissionManager.getInternalToken());
 
         const result = permissionManager.grantPermission(
           'contract-1',
@@ -371,7 +371,7 @@ describe('Multi-User Support', () => {
       });
 
       test('should not allow granting owner permission', () => {
-        permissionManager.setOwner('contract-1', 'alice');
+        permissionManager.setOwner('contract-1', 'alice', permissionManager.getInternalToken());
 
         const result = permissionManager.grantPermission(
           'contract-1',
@@ -385,7 +385,7 @@ describe('Multi-User Support', () => {
       });
 
       test('should not allow granting to self', () => {
-        permissionManager.setOwner('contract-1', 'alice');
+        permissionManager.setOwner('contract-1', 'alice', permissionManager.getInternalToken());
 
         const result = permissionManager.grantPermission(
           'contract-1',
@@ -399,7 +399,7 @@ describe('Multi-User Support', () => {
       });
 
       test('should support temporary permissions with expiration', () => {
-        permissionManager.setOwner('contract-1', 'alice');
+        permissionManager.setOwner('contract-1', 'alice', permissionManager.getInternalToken());
 
         const expiration = new Date(Date.now() + 60000); // 1 minute from now
         permissionManager.grantPermission(
@@ -419,7 +419,7 @@ describe('Multi-User Support', () => {
 
     describe('Revoking Permissions', () => {
       test('should allow owner to revoke permissions', () => {
-        permissionManager.setOwner('contract-1', 'alice');
+        permissionManager.setOwner('contract-1', 'alice', permissionManager.getInternalToken());
         permissionManager.grantPermission(
           'contract-1',
           'alice',
@@ -434,7 +434,7 @@ describe('Multi-User Support', () => {
       });
 
       test('should not allow non-owner to revoke permissions', () => {
-        permissionManager.setOwner('contract-1', 'alice');
+        permissionManager.setOwner('contract-1', 'alice', permissionManager.getInternalToken());
         permissionManager.grantPermission(
           'contract-1',
           'alice',
@@ -448,7 +448,7 @@ describe('Multi-User Support', () => {
       });
 
       test('should not allow owner to revoke own permission', () => {
-        permissionManager.setOwner('contract-1', 'alice');
+        permissionManager.setOwner('contract-1', 'alice', permissionManager.getInternalToken());
 
         const result = permissionManager.revokePermission('contract-1', 'alice', 'alice');
 
@@ -459,7 +459,7 @@ describe('Multi-User Support', () => {
 
     describe('Ownership Transfer', () => {
       test('should transfer ownership to another user', () => {
-        permissionManager.setOwner('contract-1', 'alice');
+        permissionManager.setOwner('contract-1', 'alice', permissionManager.getInternalToken());
 
         const result = permissionManager.transferOwnership('contract-1', 'alice', 'bob');
 
@@ -469,7 +469,7 @@ describe('Multi-User Support', () => {
       });
 
       test('should not allow non-owner to transfer ownership', () => {
-        permissionManager.setOwner('contract-1', 'alice');
+        permissionManager.setOwner('contract-1', 'alice', permissionManager.getInternalToken());
 
         const result = permissionManager.transferOwnership('contract-1', 'bob', 'charlie');
 
@@ -477,7 +477,7 @@ describe('Multi-User Support', () => {
       });
 
       test('should not allow transfer to self', () => {
-        permissionManager.setOwner('contract-1', 'alice');
+        permissionManager.setOwner('contract-1', 'alice', permissionManager.getInternalToken());
 
         const result = permissionManager.transferOwnership('contract-1', 'alice', 'alice');
 
@@ -487,7 +487,7 @@ describe('Multi-User Support', () => {
 
     describe('Permission Checking', () => {
       test('should check if user has required permission level', () => {
-        permissionManager.setOwner('contract-1', 'alice');
+        permissionManager.setOwner('contract-1', 'alice', permissionManager.getInternalToken());
         permissionManager.grantPermission(
           'contract-1',
           'alice',
@@ -519,7 +519,7 @@ describe('Multi-User Support', () => {
       });
 
       test('should check operation permissions', () => {
-        permissionManager.setOwner('contract-1', 'alice');
+        permissionManager.setOwner('contract-1', 'alice', permissionManager.getInternalToken());
         permissionManager.grantPermission(
           'contract-1',
           'alice',
@@ -561,7 +561,7 @@ describe('Multi-User Support', () => {
 
     describe('Permission Queries', () => {
       test('should get all permissions on a contract', () => {
-        permissionManager.setOwner('contract-1', 'alice');
+        permissionManager.setOwner('contract-1', 'alice', permissionManager.getInternalToken());
         permissionManager.grantPermission(
           'contract-1',
           'alice',
@@ -584,8 +584,8 @@ describe('Multi-User Support', () => {
       });
 
       test('should get all contracts user has access to', () => {
-        permissionManager.setOwner('contract-1', 'alice');
-        permissionManager.setOwner('contract-2', 'bob');
+        permissionManager.setOwner('contract-1', 'alice', permissionManager.getInternalToken());
+        permissionManager.setOwner('contract-2', 'bob', permissionManager.getInternalToken());
         permissionManager.grantPermission(
           'contract-1',
           'alice',
@@ -613,7 +613,7 @@ describe('Multi-User Support', () => {
 
     describe('Expired Permission Cleanup', () => {
       test('should clean up expired permissions', () => {
-        permissionManager.setOwner('contract-1', 'alice');
+        permissionManager.setOwner('contract-1', 'alice', permissionManager.getInternalToken());
 
         // Grant a permission that's already expired
         const pastDate = new Date(Date.now() - 1000);

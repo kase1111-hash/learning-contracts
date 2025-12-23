@@ -165,8 +165,12 @@ export class LearningContractsSystem {
   createContract(draft: ContractDraft): LearningContract {
     const contract = this.lifecycleManager.createDraft(draft);
     this.repository.save(contract);
-    // Set owner permission for the contract creator
-    this.permissionManager.setOwner(contract.contract_id, contract.created_by);
+    // Set owner permission for the contract creator (using internal token for security)
+    this.permissionManager.setOwner(
+      contract.contract_id,
+      contract.created_by,
+      this.permissionManager.getInternalToken()
+    );
     return contract;
   }
 
