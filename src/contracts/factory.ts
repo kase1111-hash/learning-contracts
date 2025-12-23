@@ -12,8 +12,6 @@ import {
   BoundaryMode,
   LearningScope,
   MemoryPermissions,
-  GeneralizationRules,
-  RecallRules,
 } from '../types';
 import { ContractDraft } from './lifecycle';
 
@@ -66,15 +64,21 @@ export class ContractFactory {
       retentionUntil?: Date;
     } = {}
   ): ContractDraft {
+    const retention = options.retention ?? RetentionDuration.TIMEBOUND;
+
+    // If timebound, default to 30 days from now
+    let retentionUntil = options.retentionUntil;
+    if (retention === RetentionDuration.TIMEBOUND && !retentionUntil) {
+      retentionUntil = new Date();
+      retentionUntil.setDate(retentionUntil.getDate() + 30);
+    }
+
     const memoryPermissions: MemoryPermissions = {
       may_store: true,
       classification_cap: options.classificationCap ?? 3,
-      retention: options.retention ?? RetentionDuration.TIMEBOUND,
+      retention,
+      retention_until: retentionUntil,
     };
-
-    if (options.retentionUntil) {
-      memoryPermissions.retention_until = options.retentionUntil;
-    }
 
     return {
       created_by: createdBy,

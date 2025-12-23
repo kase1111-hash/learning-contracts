@@ -1,6 +1,6 @@
 # Learning Contracts Specification
 
-> Version 1.2 | Last Updated: 2025-12-23
+> Version 2.0 | Last Updated: 2025-12-23
 
 ## Table of Contents
 
@@ -334,12 +334,16 @@ The following are explicitly **NOT** goals of Learning Contracts:
 | Contract storage and queries | ✅ Complete | `src/storage/repository.ts` |
 | Fail-closed default behavior | ✅ Complete | `src/enforcement/engine.ts` |
 | TypeScript type definitions | ✅ Complete | `src/types/` |
+| Plain-Language Interface | ✅ Complete | `src/plain-language/` |
+| Natural language parsing | ✅ Complete | `src/plain-language/parser.ts` |
+| Contract templates (7 templates) | ✅ Complete | `src/plain-language/templates.ts` |
+| Plain-language summaries | ✅ Complete | `src/plain-language/summarizer.ts` |
+| Conversational contract builder | ✅ Complete | `src/plain-language/builder.ts` |
 
 ### Not Implemented
 
 | Feature | Priority | Description |
 |---------|----------|-------------|
-| Plain-Language Interface | High | LLM translation of natural language to contracts; conversational creation flow |
 | Memory Vault Integration | High | Actual Memory Vault storage system; currently only interfaces defined |
 | Boundary Daemon Integration | High | Full Boundary Daemon component; automatic suspension on boundary downgrade |
 | Session Retention Cleanup | Medium | Automatic cleanup when session-scoped contracts end |

@@ -18,6 +18,18 @@ import { EnforcementEngine } from './enforcement/engine';
 import { AuditLogger } from './audit/logger';
 import { ContractRepository } from './storage/repository';
 import { MemoryForgetting, MemoryReference } from './memory/forgetting';
+import {
+  ConversationalContractBuilder,
+  PlainLanguageSummarizer,
+  PlainLanguageParser,
+  ContractDraftFromLanguage,
+  ConversationAnswer,
+  BuilderResponse,
+  SummaryOptions,
+  CONTRACT_TEMPLATES,
+  ContractTemplate,
+  searchTemplates,
+} from './plain-language';
 
 export class LearningContractsSystem {
   private auditLogger: AuditLogger;
@@ -25,6 +37,9 @@ export class LearningContractsSystem {
   private lifecycleManager: ContractLifecycleManager;
   private enforcementEngine: EnforcementEngine;
   private memoryForgetting: MemoryForgetting;
+  private conversationBuilder: ConversationalContractBuilder;
+  private summarizer: PlainLanguageSummarizer;
+  private parser: PlainLanguageParser;
 
   constructor() {
     this.auditLogger = new AuditLogger();
@@ -35,6 +50,9 @@ export class LearningContractsSystem {
       this.auditLogger
     );
     this.memoryForgetting = new MemoryForgetting(this.auditLogger);
+    this.conversationBuilder = new ConversationalContractBuilder();
+    this.summarizer = new PlainLanguageSummarizer();
+    this.parser = new PlainLanguageParser();
   }
 
   /**
@@ -332,5 +350,156 @@ export class LearningContractsSystem {
       this.repository.save(updated);
       return updated;
     });
+  }
+
+  /**
+   * Plain-Language Interface Methods
+   */
+
+  /**
+   * Start a new plain-language contract creation conversation
+   */
+  startPlainLanguageConversation(userId: string): BuilderResponse {
+    return this.conversationBuilder.startConversation(userId);
+  }
+
+  /**
+   * Process input in a plain-language conversation
+   */
+  processConversationInput(
+    conversationId: string,
+    input: string | ConversationAnswer
+  ): BuilderResponse {
+    return this.conversationBuilder.processInput(conversationId, input);
+  }
+
+  /**
+   * Use a template in a conversation
+   */
+  useTemplateInConversation(
+    conversationId: string,
+    templateId: string
+  ): BuilderResponse {
+    return this.conversationBuilder.useTemplate(conversationId, templateId);
+  }
+
+  /**
+   * Create a contract from a plain-language draft
+   */
+  createContractFromPlainLanguage(
+    draft: ContractDraftFromLanguage
+  ): LearningContract {
+    // Convert plain-language draft to ContractDraft
+    const contractDraft: ContractDraft = {
+      created_by: draft.createdBy,
+      contract_type: draft.contractType,
+      scope: {
+        domains: draft.domains,
+        contexts: draft.contexts,
+        tools: draft.tools,
+        max_abstraction: this.getMaxAbstraction(draft.contractType, draft.allowGeneralization),
+        transferable: false, // Never allow transfer by default
+      },
+      memory_permissions: {
+        may_store: draft.contractType !== 'observation' && draft.contractType !== 'prohibited',
+        classification_cap: draft.classificationCap,
+        retention: draft.retention,
+        retention_until: draft.retentionUntil,
+      },
+      generalization_rules: {
+        allowed: draft.allowGeneralization,
+        conditions: draft.generalizationConditions,
+      },
+      recall_rules: {
+        requires_owner: draft.requiresOwner,
+        boundary_mode_min: draft.boundaryModeMin,
+      },
+      revocable: draft.contractType !== 'prohibited',
+    };
+
+    return this.createContract(contractDraft);
+  }
+
+  /**
+   * Get plain-language summary of a contract
+   */
+  getContractSummary(
+    contractId: string,
+    options?: SummaryOptions
+  ): string | null {
+    const contract = this.getContract(contractId);
+    if (!contract) {
+      return null;
+    }
+    return this.summarizer.summarize(contract, options);
+  }
+
+  /**
+   * Get short summary of a contract
+   */
+  getContractShortSummary(contractId: string): string | null {
+    const contract = this.getContract(contractId);
+    if (!contract) {
+      return null;
+    }
+    return this.summarizer.shortSummary(contract);
+  }
+
+  /**
+   * Parse natural language to understand intent (without starting a conversation)
+   */
+  parseNaturalLanguage(input: string) {
+    return this.parser.parse(input);
+  }
+
+  /**
+   * Get all available contract templates
+   */
+  getContractTemplates(): ContractTemplate[] {
+    return CONTRACT_TEMPLATES;
+  }
+
+  /**
+   * Search contract templates
+   */
+  searchContractTemplates(query: string): ContractTemplate[] {
+    return searchTemplates(query);
+  }
+
+  /**
+   * Cancel a plain-language conversation
+   */
+  cancelConversation(conversationId: string): boolean {
+    return this.conversationBuilder.cancelConversation(conversationId);
+  }
+
+  /**
+   * Clean up old conversations
+   */
+  cleanupOldConversations(maxAgeMs?: number): number {
+    return this.conversationBuilder.cleanupOldConversations(maxAgeMs);
+  }
+
+  /**
+   * Get abstraction level based on contract type
+   */
+  private getMaxAbstraction(
+    contractType: string,
+    allowGeneralization: boolean
+  ): AbstractionLevel {
+    if (!allowGeneralization) {
+      return AbstractionLevel.RAW;
+    }
+
+    switch (contractType) {
+      case 'strategic':
+        return AbstractionLevel.STRATEGY;
+      case 'procedural':
+        return AbstractionLevel.HEURISTIC;
+      case 'episodic':
+        return AbstractionLevel.PATTERN;
+      default:
+        return AbstractionLevel.RAW;
+    }
   }
 }

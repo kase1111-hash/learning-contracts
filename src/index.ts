@@ -35,3 +35,27 @@ export {
   MemoryStatus,
   ForgettingResult,
 } from './memory/forgetting';
+
+// Plain-Language Interface
+export {
+  PlainLanguageParser,
+  PlainLanguageSummarizer,
+  ConversationalContractBuilder,
+  CONTRACT_TEMPLATES,
+  getTemplateById,
+  getTemplatesByType,
+  searchTemplates,
+} from './plain-language';
+
+export type {
+  ParsedIntent,
+  ParseResult,
+  ConversationState,
+  ConversationStep,
+  ConversationQuestion,
+  ConversationAnswer,
+  ContractDraftFromLanguage,
+  ContractTemplate,
+  SummaryOptions,
+  BuilderResponse,
+} from './plain-language';
