@@ -265,6 +265,69 @@ export class AuditLogger {
   }
 
   /**
+   * Logs a custom event
+   */
+  logCustomEvent(
+    eventName: string,
+    details: Record<string, unknown>,
+    actor: string = 'system',
+    contractId?: string
+  ): void {
+    this.log({
+      event_type: AuditEventType.CUSTOM,
+      contract_id: contractId ?? 'system',
+      actor,
+      details: {
+        custom_event_name: eventName,
+        ...details,
+      },
+    });
+  }
+
+  /**
+   * Logs session start
+   */
+  logSessionStarted(
+    sessionId: string,
+    userId: string,
+    metadata?: Record<string, unknown>
+  ): void {
+    this.log({
+      event_type: AuditEventType.SESSION_STARTED,
+      contract_id: 'session',
+      actor: userId,
+      details: {
+        session_id: sessionId,
+        user_id: userId,
+        metadata,
+      },
+    });
+  }
+
+  /**
+   * Logs session end
+   */
+  logSessionEnded(
+    sessionId: string,
+    userId: string,
+    contractsCleaned: number,
+    memoriesAffected: number,
+    errors: number
+  ): void {
+    this.log({
+      event_type: AuditEventType.SESSION_ENDED,
+      contract_id: 'session',
+      actor: userId,
+      details: {
+        session_id: sessionId,
+        contracts_cleaned: contractsCleaned,
+        memories_affected: memoriesAffected,
+        errors,
+      },
+    });
+  }
+
+  /**
    * Core logging method
    */
   private log(eventData: Omit<AuditEvent, 'event_id' | 'timestamp'>): void {

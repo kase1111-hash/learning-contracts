@@ -40,6 +40,12 @@ import {
   BoundaryDaemonAdapter,
   BoundaryAuditEvent,
 } from './boundary-integration';
+import {
+  SessionManager,
+  Session,
+  SessionEndResult,
+  SessionCleanupOptions,
+} from './session';
 
 export class LearningContractsSystem {
   private auditLogger: AuditLogger;
@@ -50,6 +56,7 @@ export class LearningContractsSystem {
   private conversationBuilder: ConversationalContractBuilder;
   private summarizer: PlainLanguageSummarizer;
   private parser: PlainLanguageParser;
+  private sessionManager: SessionManager;
 
   constructor() {
     this.auditLogger = new AuditLogger();
@@ -63,6 +70,28 @@ export class LearningContractsSystem {
     this.conversationBuilder = new ConversationalContractBuilder();
     this.summarizer = new PlainLanguageSummarizer();
     this.parser = new PlainLanguageParser();
+
+    // Initialize session manager with callbacks
+    this.sessionManager = new SessionManager({
+      contractResolver: (contractId: string) => this.getContract(contractId),
+      contractExpirer: (contractId: string, actor: string) => {
+        const contract = this.getContract(contractId);
+        if (!contract) {
+          throw new Error('Contract not found');
+        }
+        const expired = this.lifecycleManager.expire(contract, actor);
+        this.repository.save(expired);
+        return expired;
+      },
+      memoryFreezer: (contractId: string, memories: MemoryReference[]) => {
+        const contract = this.getContract(contractId);
+        if (!contract) {
+          throw new Error('Contract not found');
+        }
+        return this.memoryForgetting.freezeMemories(contract, memories);
+      },
+      auditLogger: this.auditLogger,
+    });
   }
 
   /**
@@ -667,5 +696,131 @@ export class LearningContractsSystem {
         // These are informational events
         break;
     }
+  }
+
+  /**
+   * Session Management Methods
+   */
+
+  /**
+   * Start a new session
+   *
+   * Sessions track active usage periods. Session-scoped contracts
+   * are automatically expired when their session ends.
+   *
+   * @param userId - User who owns this session
+   * @param metadata - Optional session metadata
+   */
+  startSession(userId: string, metadata?: Record<string, unknown>): Session {
+    return this.sessionManager.startSession(userId, metadata);
+  }
+
+  /**
+   * Get a session by ID
+   */
+  getSession(sessionId: string): Session | null {
+    return this.sessionManager.getSession(sessionId);
+  }
+
+  /**
+   * Get all active sessions
+   */
+  getActiveSessions(): Session[] {
+    return this.sessionManager.getActiveSessions();
+  }
+
+  /**
+   * Get all sessions for a user
+   */
+  getUserSessions(userId: string): Session[] {
+    return this.sessionManager.getUserSessions(userId);
+  }
+
+  /**
+   * Associate a session-scoped contract with a session
+   *
+   * Only contracts with retention='session' can be associated.
+   *
+   * @param sessionId - Session to associate with
+   * @param contractId - Contract to associate
+   */
+  associateContractWithSession(sessionId: string, contractId: string): boolean {
+    return this.sessionManager.associateContract(sessionId, contractId);
+  }
+
+  /**
+   * Get the session ID for a contract
+   */
+  getContractSession(contractId: string): string | null {
+    return this.sessionManager.getContractSession(contractId);
+  }
+
+  /**
+   * Check if a contract is associated with a session
+   */
+  isContractInSession(contractId: string): boolean {
+    return this.sessionManager.isContractInSession(contractId);
+  }
+
+  /**
+   * End a session and clean up associated contracts
+   *
+   * All session-scoped contracts associated with this session
+   * will be expired and their memories frozen.
+   *
+   * @param sessionId - Session to end
+   * @param options - Cleanup options
+   */
+  endSession(
+    sessionId: string,
+    options: SessionCleanupOptions = {}
+  ): SessionEndResult {
+    return this.sessionManager.endSession(sessionId, options);
+  }
+
+  /**
+   * End all sessions for a user
+   */
+  endUserSessions(
+    userId: string,
+    options: SessionCleanupOptions = {}
+  ): SessionEndResult[] {
+    return this.sessionManager.endUserSessions(userId, options);
+  }
+
+  /**
+   * Check for and expire timed-out sessions
+   *
+   * Call this periodically to clean up stale sessions.
+   */
+  expireTimedOutSessions(options: SessionCleanupOptions = {}): SessionEndResult[] {
+    return this.sessionManager.expireTimedOutSessions(options);
+  }
+
+  /**
+   * Register a listener for session end events
+   */
+  onSessionEnd(listener: (session: Session, result: SessionEndResult) => void): () => void {
+    return this.sessionManager.onSessionEnd(listener);
+  }
+
+  /**
+   * Get session statistics
+   */
+  getSessionStats(): {
+    totalSessions: number;
+    activeSessions: number;
+    endedSessions: number;
+    expiredSessions: number;
+    totalContractsInSessions: number;
+  } {
+    return this.sessionManager.getStats();
+  }
+
+  /**
+   * Clean up old ended/expired sessions from memory
+   */
+  cleanupOldSessions(maxAgeMs?: number): number {
+    return this.sessionManager.cleanupOldSessions(maxAgeMs);
   }
 }

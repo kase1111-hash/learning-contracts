@@ -23,6 +23,9 @@ export enum AuditEventType {
   MEMORY_TOMBSTONED = 'memory_tombstoned',
   GENERALIZATION_ATTEMPTED = 'generalization_attempted',
   EXPORT_ATTEMPTED = 'export_attempted',
+  SESSION_STARTED = 'session_started',
+  SESSION_ENDED = 'session_ended',
+  CUSTOM = 'custom',
 }
 
 /**
