@@ -1,6 +1,6 @@
 # Learning Contracts Specification
 
-> Version 5.0 | Last Updated: 2025-12-23
+> Version 6.0 | Last Updated: 2025-12-23
 
 ## Table of Contents
 
@@ -16,10 +16,11 @@
 10. [Memory Vault Integration](#10-memory-vault-integration)
 11. [Boundary Daemon Integration](#11-boundary-daemon-integration)
 12. [Session Management](#12-session-management)
-13. [Threat Model](#13-threat-model)
-14. [Human UX Requirements](#14-human-ux-requirements)
-15. [Non-Goals](#15-non-goals)
-16. [Implementation Status](#16-implementation-status)
+13. [Timebound Auto-Expiry](#13-timebound-auto-expiry)
+14. [Threat Model](#14-threat-model)
+15. [Human UX Requirements](#15-human-ux-requirements)
+16. [Non-Goals](#16-non-goals)
+17. [Implementation Status](#17-implementation-status)
 
 ---
 
@@ -449,7 +450,86 @@ const result = system.endSession(session.session_id);
 
 ---
 
-## 13. Threat Model
+## 13. Timebound Auto-Expiry
+
+Timebound auto-expiry provides automatic enforcement of `retention_until` timestamps for contracts with timebound retention.
+
+### How It Works
+
+1. Contracts with `retention: 'timebound'` have a `retention_until` timestamp
+2. The expiry manager periodically checks for expired contracts
+3. When `retention_until` passes, the contract is automatically expired
+4. Associated memories are frozen (marked inaccessible)
+5. All expiry events are logged to the audit trail
+
+### Automatic vs Manual Checking
+
+| Mode | Description |
+|------|-------------|
+| **Automatic** | Periodic checks at configurable intervals |
+| **Manual** | On-demand cycle via `runTimeboundExpiryCycle()` |
+
+### Usage
+
+```typescript
+import { LearningContractsSystem } from 'learning-contracts';
+
+const system = new LearningContractsSystem();
+
+// Start automatic expiry checking
+system.startTimeboundExpiryChecks();
+
+// Configure check interval (default: 1 minute)
+system.setTimeboundExpiryInterval(30000); // 30 seconds
+
+// Check a specific contract without expiring (dry run)
+const check = system.checkTimeboundExpiry(contract.contract_id);
+if (check?.expired) {
+  console.log('Contract has expired retention');
+}
+
+// Force expire a specific contract immediately
+const result = system.forceTimeboundExpiry(contract.contract_id);
+
+// Run a manual expiry cycle
+const cycleResult = system.runTimeboundExpiryCycle();
+console.log(`Expired ${cycleResult.contracts_expired} contracts`);
+
+// Listen for individual expiry events
+system.onTimeboundExpiry((contract, result) => {
+  console.log(`Contract ${contract.contract_id} expired`);
+});
+
+// Listen for cycle completion
+system.onExpiryCycleComplete((result) => {
+  console.log(`Cycle completed: ${result.contracts_checked} checked`);
+});
+
+// Get statistics
+const stats = system.getTimeboundExpiryStats();
+console.log(`Total expired: ${stats.totalContractsExpired}`);
+
+// Stop automatic checking
+system.stopTimeboundExpiryChecks();
+```
+
+### Statistics
+
+The expiry manager tracks:
+
+| Stat | Description |
+|------|-------------|
+| `isRunning` | Whether automatic checking is active |
+| `lastCheckAt` | Timestamp of last check |
+| `nextCheckAt` | Estimated next check time |
+| `cyclesCompleted` | Total check cycles completed |
+| `totalContractsExpired` | Total contracts expired |
+| `totalMemoriesAffected` | Total memories frozen |
+| `totalErrors` | Total errors encountered |
+
+---
+
+## 14. Threat Model
 
 | Threat | Mitigation |
 |--------|------------|
@@ -461,7 +541,7 @@ const result = system.endSession(session.session_id);
 
 ---
 
-## 14. Human UX Requirements
+## 15. Human UX Requirements
 
 1. All contracts must be presented and editable in clear, plain language
 2. Every change (creation, amendment, revocation) requires explicit human confirmation
@@ -471,7 +551,7 @@ const result = system.endSession(session.session_id);
 
 ---
 
-## 15. Non-Goals
+## 16. Non-Goals
 
 The following are explicitly **NOT** goals of Learning Contracts:
 
@@ -481,7 +561,7 @@ The following are explicitly **NOT** goals of Learning Contracts:
 
 ---
 
-## 16. Implementation Status
+## 17. Implementation Status
 
 ### Fully Implemented
 
@@ -523,12 +603,15 @@ The following are explicitly **NOT** goals of Learning Contracts:
 | SessionManager | ✅ Complete | `src/session/manager.ts` |
 | Session retention cleanup | ✅ Complete | `src/session/manager.ts` |
 | Session audit logging | ✅ Complete | `src/audit/logger.ts` |
+| Timebound Auto-Expiry | ✅ Complete | `src/expiry/` |
+| TimeboundExpiryManager | ✅ Complete | `src/expiry/manager.ts` |
+| Automatic periodic expiry checks | ✅ Complete | `src/expiry/manager.ts` |
+| Timebound expiry statistics | ✅ Complete | `src/expiry/manager.ts` |
 
 ### Not Implemented
 
 | Feature | Priority | Description |
 |---------|----------|-------------|
-| Timebound Auto-Expiry | Medium | Automatic background enforcement of `retention_until` timestamps (manual trigger exists) |
 | Owner Presence Validation | Medium | `requires_owner` field defined but not enforced during recall |
 | Active Contracts Dashboard | Medium | UI for "all active contracts continuously visible" |
 | Emergency Override System | Medium | "Pause all learning" command for human supremacy |

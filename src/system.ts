@@ -46,6 +46,12 @@ import {
   SessionEndResult,
   SessionCleanupOptions,
 } from './session';
+import {
+  TimeboundExpiryManager,
+  ExpiryCycleResult,
+  ExpiryCheckResult,
+  ExpiryManagerStats,
+} from './expiry';
 
 export class LearningContractsSystem {
   private auditLogger: AuditLogger;
@@ -57,6 +63,7 @@ export class LearningContractsSystem {
   private summarizer: PlainLanguageSummarizer;
   private parser: PlainLanguageParser;
   private sessionManager: SessionManager;
+  private expiryManager: TimeboundExpiryManager;
 
   constructor() {
     this.auditLogger = new AuditLogger();
@@ -91,6 +98,28 @@ export class LearningContractsSystem {
         return this.memoryForgetting.freezeMemories(contract, memories);
       },
       auditLogger: this.auditLogger,
+    });
+
+    // Initialize timebound expiry manager
+    this.expiryManager = new TimeboundExpiryManager({
+      findTimeboundExpired: () => this.repository.getTimeboundExpiredContracts(),
+      contractResolver: (contractId: string) => this.getContract(contractId),
+      contractExpirer: (contractId: string, actor: string) => {
+        const contract = this.getContract(contractId);
+        if (!contract) {
+          throw new Error('Contract not found');
+        }
+        const expired = this.lifecycleManager.expire(contract, actor);
+        this.repository.save(expired);
+        return expired;
+      },
+      memoryFreezer: (contractId: string, memories: MemoryReference[]) => {
+        const contract = this.getContract(contractId);
+        if (!contract) {
+          throw new Error('Contract not found');
+        }
+        return this.memoryForgetting.freezeMemories(contract, memories);
+      },
     });
   }
 
@@ -822,5 +851,108 @@ export class LearningContractsSystem {
    */
   cleanupOldSessions(maxAgeMs?: number): number {
     return this.sessionManager.cleanupOldSessions(maxAgeMs);
+  }
+
+  /**
+   * Timebound Expiry Methods
+   */
+
+  /**
+   * Start automatic timebound expiry checking
+   *
+   * When running, the system will periodically check for contracts
+   * with expired retention_until timestamps and automatically expire them.
+   */
+  startTimeboundExpiryChecks(): void {
+    this.expiryManager.start();
+  }
+
+  /**
+   * Stop automatic timebound expiry checking
+   */
+  stopTimeboundExpiryChecks(): void {
+    this.expiryManager.stop();
+  }
+
+  /**
+   * Check if automatic timebound expiry checking is running
+   */
+  isTimeboundExpiryRunning(): boolean {
+    return this.expiryManager.isRunning();
+  }
+
+  /**
+   * Run a single timebound expiry check cycle
+   *
+   * Can be called manually even when automatic checking is not running.
+   * Useful for testing or manual maintenance.
+   */
+  runTimeboundExpiryCycle(): ExpiryCycleResult {
+    return this.expiryManager.runExpiryCycle();
+  }
+
+  /**
+   * Check a specific contract for timebound expiry (dry run)
+   *
+   * Returns information about whether the contract would be expired
+   * without actually expiring it.
+   */
+  checkTimeboundExpiry(contractId: string): ExpiryCheckResult | null {
+    return this.expiryManager.checkContract(contractId);
+  }
+
+  /**
+   * Force expire a specific contract immediately
+   *
+   * Bypasses the scheduled check and expires the contract now.
+   */
+  forceTimeboundExpiry(contractId: string): ExpiryCheckResult {
+    return this.expiryManager.forceExpire(contractId);
+  }
+
+  /**
+   * Register a listener for individual contract expiry events
+   */
+  onTimeboundExpiry(
+    listener: (contract: LearningContract, result: ExpiryCheckResult) => void
+  ): () => void {
+    return this.expiryManager.onExpiry(listener);
+  }
+
+  /**
+   * Register a listener for expiry cycle completion events
+   */
+  onExpiryCycleComplete(listener: (result: ExpiryCycleResult) => void): () => void {
+    return this.expiryManager.onCycleComplete(listener);
+  }
+
+  /**
+   * Get the timebound expiry check interval in milliseconds
+   */
+  getTimeboundExpiryInterval(): number {
+    return this.expiryManager.getCheckInterval();
+  }
+
+  /**
+   * Set a new timebound expiry check interval
+   *
+   * If automatic checking is running, it will be restarted with the new interval.
+   */
+  setTimeboundExpiryInterval(intervalMs: number): void {
+    this.expiryManager.setCheckInterval(intervalMs);
+  }
+
+  /**
+   * Get timebound expiry manager statistics
+   */
+  getTimeboundExpiryStats(): ExpiryManagerStats {
+    return this.expiryManager.getStats();
+  }
+
+  /**
+   * Reset timebound expiry statistics
+   */
+  resetTimeboundExpiryStats(): void {
+    this.expiryManager.resetStats();
   }
 }
