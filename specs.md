@@ -19,10 +19,11 @@
 13. [Timebound Auto-Expiry](#13-timebound-auto-expiry)
 14. [Emergency Override System](#14-emergency-override-system)
 15. [Persistent Storage](#15-persistent-storage)
-16. [Threat Model](#16-threat-model)
-17. [Human UX Requirements](#17-human-ux-requirements)
-18. [Non-Goals](#18-non-goals)
-19. [Implementation Status](#19-implementation-status)
+16. [Multi-User Support](#16-multi-user-support)
+17. [Threat Model](#17-threat-model)
+18. [Human UX Requirements](#18-human-ux-requirements)
+19. [Non-Goals](#19-non-goals)
+20. [Implementation Status](#20-implementation-status)
 
 ---
 
@@ -718,7 +719,139 @@ File storage uses atomic writes for data integrity:
 
 ---
 
-## 16. Threat Model
+## 16. Multi-User Support
+
+Multi-user support enables multiple users to be logged in simultaneously from different access points, with a maximum of one active connection per user.
+
+### User Management
+
+The `UserManager` handles user connections with one-instance-per-user enforcement:
+
+| Feature | Description |
+|---------|-------------|
+| User Registration | Register users with optional display names |
+| Connection Control | Connect/disconnect users from access points |
+| One Instance Per User | Reject duplicate connections from the same user |
+| Activity Tracking | Track last activity for timeout detection |
+| Timeout Checking | Detect and optionally disconnect inactive users |
+
+### Usage
+
+```typescript
+import { LearningContractsSystem, PermissionLevel } from 'learning-contracts';
+
+const system = new LearningContractsSystem();
+
+// Connect users from different access points
+const alice = system.connectUser('alice', 'terminal-1');
+const bob = system.connectUser('bob', 'terminal-2');
+
+// Alice tries to connect from a second terminal - rejected
+const rejected = system.connectUser('alice', 'terminal-3');
+// rejected.success === false
+
+// Check connection status
+console.log(system.isUserConnected('alice'));  // true
+console.log(system.getConnectedUserCount());    // 2
+
+// Update activity to prevent timeout
+system.updateUserActivity('alice');
+
+// Disconnect user
+system.disconnectUser('alice');
+
+// Kick a user (force disconnect)
+system.kickUser('bob');
+```
+
+### Permission Levels
+
+Contracts can be shared with other users at different permission levels:
+
+| Level | Read | Use | Modify | Share |
+|-------|------|-----|--------|-------|
+| **OWNER** | ✓ | ✓ | ✓ | ✓ |
+| **DELEGATE** | ✓ | ✓ | ✗ | ✗ |
+| **READER** | ✓ | ✗ | ✗ | ✗ |
+
+### Permission Sharing
+
+```typescript
+// Create a contract (creator becomes owner)
+const contract = system.createEpisodicContract('alice', {
+  domains: ['coding'],
+});
+
+// Grant delegate access to bob
+system.grantContractPermission(
+  contract.contract_id,
+  'alice',   // granter (must be owner)
+  'bob',     // recipient
+  PermissionLevel.DELEGATE
+);
+
+// Grant reader access to charlie with expiration
+system.grantContractPermission(
+  contract.contract_id,
+  'alice',
+  'charlie',
+  PermissionLevel.READER,
+  { expires_at: new Date('2025-06-01') }
+);
+
+// Check permissions
+system.checkContractOperation(contract.contract_id, 'bob', 'use');    // allowed
+system.checkContractOperation(contract.contract_id, 'bob', 'modify'); // denied
+system.checkContractOperation(contract.contract_id, 'charlie', 'use'); // denied
+
+// Transfer ownership
+system.transferContractOwnership(contract.contract_id, 'alice', 'bob');
+
+// Revoke permissions
+system.revokeContractPermission(contract.contract_id, 'bob', 'charlie');
+```
+
+### Query Methods
+
+```typescript
+// Get all contracts accessible to a user
+const accessible = system.getUserAccessibleContracts('alice');
+
+// Get contracts a user owns
+const owned = system.getOwnedContracts('alice');
+
+// Get all contracts a user can read
+const contracts = system.getContractsForUser('alice');
+
+// Get all permissions on a contract
+const permissions = system.getContractPermissions(contract.contract_id);
+
+// Cleanup expired temporary permissions
+system.cleanupExpiredPermissions();
+```
+
+### Event Listeners
+
+```typescript
+// Listen for user connections
+system.onUserConnect((event) => {
+  console.log(`${event.user_id} connected from ${event.access_point}`);
+});
+
+// Listen for disconnections
+system.onUserDisconnect((event) => {
+  console.log(`${event.user_id} disconnected: ${event.reason}`);
+});
+
+// Listen for rejected connections
+system.onConnectionRejected((event) => {
+  console.log(`${event.user_id} connection rejected - already at ${event.existing_access_point}`);
+});
+```
+
+---
+
+## 17. Threat Model
 
 | Threat | Mitigation |
 |--------|------------|
@@ -730,7 +863,7 @@ File storage uses atomic writes for data integrity:
 
 ---
 
-## 17. Human UX Requirements
+## 18. Human UX Requirements
 
 1. All contracts must be presented and editable in clear, plain language
 2. Every change (creation, amendment, revocation) requires explicit human confirmation
@@ -740,7 +873,7 @@ File storage uses atomic writes for data integrity:
 
 ---
 
-## 18. Non-Goals
+## 19. Non-Goals
 
 The following are explicitly **NOT** goals of Learning Contracts:
 
@@ -750,7 +883,7 @@ The following are explicitly **NOT** goals of Learning Contracts:
 
 ---
 
-## 19. Implementation Status
+## 20. Implementation Status
 
 ### Fully Implemented
 
@@ -804,13 +937,17 @@ The following are explicitly **NOT** goals of Learning Contracts:
 | MemoryStorageAdapter | ✅ Complete | `src/storage/memory-adapter.ts` |
 | FileStorageAdapter | ✅ Complete | `src/storage/file-adapter.ts` |
 | Contract serialization | ✅ Complete | `src/storage/adapter.ts` |
+| Multi-User Support | ✅ Complete | `src/user-management/` |
+| UserManager | ✅ Complete | `src/user-management/manager.ts` |
+| PermissionManager | ✅ Complete | `src/user-management/permissions.ts` |
+| One instance per user | ✅ Complete | `src/user-management/manager.ts` |
+| Contract permission sharing | ✅ Complete | `src/user-management/permissions.ts` |
 
 ### Not Implemented
 
 | Feature | Priority | Description |
 |---------|----------|-------------|
 | Active Contracts Dashboard | Medium | UI for "all active contracts continuously visible" |
-| Multi-User Support | Low | Contract ownership and permission sharing |
 
 ---
 

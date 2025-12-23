@@ -211,3 +211,30 @@ export type {
   OverrideDisableListener,
   BlockedOperationListener,
 } from './emergency-override';
+
+// Multi-User Support
+export { UserManager, PermissionManager } from './user-management';
+
+export {
+  PermissionLevel,
+  UserStatus,
+} from './user-management';
+
+export type {
+  User,
+  UserConnection,
+  ConnectionResult,
+  DisconnectionResult,
+  ContractPermission,
+  PermissionCheckResult,
+  GrantPermissionOptions,
+  UserConnectEvent,
+  UserDisconnectEvent,
+  ConnectionRejectedEvent,
+  UserConnectListener,
+  UserDisconnectListener,
+  ConnectionRejectedListener,
+  UserManagerConfig,
+  UserAuditLogger,
+  UserManagerStats,
+} from './user-management';
