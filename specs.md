@@ -1,6 +1,6 @@
 # Learning Contracts Specification
 
-> Version 1.1 | Last Updated: 2025-12-23
+> Version 1.2 | Last Updated: 2025-12-23
 
 ## Table of Contents
 
@@ -328,6 +328,8 @@ The following are explicitly **NOT** goals of Learning Contracts:
 | Generalization rules | ✅ Complete | `src/types/contract.ts` |
 | Recall rules with boundary mode | ✅ Complete | `src/enforcement/engine.ts` |
 | Memory forgetting (freeze, tombstone, purge) | ✅ Complete | `src/memory/forgetting.ts` |
+| Heuristics invalidation on revocation | ✅ Complete | `src/memory/forgetting.ts` |
+| Manual contract expiration triggering | ✅ Complete | `src/system.ts` |
 | Comprehensive audit logging | ✅ Complete | `src/audit/logger.ts` |
 | Contract storage and queries | ✅ Complete | `src/storage/repository.ts` |
 | Fail-closed default behavior | ✅ Complete | `src/enforcement/engine.ts` |
@@ -341,7 +343,7 @@ The following are explicitly **NOT** goals of Learning Contracts:
 | Memory Vault Integration | High | Actual Memory Vault storage system; currently only interfaces defined |
 | Boundary Daemon Integration | High | Full Boundary Daemon component; automatic suspension on boundary downgrade |
 | Session Retention Cleanup | Medium | Automatic cleanup when session-scoped contracts end |
-| Timebound Auto-Expiry | Medium | Automatic enforcement of `retention_until` timestamps |
+| Timebound Auto-Expiry | Medium | Automatic background enforcement of `retention_until` timestamps (manual trigger exists) |
 | Owner Presence Validation | Medium | `requires_owner` field defined but not enforced during recall |
 | Active Contracts Dashboard | Medium | UI for "all active contracts continuously visible" |
 | Emergency Override System | Medium | "Pause all learning" command for human supremacy |

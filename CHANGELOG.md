@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2025-12-23
+
+### Added
+- Documented heuristics invalidation feature in implementation status
+- Documented manual contract expiration triggering in implementation status
+
+### Changed
+- Clarified timebound auto-expiry description (manual trigger exists, automatic background not yet implemented)
+- Updated specs.md to version 1.2
+
 ## [1.1.0] - 2025-12-23
 
 ### Changed
