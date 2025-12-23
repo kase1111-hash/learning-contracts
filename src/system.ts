@@ -61,6 +61,21 @@ import {
   OverrideDisableListener,
   BlockedOperationListener,
 } from './emergency-override';
+import {
+  UserManager,
+  PermissionManager,
+  User,
+  ConnectionResult,
+  DisconnectionResult,
+  PermissionLevel,
+  PermissionCheckResult,
+  GrantPermissionOptions,
+  ContractPermission,
+  UserConnectListener,
+  UserDisconnectListener,
+  ConnectionRejectedListener,
+  UserManagerStats,
+} from './user-management';
 
 export class LearningContractsSystem {
   private auditLogger: AuditLogger;
@@ -74,6 +89,8 @@ export class LearningContractsSystem {
   private sessionManager: SessionManager;
   private expiryManager: TimeboundExpiryManager;
   private emergencyOverrideManager: EmergencyOverrideManager;
+  private userManager: UserManager;
+  private permissionManager: PermissionManager;
 
   constructor() {
     this.auditLogger = new AuditLogger();
@@ -135,6 +152,10 @@ export class LearningContractsSystem {
         return this.memoryForgetting.freezeMemories(contract, memories);
       },
     });
+
+    // Initialize multi-user management
+    this.userManager = new UserManager();
+    this.permissionManager = new PermissionManager();
   }
 
   /**
@@ -144,6 +165,12 @@ export class LearningContractsSystem {
   createContract(draft: ContractDraft): LearningContract {
     const contract = this.lifecycleManager.createDraft(draft);
     this.repository.save(contract);
+    // Set owner permission for the contract creator (using internal token for security)
+    this.permissionManager.setOwner(
+      contract.contract_id,
+      contract.created_by,
+      this.permissionManager.getInternalToken()
+    );
     return contract;
   }
 
@@ -1064,5 +1091,378 @@ export class LearningContractsSystem {
     listener: BlockedOperationListener
   ): () => void {
     return this.emergencyOverrideManager.onBlockedOperation(listener);
+  }
+
+  // ==========================================
+  // Multi-User Management Methods
+  // ==========================================
+
+  /**
+   * Connects a user from an access point.
+   *
+   * Enforces one instance per user - if the user is already connected
+   * from another access point, the connection will be rejected.
+   *
+   * @param userId - User identifier
+   * @param accessPoint - Access point identifier (e.g., IP, device ID)
+   * @param metadata - Optional connection metadata
+   * @returns Connection result
+   */
+  connectUser(
+    userId: string,
+    accessPoint: string,
+    metadata?: Record<string, unknown>
+  ): ConnectionResult {
+    return this.userManager.connect(userId, accessPoint, metadata);
+  }
+
+  /**
+   * Disconnects a user.
+   *
+   * @param userId - User identifier
+   * @param reason - Reason for disconnection
+   * @returns Disconnection result
+   */
+  disconnectUser(
+    userId: string,
+    reason: 'logout' | 'timeout' | 'kicked' | 'replaced' = 'logout'
+  ): DisconnectionResult {
+    return this.userManager.disconnect(userId, reason);
+  }
+
+  /**
+   * Kicks a user (forcibly disconnects).
+   *
+   * @param userId - User identifier
+   * @returns Disconnection result
+   */
+  kickUser(userId: string): DisconnectionResult {
+    return this.userManager.kickUser(userId);
+  }
+
+  /**
+   * Gets a user by ID.
+   *
+   * @param userId - User identifier
+   * @returns User or null if not found
+   */
+  getUser(userId: string): User | null {
+    return this.userManager.getUser(userId);
+  }
+
+  /**
+   * Checks if a user is currently connected.
+   *
+   * @param userId - User identifier
+   * @returns True if connected
+   */
+  isUserConnected(userId: string): boolean {
+    return this.userManager.isConnected(userId);
+  }
+
+  /**
+   * Gets all currently connected users.
+   *
+   * @returns Array of connected users
+   */
+  getConnectedUsers(): User[] {
+    return this.userManager.getConnectedUsers();
+  }
+
+  /**
+   * Gets all registered users.
+   *
+   * @returns Array of all users
+   */
+  getAllUsers(): User[] {
+    return this.userManager.getAllUsers();
+  }
+
+  /**
+   * Gets the number of currently connected users.
+   *
+   * @returns Connected user count
+   */
+  getConnectedUserCount(): number {
+    return this.userManager.getConnectedCount();
+  }
+
+  /**
+   * Updates the last activity timestamp for a user.
+   *
+   * Call this periodically to prevent timeout.
+   *
+   * @param userId - User identifier
+   * @returns True if activity was updated
+   */
+  updateUserActivity(userId: string): boolean {
+    return this.userManager.updateActivity(userId);
+  }
+
+  /**
+   * Gets user manager statistics.
+   *
+   * @returns User manager stats
+   */
+  getUserManagerStats(): UserManagerStats {
+    return this.userManager.getStats();
+  }
+
+  /**
+   * Registers a listener for user connect events.
+   *
+   * @param listener - Callback to invoke when user connects
+   * @returns Unsubscribe function
+   */
+  onUserConnect(listener: UserConnectListener): () => void {
+    return this.userManager.onConnect(listener);
+  }
+
+  /**
+   * Registers a listener for user disconnect events.
+   *
+   * @param listener - Callback to invoke when user disconnects
+   * @returns Unsubscribe function
+   */
+  onUserDisconnect(listener: UserDisconnectListener): () => void {
+    return this.userManager.onDisconnect(listener);
+  }
+
+  /**
+   * Registers a listener for connection rejected events.
+   *
+   * @param listener - Callback to invoke when connection is rejected
+   * @returns Unsubscribe function
+   */
+  onConnectionRejected(listener: ConnectionRejectedListener): () => void {
+    return this.userManager.onConnectionRejected(listener);
+  }
+
+  /**
+   * Starts automatic timeout checking for inactive users.
+   *
+   * @param intervalMs - Check interval in milliseconds (default: 60000)
+   */
+  startUserTimeoutChecks(intervalMs?: number): void {
+    this.userManager.startTimeoutChecks(intervalMs);
+  }
+
+  /**
+   * Stops automatic timeout checking.
+   */
+  stopUserTimeoutChecks(): void {
+    this.userManager.stopTimeoutChecks();
+  }
+
+  /**
+   * Checks for and returns timed-out users.
+   *
+   * @returns Array of user IDs that have timed out
+   */
+  checkUserTimeouts(): string[] {
+    return this.userManager.checkTimeouts();
+  }
+
+  // ==========================================
+  // Contract Permission Methods
+  // ==========================================
+
+  /**
+   * Grants a permission on a contract to another user.
+   *
+   * Only the contract owner can grant permissions.
+   *
+   * @param contractId - Contract identifier
+   * @param granterId - User granting the permission (must be owner)
+   * @param userId - User receiving the permission
+   * @param level - Permission level to grant
+   * @param options - Optional grant options (expiration, etc.)
+   * @returns Permission check result
+   */
+  grantContractPermission(
+    contractId: string,
+    granterId: string,
+    userId: string,
+    level: PermissionLevel,
+    options?: GrantPermissionOptions
+  ): PermissionCheckResult {
+    return this.permissionManager.grantPermission(
+      contractId,
+      granterId,
+      userId,
+      level,
+      options
+    );
+  }
+
+  /**
+   * Revokes a permission on a contract from a user.
+   *
+   * Only the contract owner can revoke permissions.
+   *
+   * @param contractId - Contract identifier
+   * @param revokerId - User revoking the permission (must be owner)
+   * @param userId - User losing the permission
+   * @returns Permission check result
+   */
+  revokeContractPermission(
+    contractId: string,
+    revokerId: string,
+    userId: string
+  ): PermissionCheckResult {
+    return this.permissionManager.revokePermission(contractId, revokerId, userId);
+  }
+
+  /**
+   * Transfers ownership of a contract to another user.
+   *
+   * Only the current owner can transfer ownership.
+   *
+   * @param contractId - Contract identifier
+   * @param currentOwnerId - Current owner (must match)
+   * @param newOwnerId - User who will become the new owner
+   * @returns Permission check result
+   */
+  transferContractOwnership(
+    contractId: string,
+    currentOwnerId: string,
+    newOwnerId: string
+  ): PermissionCheckResult {
+    return this.permissionManager.transferOwnership(
+      contractId,
+      currentOwnerId,
+      newOwnerId
+    );
+  }
+
+  /**
+   * Gets the owner of a contract.
+   *
+   * @param contractId - Contract identifier
+   * @returns Owner user ID or null
+   */
+  getContractOwner(contractId: string): string | null {
+    return this.permissionManager.getOwner(contractId);
+  }
+
+  /**
+   * Gets a user's permission level on a contract.
+   *
+   * @param contractId - Contract identifier
+   * @param userId - User identifier
+   * @returns Permission level or undefined if no permission
+   */
+  getUserPermissionLevel(
+    contractId: string,
+    userId: string
+  ): PermissionLevel | undefined {
+    return this.permissionManager.getUserPermissionLevel(contractId, userId);
+  }
+
+  /**
+   * Checks if a user has at least a certain permission level on a contract.
+   *
+   * @param contractId - Contract identifier
+   * @param userId - User identifier
+   * @param requiredLevel - Minimum required permission level
+   * @returns Permission check result
+   */
+  checkUserPermission(
+    contractId: string,
+    userId: string,
+    requiredLevel: PermissionLevel
+  ): PermissionCheckResult {
+    return this.permissionManager.hasPermission(contractId, userId, requiredLevel);
+  }
+
+  /**
+   * Checks if a user can perform an operation on a contract.
+   *
+   * @param contractId - Contract identifier
+   * @param userId - User identifier
+   * @param operation - Operation to check ('read', 'use', 'modify', 'share')
+   * @returns Permission check result
+   */
+  checkContractOperation(
+    contractId: string,
+    userId: string,
+    operation: 'read' | 'use' | 'modify' | 'share'
+  ): PermissionCheckResult {
+    return this.permissionManager.checkOperation(contractId, userId, operation);
+  }
+
+  /**
+   * Gets all permissions on a contract.
+   *
+   * @param contractId - Contract identifier
+   * @returns Array of contract permissions
+   */
+  getContractPermissions(contractId: string): ContractPermission[] {
+    return this.permissionManager.getContractPermissions(contractId);
+  }
+
+  /**
+   * Gets all contracts a user has access to.
+   *
+   * @param userId - User identifier
+   * @returns Array of contract IDs with permission levels
+   */
+  getUserAccessibleContracts(
+    userId: string
+  ): { contractId: string; level: PermissionLevel }[] {
+    return this.permissionManager.getUserContracts(userId);
+  }
+
+  /**
+   * Gets contracts the user can view (READER or higher).
+   *
+   * @param userId - User identifier
+   * @returns Array of contracts the user can read
+   */
+  getContractsForUser(userId: string): LearningContract[] {
+    const accessible = this.permissionManager.getUserContracts(userId);
+    const contracts: LearningContract[] = [];
+
+    for (const { contractId } of accessible) {
+      const contract = this.getContract(contractId);
+      if (contract) {
+        contracts.push(contract);
+      }
+    }
+
+    return contracts;
+  }
+
+  /**
+   * Gets contracts owned by a user.
+   *
+   * @param userId - User identifier
+   * @returns Array of contracts owned by the user
+   */
+  getOwnedContracts(userId: string): LearningContract[] {
+    const accessible = this.permissionManager.getUserContracts(userId);
+    const contracts: LearningContract[] = [];
+
+    for (const { contractId, level } of accessible) {
+      if (level === PermissionLevel.OWNER) {
+        const contract = this.getContract(contractId);
+        if (contract) {
+          contracts.push(contract);
+        }
+      }
+    }
+
+    return contracts;
+  }
+
+  /**
+   * Cleans up expired permissions.
+   *
+   * Call this periodically to remove expired temporary permissions.
+   *
+   * @returns Number of permissions removed
+   */
+  cleanupExpiredPermissions(): number {
+    return this.permissionManager.cleanupExpired();
   }
 }
