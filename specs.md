@@ -187,12 +187,13 @@ const result = system.checkAbstraction(
 ### 7.3 Before Recall
 - Scope and rules revalidation
 - Boundary mode verification
+- Owner presence validation
 
 ```typescript
 const result = system.checkRecall(
   contractId,
   BoundaryMode.TRUSTED,
-  { domain: 'coding', context: 'project-x' }
+  { domain: 'coding', context: 'project-x', requester: 'user' }
 );
 ```
 
@@ -607,12 +608,12 @@ The following are explicitly **NOT** goals of Learning Contracts:
 | TimeboundExpiryManager | ✅ Complete | `src/expiry/manager.ts` |
 | Automatic periodic expiry checks | ✅ Complete | `src/expiry/manager.ts` |
 | Timebound expiry statistics | ✅ Complete | `src/expiry/manager.ts` |
+| Owner Presence Validation | ✅ Complete | `src/enforcement/engine.ts` |
 
 ### Not Implemented
 
 | Feature | Priority | Description |
 |---------|----------|-------------|
-| Owner Presence Validation | Medium | `requires_owner` field defined but not enforced during recall |
 | Active Contracts Dashboard | Medium | UI for "all active contracts continuously visible" |
 | Emergency Override System | Medium | "Pause all learning" command for human supremacy |
 | Persistent Storage Backend | Low | Currently in-memory only; needs database integration |

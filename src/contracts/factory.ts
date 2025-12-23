@@ -62,6 +62,7 @@ export class ContractFactory {
       classificationCap?: number;
       retention?: RetentionDuration;
       retentionUntil?: Date;
+      requiresOwner?: boolean;
     } = {}
   ): ContractDraft {
     const retention = options.retention ?? RetentionDuration.TIMEBOUND;
@@ -96,7 +97,7 @@ export class ContractFactory {
         conditions: [],
       },
       recall_rules: {
-        requires_owner: true,
+        requires_owner: options.requiresOwner ?? true,
         boundary_mode_min: BoundaryMode.NORMAL,
       },
       revocable: true,

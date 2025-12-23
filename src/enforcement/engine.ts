@@ -178,6 +178,27 @@ export class EnforcementEngine {
       return result;
     }
 
+    // Check owner presence requirement
+    if (contract.recall_rules.requires_owner) {
+      if (!context.requester) {
+        const result = this.deny(
+          contract.contract_id,
+          'Contract requires owner presence for recall but no requester was provided'
+        );
+        this.auditLogger.logEnforcementCheck('recall', context, result);
+        return result;
+      }
+
+      if (context.requester !== contract.created_by) {
+        const result = this.deny(
+          contract.contract_id,
+          `Recall requires owner presence: requester '${context.requester}' is not the contract owner '${contract.created_by}'`
+        );
+        this.auditLogger.logEnforcementCheck('recall', context, result);
+        return result;
+      }
+    }
+
     // Check boundary mode requirement
     if (!this.isBoundaryModeSufficient(
       context.boundary_mode,
