@@ -17,10 +17,11 @@
 11. [Boundary Daemon Integration](#11-boundary-daemon-integration)
 12. [Session Management](#12-session-management)
 13. [Timebound Auto-Expiry](#13-timebound-auto-expiry)
-14. [Threat Model](#14-threat-model)
-15. [Human UX Requirements](#15-human-ux-requirements)
-16. [Non-Goals](#16-non-goals)
-17. [Implementation Status](#17-implementation-status)
+14. [Emergency Override System](#14-emergency-override-system)
+15. [Threat Model](#15-threat-model)
+16. [Human UX Requirements](#16-human-ux-requirements)
+17. [Non-Goals](#17-non-goals)
+18. [Implementation Status](#18-implementation-status)
 
 ---
 
@@ -530,7 +531,78 @@ The expiry manager tracks:
 
 ---
 
-## 14. Threat Model
+## 14. Emergency Override System
+
+The Emergency Override System provides a "pause all learning" capability that immediately blocks all learning operations system-wide. This implements the human supremacy principle - humans can override any system at any time.
+
+### When Override is Active
+
+- All memory creation is blocked
+- All abstraction/generalization is blocked
+- All recall operations are blocked
+- All export operations are blocked
+- All blocked operations are logged to the audit trail
+
+### Usage
+
+```typescript
+import { LearningContractsSystem } from 'learning-contracts';
+
+const system = new LearningContractsSystem();
+
+// Trigger emergency override
+const result = system.triggerEmergencyOverride(
+  'admin',
+  'Security incident detected'
+);
+
+if (result.success) {
+  console.log(`Override active, ${result.active_contracts_blocked} contracts blocked`);
+}
+
+// Check override status
+const status = system.getEmergencyOverrideStatus();
+console.log(`Override active: ${status.active}`);
+console.log(`Reason: ${status.reason}`);
+console.log(`Operations blocked: ${status.operations_blocked}`);
+
+// Listen for override events
+system.onEmergencyOverrideTrigger((event) => {
+  console.log(`Override triggered by ${event.triggered_by}: ${event.reason}`);
+});
+
+system.onEmergencyOverrideBlockedOperation((op, contractId, reason) => {
+  console.log(`Blocked ${op} on ${contractId}: ${reason}`);
+});
+
+// Disable override when safe
+const disableResult = system.disableEmergencyOverride('admin', 'Incident resolved');
+console.log(`Duration: ${disableResult.duration_ms}ms`);
+console.log(`Operations blocked during: ${disableResult.operations_blocked_during}`);
+```
+
+### Enforcement Integration
+
+The emergency override is checked at the beginning of each enforcement hook:
+
+| Hook | Behavior During Override |
+|------|-------------------------|
+| Memory Creation | Blocked with override reason |
+| Abstraction | Blocked with override reason |
+| Recall | Blocked with override reason |
+| Export | Blocked with override reason |
+
+### Audit Events
+
+| Event | Description |
+|-------|-------------|
+| `emergency_override_triggered` | Override was activated |
+| `emergency_override_disabled` | Override was deactivated |
+| `emergency_override_blocked_operation` | An operation was blocked |
+
+---
+
+## 15. Threat Model
 
 | Threat | Mitigation |
 |--------|------------|
@@ -542,7 +614,7 @@ The expiry manager tracks:
 
 ---
 
-## 15. Human UX Requirements
+## 16. Human UX Requirements
 
 1. All contracts must be presented and editable in clear, plain language
 2. Every change (creation, amendment, revocation) requires explicit human confirmation
@@ -552,7 +624,7 @@ The expiry manager tracks:
 
 ---
 
-## 16. Non-Goals
+## 17. Non-Goals
 
 The following are explicitly **NOT** goals of Learning Contracts:
 
@@ -562,7 +634,7 @@ The following are explicitly **NOT** goals of Learning Contracts:
 
 ---
 
-## 17. Implementation Status
+## 18. Implementation Status
 
 ### Fully Implemented
 
@@ -609,13 +681,14 @@ The following are explicitly **NOT** goals of Learning Contracts:
 | Automatic periodic expiry checks | ✅ Complete | `src/expiry/manager.ts` |
 | Timebound expiry statistics | ✅ Complete | `src/expiry/manager.ts` |
 | Owner Presence Validation | ✅ Complete | `src/enforcement/engine.ts` |
+| Emergency Override System | ✅ Complete | `src/emergency-override/` |
+| EmergencyOverrideManager | ✅ Complete | `src/emergency-override/manager.ts` |
 
 ### Not Implemented
 
 | Feature | Priority | Description |
 |---------|----------|-------------|
 | Active Contracts Dashboard | Medium | UI for "all active contracts continuously visible" |
-| Emergency Override System | Medium | "Pause all learning" command for human supremacy |
 | Persistent Storage Backend | Low | Currently in-memory only; needs database integration |
 | Multi-User Support | Low | Contract ownership and permission sharing |
 
