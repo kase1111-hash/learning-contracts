@@ -2,7 +2,7 @@
  * Contract Repository
  *
  * Stores and retrieves Learning Contracts.
- * In-memory implementation (can be extended for persistent storage).
+ * Supports both in-memory and persistent storage through adapters.
  */
 
 import {
@@ -10,6 +10,8 @@ import {
   ContractState,
   ContractType,
 } from '../types';
+import { StorageAdapter } from './adapter';
+import { MemoryStorageAdapter } from './memory-adapter';
 
 export interface ContractQueryOptions {
   state?: ContractState;
@@ -20,14 +22,100 @@ export interface ContractQueryOptions {
   active_only?: boolean;
 }
 
+export interface ContractRepositoryConfig {
+  /**
+   * Storage adapter to use. Defaults to MemoryStorageAdapter.
+   */
+  adapter?: StorageAdapter;
+}
+
 export class ContractRepository {
   private contracts: Map<string, LearningContract> = new Map();
+  private adapter: StorageAdapter;
+  private initialized = false;
+  private pendingWrites: Promise<void>[] = [];
+
+  constructor(config: ContractRepositoryConfig = {}) {
+    this.adapter = config.adapter ?? new MemoryStorageAdapter();
+  }
+
+  /**
+   * Initializes the repository (required for persistent storage)
+   */
+  async initialize(): Promise<void> {
+    if (this.initialized) {
+      return;
+    }
+
+    await this.adapter.initialize();
+
+    // Load all contracts into memory cache
+    const contracts = await this.adapter.getAll();
+    this.contracts.clear();
+    for (const contract of contracts) {
+      this.contracts.set(contract.contract_id, contract);
+    }
+
+    this.initialized = true;
+  }
+
+  /**
+   * Checks if the repository has been initialized
+   */
+  isInitialized(): boolean {
+    return this.initialized;
+  }
+
+  /**
+   * Gets the storage adapter being used
+   */
+  getAdapter(): StorageAdapter {
+    return this.adapter;
+  }
+
+  /**
+   * Waits for all pending writes to complete
+   */
+  async flush(): Promise<void> {
+    await Promise.all(this.pendingWrites);
+    this.pendingWrites = [];
+  }
+
+  /**
+   * Closes the repository and underlying storage
+   */
+  async close(): Promise<void> {
+    await this.flush();
+    await this.adapter.close();
+    this.initialized = false;
+  }
 
   /**
    * Stores a contract
    */
   save(contract: LearningContract): void {
-    this.contracts.set(contract.contract_id, { ...contract });
+    const cloned = { ...contract };
+    this.contracts.set(contract.contract_id, cloned);
+
+    // Persist to storage adapter in background
+    if (this.initialized) {
+      const writePromise = this.adapter.save(cloned).catch((error) => {
+        console.error(`Failed to persist contract ${contract.contract_id}:`, error);
+      });
+      this.pendingWrites.push(writePromise);
+    }
+  }
+
+  /**
+   * Stores a contract asynchronously (waits for persistence)
+   */
+  async saveAsync(contract: LearningContract): Promise<void> {
+    const cloned = { ...contract };
+    this.contracts.set(contract.contract_id, cloned);
+
+    if (this.initialized) {
+      await this.adapter.save(cloned);
+    }
   }
 
   /**
@@ -42,7 +130,30 @@ export class ContractRepository {
    * Deletes a contract (typically not used, revocation is preferred)
    */
   delete(contractId: string): boolean {
-    return this.contracts.delete(contractId);
+    const deleted = this.contracts.delete(contractId);
+
+    // Persist to storage adapter in background
+    if (deleted && this.initialized) {
+      const writePromise = this.adapter.delete(contractId).then(() => {}).catch((error) => {
+        console.error(`Failed to delete contract ${contractId}:`, error);
+      });
+      this.pendingWrites.push(writePromise);
+    }
+
+    return deleted;
+  }
+
+  /**
+   * Deletes a contract asynchronously (waits for persistence)
+   */
+  async deleteAsync(contractId: string): Promise<boolean> {
+    const deleted = this.contracts.delete(contractId);
+
+    if (deleted && this.initialized) {
+      await this.adapter.delete(contractId);
+    }
+
+    return deleted;
   }
 
   /**
@@ -230,5 +341,24 @@ export class ContractRepository {
    */
   clear(): void {
     this.contracts.clear();
+
+    // Persist to storage adapter in background
+    if (this.initialized) {
+      const writePromise = this.adapter.clear().catch((error) => {
+        console.error('Failed to clear storage:', error);
+      });
+      this.pendingWrites.push(writePromise);
+    }
+  }
+
+  /**
+   * Clears all contracts asynchronously (waits for persistence)
+   */
+  async clearAsync(): Promise<void> {
+    this.contracts.clear();
+
+    if (this.initialized) {
+      await this.adapter.clear();
+    }
   }
 }

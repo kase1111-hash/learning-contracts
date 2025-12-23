@@ -18,10 +18,11 @@
 12. [Session Management](#12-session-management)
 13. [Timebound Auto-Expiry](#13-timebound-auto-expiry)
 14. [Emergency Override System](#14-emergency-override-system)
-15. [Threat Model](#15-threat-model)
-16. [Human UX Requirements](#16-human-ux-requirements)
-17. [Non-Goals](#17-non-goals)
-18. [Implementation Status](#18-implementation-status)
+15. [Persistent Storage](#15-persistent-storage)
+16. [Threat Model](#16-threat-model)
+17. [Human UX Requirements](#17-human-ux-requirements)
+18. [Non-Goals](#18-non-goals)
+19. [Implementation Status](#19-implementation-status)
 
 ---
 
@@ -602,7 +603,122 @@ The emergency override is checked at the beginning of each enforcement hook:
 
 ---
 
-## 15. Threat Model
+## 15. Persistent Storage
+
+The Persistent Storage system provides pluggable storage backends for contracts, enabling data to survive beyond application restarts.
+
+### Storage Adapters
+
+| Adapter | Description |
+|---------|-------------|
+| **MemoryStorageAdapter** | In-memory storage (default, for testing) |
+| **FileStorageAdapter** | JSON file-based storage with atomic writes |
+
+### Storage Adapter Interface
+
+All adapters implement the `StorageAdapter` interface:
+
+```typescript
+interface StorageAdapter {
+  initialize(): Promise<void>;
+  save(contract: LearningContract): Promise<void>;
+  get(contractId: string): Promise<LearningContract | null>;
+  delete(contractId: string): Promise<boolean>;
+  exists(contractId: string): Promise<boolean>;
+  getAll(): Promise<LearningContract[]>;
+  count(): Promise<number>;
+  clear(): Promise<void>;
+  close(): Promise<void>;
+}
+```
+
+### File Storage Configuration
+
+```typescript
+interface FileStorageConfig {
+  filePath: string;           // Path to JSON storage file
+  createIfMissing?: boolean;  // Create file if it doesn't exist (default: true)
+  prettyPrint?: boolean;      // Format JSON with indentation (default: false)
+}
+```
+
+### Usage
+
+```typescript
+import {
+  ContractRepository,
+  FileStorageAdapter,
+  MemoryStorageAdapter,
+} from 'learning-contracts';
+
+// Memory storage (default)
+const memoryAdapter = new MemoryStorageAdapter();
+const memoryRepo = new ContractRepository({ adapter: memoryAdapter });
+await memoryRepo.initialize();
+
+// File storage (persistent)
+const fileAdapter = new FileStorageAdapter({
+  filePath: './data/contracts.json',
+  createIfMissing: true,
+  prettyPrint: true,
+});
+const fileRepo = new ContractRepository({ adapter: fileAdapter });
+await fileRepo.initialize();
+
+// Save contracts (syncs to in-memory cache, persists in background)
+fileRepo.save(contract);
+
+// Wait for all pending writes to complete
+await fileRepo.flush();
+
+// Close repository when done
+await fileRepo.close();
+```
+
+### Serialization
+
+Contracts are serialized/deserialized for storage:
+
+- Date fields are converted to ISO 8601 strings
+- Enum values are stored as strings
+- Nested objects are preserved
+
+```typescript
+import { serializeContract, deserializeContract } from 'learning-contracts';
+
+const serialized = serializeContract(contract);  // For JSON storage
+const restored = deserializeContract(serialized); // Back to LearningContract
+```
+
+### File Format
+
+The FileStorageAdapter stores contracts in JSON format:
+
+```json
+{
+  "version": 1,
+  "contracts": [
+    {
+      "contract_id": "contract-123",
+      "created_at": "2025-01-15T10:30:00.000Z",
+      "state": "active",
+      ...
+    }
+  ]
+}
+```
+
+### Atomic Writes
+
+File storage uses atomic writes for data integrity:
+
+1. Write to temporary file (`.tmp` suffix)
+2. Rename temporary file to target path
+3. This prevents partial writes on system failure
+
+---
+
+## 16. Threat Model
 
 | Threat | Mitigation |
 |--------|------------|
@@ -614,7 +730,7 @@ The emergency override is checked at the beginning of each enforcement hook:
 
 ---
 
-## 16. Human UX Requirements
+## 17. Human UX Requirements
 
 1. All contracts must be presented and editable in clear, plain language
 2. Every change (creation, amendment, revocation) requires explicit human confirmation
@@ -624,7 +740,7 @@ The emergency override is checked at the beginning of each enforcement hook:
 
 ---
 
-## 17. Non-Goals
+## 18. Non-Goals
 
 The following are explicitly **NOT** goals of Learning Contracts:
 
@@ -634,7 +750,7 @@ The following are explicitly **NOT** goals of Learning Contracts:
 
 ---
 
-## 18. Implementation Status
+## 19. Implementation Status
 
 ### Fully Implemented
 
@@ -683,13 +799,17 @@ The following are explicitly **NOT** goals of Learning Contracts:
 | Owner Presence Validation | ✅ Complete | `src/enforcement/engine.ts` |
 | Emergency Override System | ✅ Complete | `src/emergency-override/` |
 | EmergencyOverrideManager | ✅ Complete | `src/emergency-override/manager.ts` |
+| Persistent Storage | ✅ Complete | `src/storage/` |
+| StorageAdapter interface | ✅ Complete | `src/storage/adapter.ts` |
+| MemoryStorageAdapter | ✅ Complete | `src/storage/memory-adapter.ts` |
+| FileStorageAdapter | ✅ Complete | `src/storage/file-adapter.ts` |
+| Contract serialization | ✅ Complete | `src/storage/adapter.ts` |
 
 ### Not Implemented
 
 | Feature | Priority | Description |
 |---------|----------|-------------|
 | Active Contracts Dashboard | Medium | UI for "all active contracts continuously visible" |
-| Persistent Storage Backend | Low | Currently in-memory only; needs database integration |
 | Multi-User Support | Low | Contract ownership and permission sharing |
 
 ---

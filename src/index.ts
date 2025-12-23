@@ -26,7 +26,21 @@ export { EnforcementEngine } from './enforcement/engine';
 export { AuditLogger } from './audit/logger';
 
 // Storage
-export { ContractRepository, ContractQueryOptions } from './storage/repository';
+export {
+  ContractRepository,
+  MemoryStorageAdapter,
+  FileStorageAdapter,
+  serializeContract,
+  deserializeContract,
+} from './storage';
+
+export type {
+  ContractQueryOptions,
+  ContractRepositoryConfig,
+  StorageAdapter,
+  SerializedContract,
+  FileStorageConfig,
+} from './storage';
 
 // Memory
 export {
