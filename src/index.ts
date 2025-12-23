@@ -148,3 +148,20 @@ export type {
   BoundaryAuditEvent,
   ContractResolver as BoundaryContractResolver,
 } from './boundary-integration';
+
+// Session Management
+export {
+  SessionManager,
+  SessionStatus,
+} from './session';
+
+export type {
+  Session,
+  SessionEndResult,
+  SessionCleanupOptions,
+  SessionEndListener,
+  SessionManagerConfig,
+  SessionContractResolver,
+  SessionContractExpirer,
+  SessionMemoryFreezer,
+} from './session';

@@ -1,6 +1,6 @@
 # Learning Contracts Specification
 
-> Version 4.0 | Last Updated: 2025-12-23
+> Version 5.0 | Last Updated: 2025-12-23
 
 ## Table of Contents
 
@@ -15,10 +15,11 @@
 9. [Revocation & Forgetting](#9-revocation--forgetting)
 10. [Memory Vault Integration](#10-memory-vault-integration)
 11. [Boundary Daemon Integration](#11-boundary-daemon-integration)
-12. [Threat Model](#12-threat-model)
-13. [Human UX Requirements](#13-human-ux-requirements)
-14. [Non-Goals](#14-non-goals)
-15. [Implementation Status](#15-implementation-status)
+12. [Session Management](#12-session-management)
+13. [Threat Model](#13-threat-model)
+14. [Human UX Requirements](#14-human-ux-requirements)
+15. [Non-Goals](#15-non-goals)
+16. [Implementation Status](#16-implementation-status)
 
 ---
 
@@ -388,7 +389,67 @@ await boundarySystem.triggerLockdown('Security breach detected', 'admin');
 
 ---
 
-## 12. Threat Model
+## 12. Session Management
+
+Session management provides automatic cleanup of session-scoped contracts when sessions end.
+
+### Session Lifecycle
+
+```
+Start → Active → Ended | Expired
+```
+
+### Session Features
+
+| Feature | Description |
+|---------|-------------|
+| Session Creation | Start a new session for a user |
+| Contract Association | Associate session-scoped contracts with a session |
+| Automatic Cleanup | Expire contracts and freeze memories when session ends |
+| Session Timeout | Automatic expiration after configurable timeout |
+| Multi-User Support | Track sessions per user |
+
+### Session-Scoped Contracts
+
+Contracts with `retention: 'session'` can be associated with a session:
+
+- When the session ends, the contract is automatically expired
+- Associated memories are frozen (marked inaccessible)
+- All cleanup events are logged to the audit trail
+
+### Usage
+
+```typescript
+import { LearningContractsSystem } from 'learning-contracts';
+
+const system = new LearningContractsSystem();
+
+// Start a session
+const session = system.startSession('alice', { project: 'my-project' });
+
+// Create a session-scoped contract
+let contract = system.createEpisodicContract('alice', {
+  domains: ['coding'],
+}, { retention: 'session' });
+contract = system.submitForReview(contract.contract_id, 'alice');
+contract = system.activateContract(contract.contract_id, 'alice');
+
+// Associate contract with session
+system.associateContractWithSession(session.session_id, contract.contract_id);
+
+// Listen for session end events
+system.onSessionEnd((session, result) => {
+  console.log(`Session ${session.session_id} ended`);
+  console.log(`Contracts cleaned: ${result.contracts_cleaned.length}`);
+});
+
+// End session - automatically cleans up contracts
+const result = system.endSession(session.session_id);
+```
+
+---
+
+## 13. Threat Model
 
 | Threat | Mitigation |
 |--------|------------|
@@ -400,7 +461,7 @@ await boundarySystem.triggerLockdown('Security breach detected', 'admin');
 
 ---
 
-## 13. Human UX Requirements
+## 14. Human UX Requirements
 
 1. All contracts must be presented and editable in clear, plain language
 2. Every change (creation, amendment, revocation) requires explicit human confirmation
@@ -410,7 +471,7 @@ await boundarySystem.triggerLockdown('Security breach detected', 'admin');
 
 ---
 
-## 14. Non-Goals
+## 15. Non-Goals
 
 The following are explicitly **NOT** goals of Learning Contracts:
 
@@ -420,7 +481,7 @@ The following are explicitly **NOT** goals of Learning Contracts:
 
 ---
 
-## 15. Implementation Status
+## 16. Implementation Status
 
 ### Fully Implemented
 
@@ -458,12 +519,15 @@ The following are explicitly **NOT** goals of Learning Contracts:
 | Automatic contract suspension | ✅ Complete | `src/boundary-integration/enforced-system.ts` |
 | RecallGate & ToolGate enforcement | ✅ Complete | `src/boundary-integration/enforced-system.ts` |
 | Boundary audit logging | ✅ Complete | `src/system.ts` |
+| Session Management | ✅ Complete | `src/session/` |
+| SessionManager | ✅ Complete | `src/session/manager.ts` |
+| Session retention cleanup | ✅ Complete | `src/session/manager.ts` |
+| Session audit logging | ✅ Complete | `src/audit/logger.ts` |
 
 ### Not Implemented
 
 | Feature | Priority | Description |
 |---------|----------|-------------|
-| Session Retention Cleanup | Medium | Automatic cleanup when session-scoped contracts end |
 | Timebound Auto-Expiry | Medium | Automatic background enforcement of `retention_until` timestamps (manual trigger exists) |
 | Owner Presence Validation | Medium | `requires_owner` field defined but not enforced during recall |
 | Active Contracts Dashboard | Medium | UI for "all active contracts continuously visible" |

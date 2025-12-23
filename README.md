@@ -513,6 +513,69 @@ The Boundary Daemon defines six security modes (least to most restrictive):
 - LOCKDOWN mode suspends ALL contracts immediately
 - All suspension/resume events are logged to the audit trail
 
+## Session Management
+
+Sessions track active usage periods and provide automatic cleanup for session-scoped contracts.
+
+### Basic Usage
+
+```typescript
+import { LearningContractsSystem } from 'learning-contracts';
+
+const system = new LearningContractsSystem();
+
+// Start a session
+const session = system.startSession('alice', { project: 'my-project' });
+
+// Create a session-scoped contract
+let contract = system.createEpisodicContract('alice', {
+  domains: ['coding'],
+}, { retention: 'session' });
+contract = system.submitForReview(contract.contract_id, 'alice');
+contract = system.activateContract(contract.contract_id, 'alice');
+
+// Associate contract with session
+system.associateContractWithSession(session.session_id, contract.contract_id);
+
+// Use the contract during the session...
+
+// End session - automatically expires contracts and freezes memories
+const result = system.endSession(session.session_id);
+console.log(`Contracts cleaned: ${result.contracts_cleaned.length}`);
+```
+
+### Session Features
+
+- **Automatic Cleanup**: Session-scoped contracts are expired when session ends
+- **Memory Freezing**: Memories under expired contracts are frozen
+- **Session Timeout**: Sessions can auto-expire after configurable timeout
+- **Multi-User**: Track sessions per user independently
+- **Event Listeners**: Listen for session end events
+
+### Session Methods
+
+```typescript
+// Start/end sessions
+startSession(userId: string, metadata?: Record<string, unknown>): Session
+endSession(sessionId: string, options?: SessionCleanupOptions): SessionEndResult
+endUserSessions(userId: string, options?: SessionCleanupOptions): SessionEndResult[]
+
+// Session queries
+getSession(sessionId: string): Session | null
+getActiveSessions(): Session[]
+getUserSessions(userId: string): Session[]
+getSessionStats(): SessionStats
+
+// Contract association
+associateContractWithSession(sessionId: string, contractId: string): boolean
+getContractSession(contractId: string): string | null
+isContractInSession(contractId: string): boolean
+
+// Maintenance
+expireTimedOutSessions(options?: SessionCleanupOptions): SessionEndResult[]
+cleanupOldSessions(maxAgeMs?: number): number
+```
+
 ## Default Rules (Fail-Closed)
 
 - **No contract** → no learning
@@ -578,6 +641,12 @@ class LearningContractsSystem {
 
   // Boundary Daemon Integration
   createBoundaryEnforcedSystem(adapter, autoResumeOnUpgrade?): BoundaryEnforcedSystem
+
+  // Session Management
+  startSession(userId, metadata?): Session
+  endSession(sessionId, options?): SessionEndResult
+  associateContractWithSession(sessionId, contractId): boolean
+  getSessionStats(): SessionStats
 }
 ```
 
