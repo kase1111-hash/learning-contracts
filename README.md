@@ -339,11 +339,102 @@ const violations = system.getViolations();
 
 ## Integration with Memory Vault
 
-Learning Contracts are designed to integrate with a Memory Vault system:
+Learning Contracts integrate with the Memory Vault storage system to enforce contract rules on all memory operations.
 
-- Contract ID is stored in every Memory Object
+### Creating a Contract-Enforced Vault
+
+```typescript
+import {
+  LearningContractsSystem,
+  MockMemoryVaultAdapter,
+  BoundaryMode,
+  ClassificationLevel
+} from 'learning-contracts';
+
+// Initialize system and vault adapter
+const system = new LearningContractsSystem();
+const adapter = new MockMemoryVaultAdapter(); // Or your production adapter
+
+// Create a contract-enforced vault
+const vault = system.createContractEnforcedVault(
+  adapter,
+  BoundaryMode.NORMAL,
+  'my-agent'
+);
+
+// Create and activate a contract
+let contract = system.createEpisodicContract('alice', {
+  domains: ['coding'],
+  contexts: ['project-x'],
+});
+contract = system.submitForReview(contract.contract_id, 'alice');
+contract = system.activateContract(contract.contract_id, 'alice');
+
+// Store memory with contract enforcement
+const storeResult = await vault.storeMemory(
+  {
+    content: 'Learned a new coding pattern',
+    classification: ClassificationLevel.LOW,
+    domain: 'coding',
+    context: 'project-x',
+  },
+  contract.contract_id
+);
+
+if (storeResult.success) {
+  console.log('Memory stored:', storeResult.result?.memory_id);
+} else {
+  console.log('Denied:', storeResult.enforcement.reason);
+}
+
+// Recall memory with contract enforcement
+const recallResult = await vault.recallMemory({
+  memory_id: storeResult.result!.memory_id!,
+  requester: 'alice',
+  justification: 'Need to review pattern',
+  domain: 'coding',
+});
+```
+
+### Contract Enforcement Rules
+
+The vault enforces these rules before any memory operation:
+
+- **Contract must be active** - Draft, expired, or revoked contracts deny all operations
+- **Classification cap** - Memory classification cannot exceed contract cap
+- **Domain/context scope** - Operations must be within contract scope
+- **Boundary mode** - Strategic contracts require TRUSTED or higher mode
+- **No storage for observation contracts** - Observation contracts can only observe
+
+### Automatic Contract Discovery
+
+If you don't specify a contract_id, the vault will find an applicable contract:
+
+```typescript
+// Vault will find contract matching domain and context
+const result = await vault.storeMemory({
+  content: 'Data',
+  classification: ClassificationLevel.LOW,
+  domain: 'coding',
+  context: 'project-x',
+});
+```
+
+### Vault Adapters
+
+The integration provides:
+
+- **MemoryVaultAdapter** interface - For implementing production adapters
+- **MockMemoryVaultAdapter** - In-memory adapter for testing
+- **BaseMemoryVaultAdapter** - Abstract base class with common functionality
+
+### Key Features
+
+- Contract ID stored in every Memory Object
 - Classification may not exceed contract cap
 - Vault refuses writes without valid contract
+- All operations logged for audit compliance
+- Boundary mode changes are respected
 
 ## Integration with Boundary Daemon
 
@@ -415,6 +506,9 @@ class LearningContractsSystem {
   parseNaturalLanguage(input): ParseResult
   getContractTemplates(): ContractTemplate[]
   searchContractTemplates(query): ContractTemplate[]
+
+  // Memory Vault Integration
+  createContractEnforcedVault(adapter, boundaryMode, defaultActor?): ContractEnforcedVault
 }
 ```
 

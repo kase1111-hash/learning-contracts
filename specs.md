@@ -1,6 +1,6 @@
 # Learning Contracts Specification
 
-> Version 2.0 | Last Updated: 2025-12-23
+> Version 3.0 | Last Updated: 2025-12-23
 
 ## Table of Contents
 
@@ -255,13 +255,48 @@ const purged = system.deepPurge(contractId, memories, {
 
 ## 10. Memory Vault Integration
 
-Learning Contracts integrate with the Memory Vault storage system:
+Learning Contracts integrate with the Memory Vault storage system through the `ContractEnforcedVault` wrapper:
 
 | Integration Point | Description |
 |-------------------|-------------|
 | Contract ID in Memory Objects | Every stored Memory Object carries the ID of its governing contract |
 | Classification Cap | Memory classification cannot exceed the contract's allowed cap |
 | Write Gate | The Vault refuses to write any memory without a valid, active contract |
+| Domain/Context Scope | All operations validated against contract scope |
+| Boundary Mode Enforcement | Strategic contracts require TRUSTED or higher mode |
+| Automatic Contract Discovery | Vault can find applicable contract based on domain/context |
+
+### Usage
+
+```typescript
+import { LearningContractsSystem, MockMemoryVaultAdapter, BoundaryMode, ClassificationLevel } from 'learning-contracts';
+
+const system = new LearningContractsSystem();
+const adapter = new MockMemoryVaultAdapter(); // Or production adapter
+
+// Create contract-enforced vault
+const vault = system.createContractEnforcedVault(adapter, BoundaryMode.NORMAL, 'agent');
+
+// Store with enforcement
+const result = await vault.storeMemory({
+  content: 'Learned pattern',
+  classification: ClassificationLevel.LOW,
+  domain: 'coding',
+}, contract.contract_id);
+
+// Recall with enforcement
+const recall = await vault.recallMemory({
+  memory_id: result.result.memory_id,
+  requester: 'user',
+  justification: 'Review needed',
+});
+```
+
+### Available Adapters
+
+- **MemoryVaultAdapter** - Interface for implementing production adapters
+- **MockMemoryVaultAdapter** - In-memory adapter for testing
+- **BaseMemoryVaultAdapter** - Abstract base class with common functionality
 
 ---
 
@@ -339,12 +374,16 @@ The following are explicitly **NOT** goals of Learning Contracts:
 | Contract templates (7 templates) | ✅ Complete | `src/plain-language/templates.ts` |
 | Plain-language summaries | ✅ Complete | `src/plain-language/summarizer.ts` |
 | Conversational contract builder | ✅ Complete | `src/plain-language/builder.ts` |
+| Memory Vault Integration | ✅ Complete | `src/vault-integration/` |
+| ContractEnforcedVault wrapper | ✅ Complete | `src/vault-integration/enforced-vault.ts` |
+| MemoryVaultAdapter interface | ✅ Complete | `src/vault-integration/adapter.ts` |
+| MockMemoryVaultAdapter | ✅ Complete | `src/vault-integration/adapter.ts` |
+| Vault audit logging | ✅ Complete | `src/system.ts` |
 
 ### Not Implemented
 
 | Feature | Priority | Description |
 |---------|----------|-------------|
-| Memory Vault Integration | High | Actual Memory Vault storage system; currently only interfaces defined |
 | Boundary Daemon Integration | High | Full Boundary Daemon component; automatic suspension on boundary downgrade |
 | Session Retention Cleanup | Medium | Automatic cleanup when session-scoped contracts end |
 | Timebound Auto-Expiry | Medium | Automatic background enforcement of `retention_until` timestamps (manual trigger exists) |

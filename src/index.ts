@@ -59,3 +59,46 @@ export type {
   SummaryOptions,
   BuilderResponse,
 } from './plain-language';
+
+// Memory Vault Integration
+export {
+  // Types
+  ClassificationLevel,
+  KeySource,
+  // Adapter
+  MockMemoryVaultAdapter,
+  // Contract-enforced vault
+  ContractEnforcedVault,
+} from './vault-integration';
+
+export type {
+  // Types
+  MemoryObject,
+  AccessPolicy,
+  EncryptionProfile,
+  RecallRequest,
+  StoreResult,
+  RecallResult,
+  LockdownStatus,
+  BackupMetadata,
+  TombstoneInfo,
+  MemoryQuery,
+  IntegrityResult,
+  EnforcementCheckResult,
+  ContractEnforcedStoreOptions,
+  ContractEnforcedRecallOptions,
+  // Adapter
+  MemoryVaultAdapter,
+  VaultStoreOptions,
+  VaultRecallOptions,
+  VaultTombstoneOptions,
+  VaultBackupOptions,
+  VaultConnectionStatus,
+  // Contract-enforced vault
+  ContractEnforcedVaultConfig,
+  ContractResolver,
+  ContractFinder,
+  VaultAuditEvent,
+  EnforcedOperationResult,
+  AuditLogger as VaultAuditLogger,
+} from './vault-integration';

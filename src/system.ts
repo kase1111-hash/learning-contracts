@@ -30,6 +30,11 @@ import {
   ContractTemplate,
   searchTemplates,
 } from './plain-language';
+import {
+  ContractEnforcedVault,
+  MemoryVaultAdapter,
+  VaultAuditEvent,
+} from './vault-integration';
 
 export class LearningContractsSystem {
   private auditLogger: AuditLogger;
@@ -500,6 +505,85 @@ export class LearningContractsSystem {
         return AbstractionLevel.PATTERN;
       default:
         return AbstractionLevel.RAW;
+    }
+  }
+
+  /**
+   * Memory Vault Integration Methods
+   */
+
+  /**
+   * Create a contract-enforced vault instance
+   *
+   * The returned vault enforces all Learning Contract rules before
+   * allowing memory operations. This is the recommended way to
+   * integrate with Memory Vault.
+   *
+   * @param adapter - The vault adapter to wrap (e.g., HTTP adapter, mock)
+   * @param boundaryMode - Current boundary mode for enforcement
+   * @param defaultActor - Default actor for operations
+   */
+  createContractEnforcedVault(
+    adapter: MemoryVaultAdapter,
+    boundaryMode: BoundaryMode,
+    defaultActor?: string
+  ): ContractEnforcedVault {
+    return new ContractEnforcedVault({
+      adapter,
+      contractResolver: (contractId: string) => this.getContract(contractId),
+      contractFinder: (domain, context, tool) =>
+        this.findApplicableContract(domain, context, tool),
+      auditLogger: (event: VaultAuditEvent) => this.logVaultEvent(event),
+      boundaryMode,
+      defaultActor,
+    });
+  }
+
+  /**
+   * Log a vault audit event to the main audit log
+   */
+  private logVaultEvent(event: VaultAuditEvent): void {
+    const contractId = event.contract_id ?? 'unknown';
+    const memoryId = event.memory_id ?? 'unknown';
+
+    switch (event.event_type) {
+      case 'store':
+        if (event.allowed) {
+          this.auditLogger.logMemoryCreated(
+            contractId,
+            memoryId,
+            (event.details?.classification as number) ?? 0,
+            event.actor
+          );
+        }
+        break;
+
+      case 'recall':
+        if (event.allowed) {
+          this.auditLogger.logMemoryRecalled(contractId, memoryId, event.actor);
+        }
+        break;
+
+      case 'tombstone':
+        this.auditLogger.logMemoryTombstoned(
+          contractId,
+          [memoryId],
+          []
+        );
+        break;
+
+      case 'violation':
+        // Violations are logged via enforcement check
+        this.auditLogger.logGeneralizationAttempt(
+          contractId,
+          false,
+          event.denial_reason
+        );
+        break;
+
+      case 'query':
+        // Queries don't have a specific log method, they're not sensitive
+        break;
     }
   }
 }
