@@ -238,3 +238,64 @@ export type {
   UserAuditLogger,
   UserManagerStats,
 } from './user-management';
+
+// Agent-OS Integration
+export {
+  // Types
+  AuthorityTier,
+  AgentOSAgentType,
+  AgentOSMemoryClass,
+  KernelEventType,
+  MEMORY_CLASS_TO_CLASSIFICATION,
+  MEMORY_CLASS_TO_CONTRACT_TYPE,
+  DEFAULT_AGENT_OS_CONFIG,
+  // Memory Adapter
+  AgentOSMemoryAdapter,
+  MockAgentOSMemoryClient,
+  // Boundary Adapter
+  AgentOSBoundaryAdapter,
+  MockAgentOSBoundaryClient,
+  // Kernel Hooks
+  AgentOSKernelHooks,
+  MockAgentOSKernelClient,
+  createKernelRules,
+  createKernelPolicies,
+  // Consent Bridge
+  AgentOSConsentBridge,
+  // Python Interop
+  MockInteropTransport,
+  HttpInteropTransport,
+  AgentOSPythonClient,
+  generatePythonClientCode,
+  generateAgentOSIntegrationModule,
+} from './agent-os-integration';
+
+export type {
+  // Types
+  KernelEvent,
+  AgentOSConsentRequest,
+  AgentOSConsentResponse,
+  AgentOSMemoryOperation,
+  AgentOSBoundaryStatus,
+  AgentOSIntegrationConfig,
+  AgentOSHookRegistration,
+  AgentOSHookResult,
+  ContractAgentOSMapping,
+  AgentOSInteropMessage,
+  AgentOSInteropRequest,
+  AgentOSInteropResponse,
+  ConsentAlignmentResult,
+  AgentOSIntegrationStatus,
+  // Memory Adapter
+  AgentOSMemoryClient,
+  // Boundary Adapter
+  AgentOSBoundaryClient,
+  // Kernel Hooks
+  AgentOSKernelClient,
+  KernelHookHandler,
+  // Consent Bridge
+  ConsentBridgeConfig,
+  ConsentRecord,
+  // Python Interop
+  InteropTransport,
+} from './agent-os-integration';
