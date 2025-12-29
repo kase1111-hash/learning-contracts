@@ -8,6 +8,7 @@
  * - Mock adapter (for testing)
  */
 
+import { createHash } from 'crypto';
 import {
   MemoryObject,
   MemoryQuery,
@@ -250,6 +251,8 @@ export abstract class BaseMemoryVaultAdapter implements MemoryVaultAdapter {
  *
  * In-memory implementation that doesn't require actual vault.
  * Useful for unit tests and development.
+ *
+ * WARNING: This adapter should ONLY be used in test environments.
  */
 export class MockMemoryVaultAdapter extends BaseMemoryVaultAdapter {
   private memories: Map<string, MemoryObject> = new Map();
@@ -258,6 +261,17 @@ export class MockMemoryVaultAdapter extends BaseMemoryVaultAdapter {
   private isLocked: boolean = false;
   private lockReason?: string;
   private lockTime?: Date;
+
+  constructor() {
+    super();
+    // Production safety guard
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error(
+        'MockMemoryVaultAdapter is for testing only and cannot be used in production. ' +
+        'Use a real MemoryVaultAdapter implementation instead.'
+      );
+    }
+  }
 
   async checkConnection(): Promise<VaultConnectionStatus> {
     this.connected = true;
@@ -541,16 +555,11 @@ export class MockMemoryVaultAdapter extends BaseMemoryVaultAdapter {
   }
 
   /**
-   * Simple hash function for mock purposes
+   * Cryptographic hash function using SHA-256
+   * Provides secure content verification with collision resistance
    */
   private async hashContent(content: Uint8Array): Promise<string> {
-    // Simple mock hash - in real implementation would use crypto
-    let hash = 0;
-    for (let i = 0; i < content.length; i++) {
-      hash = ((hash << 5) - hash) + content[i];
-      hash = hash & hash;
-    }
-    return `mock_hash_${Math.abs(hash).toString(16)}`;
+    return createHash('sha256').update(content).digest('hex');
   }
 
   /**
