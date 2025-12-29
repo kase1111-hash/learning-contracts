@@ -3,8 +3,10 @@
  *
  * JSON file-based storage adapter for persistent storage.
  * Uses atomic writes to prevent data corruption.
+ * Includes SHA-256 integrity verification to detect tampering.
  */
 
+import { createHash } from 'crypto';
 import * as fsPromises from 'fs/promises';
 import * as path from 'path';
 import { LearningContract } from '../types';
@@ -36,6 +38,7 @@ interface StorageFileFormat {
   version: number;
   updated_at: string;
   contracts: SerializedContract[];
+  checksum?: string; // SHA-256 hash of contracts array for integrity verification
 }
 
 export class FileStorageAdapter implements StorageAdapter {
@@ -149,6 +152,19 @@ export class FileStorageAdapter implements StorageAdapter {
         throw new Error(`Unsupported storage file version: ${data.version}`);
       }
 
+      // Verify integrity checksum if present
+      if (data.checksum) {
+        const contractsJson = JSON.stringify(data.contracts);
+        const calculatedChecksum = createHash('sha256').update(contractsJson).digest('hex');
+
+        if (calculatedChecksum !== data.checksum) {
+          throw new Error(
+            'Contract file integrity check failed - possible tampering detected. ' +
+            'The file checksum does not match the expected value.'
+          );
+        }
+      }
+
       // Load contracts
       this.contracts.clear();
       for (const serialized of data.contracts) {
@@ -169,12 +185,20 @@ export class FileStorageAdapter implements StorageAdapter {
 
   /**
    * Saves contracts to the storage file using atomic write
+   * Includes SHA-256 checksum for integrity verification
    */
   private async saveToFile(): Promise<void> {
+    const contracts = Array.from(this.contracts.values()).map(serializeContract);
+
+    // Calculate checksum of contracts array for integrity verification
+    const contractsJson = JSON.stringify(contracts);
+    const checksum = createHash('sha256').update(contractsJson).digest('hex');
+
     const data: StorageFileFormat = {
       version: 1,
       updated_at: new Date().toISOString(),
-      contracts: Array.from(this.contracts.values()).map(serializeContract),
+      contracts,
+      checksum,
     };
 
     const content = this.prettyPrint
@@ -184,8 +208,11 @@ export class FileStorageAdapter implements StorageAdapter {
     // Atomic write: write to temp file, then rename
     const tempPath = `${this.filePath}.tmp`;
     try {
-      await fsPromises.writeFile(tempPath, content, 'utf-8');
+      // Write with restricted permissions (owner read/write only)
+      await fsPromises.writeFile(tempPath, content, { mode: 0o600, encoding: 'utf-8' });
       await fsPromises.rename(tempPath, this.filePath);
+      // Ensure final file has correct permissions
+      await fsPromises.chmod(this.filePath, 0o600);
     } catch (error) {
       // Clean up temp file if it exists
       try {
