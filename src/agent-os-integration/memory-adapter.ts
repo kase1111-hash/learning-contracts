@@ -5,6 +5,7 @@
  * with Agent-OS memory management system (Seshat agent domain).
  */
 
+import { createHash } from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
 import {
   BaseMemoryVaultAdapter,
@@ -396,13 +397,12 @@ export class AgentOSMemoryAdapter extends BaseMemoryVaultAdapter {
     return this.memoryMappings.get(memory_id)?.aosKey ?? null;
   }
 
+  /**
+   * Cryptographic hash function using SHA-256
+   * Provides secure content verification with collision resistance
+   */
   private async hashContent(content: Uint8Array): Promise<string> {
-    let hash = 0;
-    for (let i = 0; i < content.length; i++) {
-      hash = ((hash << 5) - hash) + content[i];
-      hash = hash & hash;
-    }
-    return `aos_hash_${Math.abs(hash).toString(16)}`;
+    return createHash('sha256').update(content).digest('hex');
   }
 
   clear(): void {
