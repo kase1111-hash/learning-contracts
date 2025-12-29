@@ -48,7 +48,12 @@ export interface MemoryObject {
   classification: ClassificationLevel;
   /** Encryption profile reference */
   encryption_profile: string;
-  /** Plaintext content (in-memory only, never persisted) */
+  /**
+   * Plaintext content (in-memory only, never persisted)
+   * SECURITY: Should be cleared using securelyClearMemory() or zeroMemory()
+   * after use to prevent sensitive data from lingering in memory.
+   * @see securelyClearMemory
+   */
   content_plaintext?: Uint8Array;
   /** Content verification hash */
   content_hash: string;
@@ -150,13 +155,20 @@ export interface StoreResult {
 
 /**
  * Result of a recall operation
+ *
+ * SECURITY NOTE: The content field contains sensitive plaintext data.
+ * Always clear it using zeroMemory() when no longer needed.
  */
 export interface RecallResult {
   /** Whether recall succeeded */
   success: boolean;
   /** Recalled memory object (if successful) */
   memory?: MemoryObject;
-  /** Decrypted content (if successful) */
+  /**
+   * Decrypted content (if successful)
+   * SECURITY: Clear with zeroMemory() after use
+   * @see zeroMemory
+   */
   content?: Uint8Array;
   /** Error message (if failed) */
   error?: string;

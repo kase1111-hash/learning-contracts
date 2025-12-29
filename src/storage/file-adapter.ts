@@ -6,7 +6,7 @@
  * Includes SHA-256 integrity verification to detect tampering.
  */
 
-import { createHash } from 'crypto';
+import { createHash, timingSafeEqual } from 'crypto';
 import * as fsPromises from 'fs/promises';
 import * as path from 'path';
 import { LearningContract } from '../types';
@@ -157,7 +157,8 @@ export class FileStorageAdapter implements StorageAdapter {
         const contractsJson = JSON.stringify(data.contracts);
         const calculatedChecksum = createHash('sha256').update(contractsJson).digest('hex');
 
-        if (calculatedChecksum !== data.checksum) {
+        // Use constant-time comparison to prevent timing attacks
+        if (!this.constantTimeCompare(calculatedChecksum, data.checksum)) {
           throw new Error(
             'Contract file integrity check failed - possible tampering detected. ' +
             'The file checksum does not match the expected value.'
@@ -234,5 +235,26 @@ export class FileStorageAdapter implements StorageAdapter {
     if (!this.initialized) {
       throw new Error('FileStorageAdapter has not been initialized. Call initialize() first.');
     }
+  }
+
+  /**
+   * Constant-time string comparison to prevent timing attacks
+   * Uses timingSafeEqual for cryptographic hash comparison
+   */
+  private constantTimeCompare(a: string, b: string): boolean {
+    // If lengths differ, still perform comparison to prevent length-based timing leaks
+    // Pad the shorter string to match length for constant-time comparison
+    const maxLength = Math.max(a.length, b.length);
+    const bufA = Buffer.alloc(maxLength);
+    const bufB = Buffer.alloc(maxLength);
+
+    bufA.write(a, 0, a.length, 'utf-8');
+    bufB.write(b, 0, b.length, 'utf-8');
+
+    // timingSafeEqual requires equal-length buffers
+    const equalLength = a.length === b.length;
+    const equalContent = timingSafeEqual(bufA, bufB);
+
+    return equalLength && equalContent;
   }
 }

@@ -47,3 +47,12 @@ export {
   VaultAuditEvent,
   EnforcedOperationResult,
 } from './enforced-vault';
+
+// Security utilities
+export {
+  zeroMemory,
+  securelyClearMemory,
+  constantTimeCompare,
+  withSecureMemory,
+  createSecureCopy,
+} from './security-utils';
