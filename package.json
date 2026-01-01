@@ -1,6 +1,6 @@
 {
   "name": "learning-contracts",
-  "version": "3.0.0",
+  "version": "0.1.0-alpha",
   "description": "Explicit, enforceable agreements governing what a learning co-worker/assistant is allowed to learn",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

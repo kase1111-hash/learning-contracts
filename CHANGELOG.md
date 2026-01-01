@@ -5,7 +5,73 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [3.0.0] - 2025-12-23
+## [0.1.0-alpha] - 2026-01-01
+
+### Added
+
+#### Error Handling Module (`src/errors/`)
+- **Structured Error Types** - Comprehensive error handling with SIEM integration
+  - 5 severity levels: INFO, LOW, MEDIUM, HIGH, CRITICAL
+  - 10 error categories: CONTRACT, ENFORCEMENT, STORAGE, AUTH, NETWORK, SECURITY, etc.
+  - 50+ specific error codes for precise error identification
+  - Specialized error classes: `ContractError`, `EnforcementError`, `SecurityError`, `StorageError`, `NetworkError`, `IntegrationError`, `AuthError`
+- **CentralErrorHandler** - Centralized error handling with automatic SIEM reporting
+  - Error buffering and batch reporting
+  - Automatic retry with exponential backoff
+  - Lockdown triggers on critical security errors
+  - Error statistics and aggregation
+- **CEF Format Support** - Common Event Format for SIEM ingestion
+- **MITRE ATT&CK Technique Tagging** - Security event classification
+
+#### Boundary-SIEM Integration (`src/siem-integration/`)
+- **SIEMReporter** - Full integration with Boundary-SIEM
+  - JSON HTTP API reporting (`POST /api/v1/events`)
+  - CEF over UDP/TCP for redundant delivery
+  - Syslog format support
+- **Event Types**: errors, security violations, contract events, enforcement events, audit logs, connection events
+- **Batching** with configurable flush intervals
+- **Retry Logic** with exponential backoff
+- **Health Check Monitoring** for SIEM connectivity
+
+#### Boundary Daemon Connector (`src/daemon-connector/`)
+- **DaemonConnector** - Integration with Boundary Daemon for policy enforcement
+  - Unix socket communication protocol
+  - HTTP/HTTPS communication protocol
+  - Mutual TLS (mTLS) support
+- **Policy Decision Requests** for all operations
+- **Six Boundary Modes**: OPEN, RESTRICTED, TRUSTED, AIRGAP, COLDROOM, LOCKDOWN
+- **Six Classification Levels**: PUBLIC, INTERNAL, CONFIDENTIAL, SENSITIVE, RESTRICTED, CROWN_JEWEL
+- **Component Attestation** with signed tokens
+- **Automatic Reconnection** with exponential backoff
+- **Event Handlers** for mode changes and tripwire events
+- **Connection Protection Settings** for secure communications
+- **MockDaemonConnector** for testing (blocked in production)
+
+#### Production Readiness
+- **GitHub Actions CI/CD** - Multi-version Node.js testing (18.x, 20.x, 22.x)
+- **Dependabot** - Automated dependency updates
+- **Test Coverage Thresholds** - Enforced minimum coverage
+- **ESLint & Prettier** - Code quality enforcement
+- **GitHub Templates** - Issue and PR templates
+- **Security Policy** (`SECURITY.md`) - Vulnerability reporting guidelines
+- **Contributing Guidelines** (`CONTRIBUTING.md`) - Development workflow
+- **Windows Batch Files** - `build.bat` and `start.bat` for Windows users
+
+### Changed
+- Version reset to 0.1.0-alpha for first public release
+- Updated all module version references to match
+- Improved TypeScript strict mode compliance
+- Enhanced error messages with actionable remediation suggestions
+
+### Security
+- Production guards prevent mock adapters in production environments
+- Constant-time comparison for security-sensitive operations
+- Secure memory zeroing for sensitive data
+- TLS/mTLS support for all external connections
+
+---
+
+## [3.0.0] - 2025-12-23 (Internal)
 
 ### Added
 - **Memory Vault Integration** - Complete integration with Memory Vault storage system
