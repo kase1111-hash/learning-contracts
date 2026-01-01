@@ -299,3 +299,79 @@ export type {
   // Python Interop
   InteropTransport,
 } from './agent-os-integration';
+
+// Error Handling
+export {
+  LearningContractsError,
+  ContractError,
+  EnforcementError,
+  SecurityError,
+  StorageError,
+  NetworkError,
+  IntegrationError,
+  AuthError,
+  ErrorSeverity,
+  ErrorCategory,
+  ErrorCode,
+  CentralErrorHandler,
+  getDefaultErrorHandler,
+  setDefaultErrorHandler,
+} from './errors';
+
+export type {
+  ErrorContext,
+  ErrorEvent,
+  ErrorHandler,
+  RecoveryStrategy,
+  ErrorHandlerConfig,
+  ErrorStats,
+} from './errors';
+
+// Boundary-SIEM Integration
+export { SIEMReporter } from './siem-integration';
+
+export {
+  SIEMEventType,
+  CEF_SEVERITY_MAP,
+} from './siem-integration';
+
+export type {
+  SIEMConfig,
+  SIEMEvent,
+  SIEMResponse,
+  SIEMHealthStatus,
+  ContractEvent as SIEMContractEvent,
+  EnforcementEvent as SIEMEnforcementEvent,
+  SecurityViolationEvent,
+  ConnectionEvent,
+  AuditLogEntry,
+  EventConverter,
+} from './siem-integration';
+
+// Boundary Daemon Connector
+export {
+  DaemonConnector,
+  MockDaemonConnector,
+} from './daemon-connector';
+
+export {
+  DaemonBoundaryMode as RealDaemonBoundaryMode,
+  DaemonClassificationLevel,
+  PolicyOperation,
+  DaemonCommand,
+  CLASSIFICATION_CAPS,
+} from './daemon-connector';
+
+export type {
+  DaemonConfig,
+  PolicyDecision,
+  PolicyRequest,
+  DaemonStatus,
+  ModeChangeEvent as DaemonModeChangeEvent,
+  TripwireEvent as DaemonTripwireEvent,
+  AttestationRequest,
+  AttestationResponse,
+  DaemonEventHandlers,
+  DaemonResponse,
+  ConnectionProtection,
+} from './daemon-connector';
