@@ -1,6 +1,6 @@
 # Learning Contracts Specification
 
-> Version 6.0 | Last Updated: 2025-12-23
+> Version 0.1.0-alpha | Last Updated: 2026-01-01
 
 ## Table of Contents
 
@@ -942,12 +942,29 @@ The following are explicitly **NOT** goals of Learning Contracts:
 | PermissionManager | ✅ Complete | `src/user-management/permissions.ts` |
 | One instance per user | ✅ Complete | `src/user-management/manager.ts` |
 | Contract permission sharing | ✅ Complete | `src/user-management/permissions.ts` |
+| Error Handling Module | ✅ Complete | `src/errors/` |
+| Structured error types | ✅ Complete | `src/errors/types.ts` |
+| CentralErrorHandler | ✅ Complete | `src/errors/handler.ts` |
+| CEF format support | ✅ Complete | `src/errors/types.ts` |
+| Boundary-SIEM Integration | ✅ Complete | `src/siem-integration/` |
+| SIEMReporter | ✅ Complete | `src/siem-integration/reporter.ts` |
+| JSON HTTP API reporting | ✅ Complete | `src/siem-integration/reporter.ts` |
+| CEF over UDP/TCP | ✅ Complete | `src/siem-integration/reporter.ts` |
+| Event batching and retry | ✅ Complete | `src/siem-integration/reporter.ts` |
+| Boundary Daemon Connector | ✅ Complete | `src/daemon-connector/` |
+| DaemonConnector | ✅ Complete | `src/daemon-connector/connector.ts` |
+| Policy decision requests | ✅ Complete | `src/daemon-connector/connector.ts` |
+| Component attestation | ✅ Complete | `src/daemon-connector/connector.ts` |
+| mTLS support | ✅ Complete | `src/daemon-connector/connector.ts` |
+| MockDaemonConnector | ✅ Complete | `src/daemon-connector/connector.ts` |
 
 ### Not Implemented
 
 | Feature | Priority | Description |
 |---------|----------|-------------|
 | Active Contracts Dashboard | Medium | UI for "all active contracts continuously visible" |
+| Rate Limiting | Low | Request rate limiting for external integrations |
+| Audit Log Signing | Low | Cryptographic signatures on audit logs |
 
 ---
 

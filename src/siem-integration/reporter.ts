@@ -44,7 +44,7 @@ const DEFAULT_CONFIG: Partial<SIEMConfig> = {
   source: {
     product: 'learning-contracts',
     vendor: 'LearningContracts',
-    version: '3.0.0',
+    version: '0.1.0-alpha',
   },
 };
 

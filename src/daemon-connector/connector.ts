@@ -40,7 +40,7 @@ const DEFAULT_CONFIG: Partial<DaemonConfig> = {
   timeout_ms: 5000,
   use_tls: true,
   component_name: 'learning-contracts',
-  component_version: '3.0.0',
+  component_version: '0.1.0-alpha',
   reconnect: {
     enabled: true,
     max_attempts: 5,

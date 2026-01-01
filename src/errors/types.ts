@@ -254,7 +254,7 @@ export class LearningContractsError extends Error {
     const version = 0;
     const vendor = 'LearningContracts';
     const product = 'learning-contracts';
-    const productVersion = '3.0.0';
+    const productVersion = '0.1.0-alpha';
     const signatureId = this.code;
     const name = this.category;
     const severity = this.mapSeverityToCEF();
