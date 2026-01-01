@@ -1,0 +1,32 @@
+# Source files (compiled output in dist/ is included via files field)
+src/
+tests/
+examples/
+
+# Config files
+.eslintrc.json
+.prettierrc.json
+.editorconfig
+jest.config.js
+tsconfig.json
+
+# Development files
+.github/
+coverage/
+*.log
+
+# Documentation (README.md and LICENSE included via files field)
+CHANGELOG.md
+CONTRIBUTING.md
+SECURITY.md
+ENCRYPTION_SECURITY_REVIEW.md
+User-Manual.md
+specs.md
+system-arch.md
+
+# Lock files
+package-lock.json
+
+# Git
+.git/
+.gitignore

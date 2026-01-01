@@ -1,16 +1,26 @@
 {
   "name": "learning-contracts",
-  "version": "1.0.0",
+  "version": "3.0.0",
   "description": "Explicit, enforceable agreements governing what a learning co-worker/assistant is allowed to learn",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsc",
     "test": "jest",
     "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
     "lint": "eslint src --ext .ts",
-    "format": "prettier --write \"src/**/*.ts\"",
-    "prepublishOnly": "npm run build"
+    "lint:fix": "eslint src --ext .ts --fix",
+    "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\" \"tests/**/*.ts\"",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run lint && npm run test && npm run build",
+    "prepare": "npm run build"
   },
   "keywords": [
     "learning",
@@ -18,10 +28,25 @@
     "consent",
     "ai",
     "memory",
-    "privacy"
+    "privacy",
+    "machine-learning",
+    "governance",
+    "audit"
   ],
-  "author": "",
+  "author": "Learning Contracts Contributors",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kase1111-hash/learning-contracts.git"
+  },
+  "bugs": {
+    "url": "https://github.com/kase1111-hash/learning-contracts/issues"
+  },
+  "homepage": "https://github.com/kase1111-hash/learning-contracts#readme",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "sideEffects": false,
   "devDependencies": {
     "@types/jest": "^29.5.0",
     "@types/node": "^20.0.0",
