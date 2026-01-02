@@ -340,7 +340,8 @@ export class DaemonConnector {
       });
 
       this.socket.on('data', (data) => {
-        this.handleSocketData(data);
+        const buffer = typeof data === 'string' ? Buffer.from(data) : data;
+        this.handleSocketData(buffer);
       });
 
       this.socket.setTimeout(this.config.timeout_ms);

@@ -47,7 +47,7 @@ if %ERRORLEVEL% neq 0 (
     REM If example doesn't exist, run a quick verification instead
     echo.
     echo Verifying Learning Contracts module...
-    node -e "const lc = require('./dist'); console.log('Learning Contracts v3.0.0 loaded successfully'); console.log('Available exports:', Object.keys(lc).join(', '));"
+    node -e "const lc = require('./dist'); console.log('Learning Contracts v0.1.0-alpha loaded successfully'); console.log('Available exports:', Object.keys(lc).join(', '));"
     if %ERRORLEVEL% neq 0 (
         echo ERROR: Failed to load Learning Contracts module
         exit /b 1
