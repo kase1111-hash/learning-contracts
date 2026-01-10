@@ -1,16 +1,24 @@
 # Learning Contracts
 
-> **Explicit, enforceable agreements governing what a learning co-worker/assistant is allowed to learn**
+> **AI learning contracts and safe AI training protocols for controlled, consent-based machine learning**
 
 [![CI](https://github.com/kase1111-hash/learning-contracts/actions/workflows/ci.yml/badge.svg)](https://github.com/kase1111-hash/learning-contracts/actions/workflows/ci.yml)
 [![npm version](https://img.shields.io/npm/v/learning-contracts.svg)](https://www.npmjs.com/package/learning-contracts)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Learning Contracts define explicit consent for AI learning, how it may generalize that learning, how long it may retain it, and under what conditions it may be recalled or revoked.
+Learning Contracts provide **learning boundary agreements** and **AI data governance** for safe AI education. These training safety contracts define explicit consent for what AI can learn, how it may generalize that learning, how long it may retain it, and under what conditions it may be recalled or revoked. Built for **controlled AI learning** with full AI learning permissions management and training data contracts.
 
 **Nothing is learned by default.**
 
-**v0.1.0-alpha** - Part of the [Agent OS](https://github.com/kase1111-hash) ecosystem, integrating with [Boundary-SIEM](https://github.com/kase1111-hash/Boundary-SIEM) and [Boundary Daemon](https://github.com/kase1111-hash/boundary-daemon-).
+**v0.1.0-alpha** - Part of the [Agent OS](https://github.com/kase1111-hash/Agent-OS) ecosystem for **digital sovereignty** and **human-AI collaboration**, integrating with [Boundary-SIEM](https://github.com/kase1111-hash/Boundary-SIEM) and [Boundary Daemon](https://github.com/kase1111-hash/boundary-daemon-).
+
+## What Problem Does This Solve?
+
+- **How do I control what AI learns?** — Learning Contracts require explicit consent before any learning occurs
+- **How do I ensure AI learning safety?** — Fail-closed design means ambiguous situations default to denying learning
+- **How do I implement AI training governance?** — Complete audit trails, revocation rights, and scope limitations
+- **What are my AI learning permissions?** — Define exactly which domains, contexts, and abstraction levels are permitted
+- **How do I build a learning governance framework?** — Composable contracts that stack with security systems like Memory Vault and Boundary Daemon
 
 ## Core Principles
 
@@ -912,12 +920,37 @@ if (attestation.success) {
 | RESTRICTED | 4 | Restricted |
 | CROWN_JEWEL | 5 | Highest protection |
 
-## Related Projects
+## Connected Repositories
 
-- **[Boundary-SIEM](https://github.com/kase1111-hash/Boundary-SIEM)** - Security event management
-- **[Boundary Daemon](https://github.com/kase1111-hash/boundary-daemon-)** - Policy enforcement layer
-- **Memory Vault** - Secure storage for learning memories
-- **Agent OS** - Locally-controlled AI infrastructure
+Learning Contracts is part of a larger ecosystem of tools for **digital sovereignty**, **intent preservation**, and **human-AI collaboration**.
+
+### Agent-OS Ecosystem
+
+The natural-language native operating system for AI agents:
+
+- **[Agent-OS](https://github.com/kase1111-hash/Agent-OS)** - Natural language operating system for AI agents (NLOS)
+- **[synth-mind](https://github.com/kase1111-hash/synth-mind)** - NLOS-based agent with psychological modules for emergent continuity and empathy
+- **[boundary-daemon-](https://github.com/kase1111-hash/boundary-daemon-)** - Mandatory trust enforcement layer defining cognition boundaries
+- **[memory-vault](https://github.com/kase1111-hash/memory-vault)** - Secure, offline-capable, owner-sovereign storage for cognitive artifacts
+- **[value-ledger](https://github.com/kase1111-hash/value-ledger)** - Economic accounting layer for cognitive work (ideas, effort, novelty)
+- **[Boundary-SIEM](https://github.com/kase1111-hash/Boundary-SIEM)** - Security Information and Event Management for AI systems
+
+### NatLangChain Ecosystem
+
+Prose-first, intent-native blockchain protocol for human intent:
+
+- **[NatLangChain](https://github.com/kase1111-hash/NatLangChain)** - Natural language blockchain for human-readable smart contracts
+- **[IntentLog](https://github.com/kase1111-hash/IntentLog)** - Git for human reasoning; tracks "why" changes happen via prose commits
+- **[RRA-Module](https://github.com/kase1111-hash/RRA-Module)** - Revenant Repo Agent for abandoned repository monetization
+- **[mediator-node](https://github.com/kase1111-hash/mediator-node)** - LLM mediation layer for matching, negotiation, and closure proposals
+- **[ILR-module](https://github.com/kase1111-hash/ILR-module)** - IP & Licensing Reconciliation for dispute resolution
+- **[Finite-Intent-Executor](https://github.com/kase1111-hash/Finite-Intent-Executor)** - Posthumous execution of predefined intent (Solidity smart contract)
+
+### Game Development
+
+- **[Shredsquatch](https://github.com/kase1111-hash/Shredsquatch)** - 3D first-person snowboarding infinite runner (SkiFree homage)
+- **[Midnight-pulse](https://github.com/kase1111-hash/Midnight-pulse)** - Procedurally generated night drive
+- **[Long-Home](https://github.com/kase1111-hash/Long-Home)** - Atmospheric indie game (Godot)
 
 ---
 
