@@ -2,10 +2,11 @@
 
 ## Supported Versions
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 3.x.x   | :white_check_mark: |
-| < 3.0   | :x:                |
+| Version       | Supported          |
+| ------------- | ------------------ |
+| 0.1.x (alpha) | :white_check_mark: |
+
+> **Note**: This project is currently in alpha (0.1.0-alpha). As it matures, older versions may be deprecated. We recommend always using the latest release.
 
 ## Security Architecture
 
