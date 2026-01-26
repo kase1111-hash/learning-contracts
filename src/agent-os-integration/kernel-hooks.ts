@@ -51,7 +51,7 @@ export class MockAgentOSKernelClient implements AgentOSKernelClient {
 
   onKernelEvent(callback: (event: KernelEvent) => void): () => void {
     this.eventListeners.push(callback);
-    return () => { const i = this.eventListeners.indexOf(callback); if (i > -1) this.eventListeners.splice(i, 1); };
+    return () => { const i = this.eventListeners.indexOf(callback); if (i > -1) {this.eventListeners.splice(i, 1);} };
   }
 
   async reportHookResult(result: AgentOSHookResult): Promise<void> { this.hookResults.push(result); }
@@ -84,7 +84,7 @@ export class AgentOSKernelHooks {
 
   async initialize(): Promise<boolean> {
     const connected = await this.client.connect();
-    if (!connected) return false;
+    if (!connected) {return false;}
     this.unsubscribeKernelEvents = this.client.onKernelEvent((event) => { this.handleKernelEvent(event); });
     const eventTypes = Array.from(this.handlers.keys());
     const hookId = await this.client.registerHook(eventTypes, 100, 'learning_contracts_enforcement');
@@ -93,9 +93,9 @@ export class AgentOSKernelHooks {
   }
 
   async shutdown(): Promise<void> {
-    for (const hookId of this.registeredHooks.keys()) await this.client.unregisterHook(hookId);
+    for (const hookId of this.registeredHooks.keys()) {await this.client.unregisterHook(hookId);}
     this.registeredHooks.clear();
-    if (this.unsubscribeKernelEvents) this.unsubscribeKernelEvents();
+    if (this.unsubscribeKernelEvents) {this.unsubscribeKernelEvents();}
     await this.client.disconnect();
   }
 
@@ -105,7 +105,7 @@ export class AgentOSKernelHooks {
 
   private async handleKernelEvent(event: KernelEvent): Promise<void> {
     const handler = this.handlers.get(event.event_type);
-    if (!handler) return;
+    if (!handler) {return;}
     if (this.isAgentExempt(event.agent as AgentOSAgentType)) {
       await this.client.reportHookResult({ hook_id: 'exempt', event_id: event.event_id, allowed: true, reason: 'Agent is exempt from enforcement', audit_logged: false });
       return;

@@ -364,8 +364,8 @@ export function searchTemplates(query: string): ContractTemplate[] {
   const normalizedQuery = query.toLowerCase();
   return CONTRACT_TEMPLATES.filter(template => {
     // Check name and description
-    if (template.name.toLowerCase().includes(normalizedQuery)) return true;
-    if (template.description.toLowerCase().includes(normalizedQuery)) return true;
+    if (template.name.toLowerCase().includes(normalizedQuery)) {return true;}
+    if (template.description.toLowerCase().includes(normalizedQuery)) {return true;}
     // Check keywords
     return template.keywords.some(k => k.includes(normalizedQuery));
   });

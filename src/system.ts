@@ -725,35 +725,41 @@ export class LearningContractsSystem {
     switch (event.event_type) {
       case 'suspension':
         if (event.contract_id) {
-          this.auditLogger.logStateTransition(
-            event.contract_id,
-            event.actor,
-            this.getContract(event.contract_id)?.state as any,
-            this.getContract(event.contract_id)?.state as any,
-            {
-              boundary_event_id: event.event_id,
-              boundary_event_type: 'suspension',
-              reason: event.details?.reason,
-              previous_mode: event.details?.previous_mode,
-              new_mode: event.details?.new_mode,
-            }
-          );
+          const suspendedContract = this.getContract(event.contract_id);
+          if (suspendedContract) {
+            this.auditLogger.logStateTransition(
+              event.contract_id,
+              event.actor,
+              suspendedContract.state,
+              suspendedContract.state,
+              {
+                boundary_event_id: event.event_id,
+                boundary_event_type: 'suspension',
+                reason: event.details?.reason,
+                previous_mode: event.details?.previous_mode,
+                new_mode: event.details?.new_mode,
+              }
+            );
+          }
         }
         break;
 
       case 'resume':
         if (event.contract_id) {
-          this.auditLogger.logStateTransition(
-            event.contract_id,
-            event.actor,
-            this.getContract(event.contract_id)?.state as any,
-            this.getContract(event.contract_id)?.state as any,
-            {
-              boundary_event_id: event.event_id,
-              boundary_event_type: 'resume',
-              reason: event.details?.reason,
-            }
-          );
+          const resumedContract = this.getContract(event.contract_id);
+          if (resumedContract) {
+            this.auditLogger.logStateTransition(
+              event.contract_id,
+              event.actor,
+              resumedContract.state,
+              resumedContract.state,
+              {
+                boundary_event_id: event.event_id,
+                boundary_event_type: 'resume',
+                reason: event.details?.reason,
+              }
+            );
+          }
         }
         break;
 

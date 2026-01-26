@@ -144,8 +144,8 @@ export class MockAgentOSMemoryClient implements AgentOSMemoryClient {
 }
 
 function classificationToMemoryClass(classification: ClassificationLevel): AgentOSMemoryClass {
-  if (classification <= 0) return AgentOSMemoryClass.EPHEMERAL;
-  if (classification <= 2) return AgentOSMemoryClass.WORKING;
+  if (classification <= 0) {return AgentOSMemoryClass.EPHEMERAL;}
+  if (classification <= 2) {return AgentOSMemoryClass.WORKING;}
   return AgentOSMemoryClass.LONG_TERM;
 }
 
@@ -254,10 +254,10 @@ export class AgentOSMemoryAdapter extends BaseMemoryVaultAdapter {
   async queryMemories(query: MemoryQuery): Promise<MemoryObject[]> {
     const results: MemoryObject[] = [];
     for (const [memoryId, mapping] of this.memoryMappings) {
-      if (!query.include_tombstoned && this.tombstones.has(memoryId)) continue;
+      if (!query.include_tombstoned && this.tombstones.has(memoryId)) {continue;}
       const createdAt = new Date(mapping.metadata.created_at as string);
-      if (query.created_after && createdAt < query.created_after) continue;
-      if (query.created_before && createdAt > query.created_before) continue;
+      if (query.created_after && createdAt < query.created_after) {continue;}
+      if (query.created_before && createdAt > query.created_before) {continue;}
 
       const content = await this.client.recall(mapping.aosKey, 'query');
       results.push({
@@ -273,15 +273,15 @@ export class AgentOSMemoryAdapter extends BaseMemoryVaultAdapter {
       });
     }
     let paginated = results;
-    if (query.offset) paginated = paginated.slice(query.offset);
-    if (query.limit) paginated = paginated.slice(0, query.limit);
+    if (query.offset) {paginated = paginated.slice(query.offset);}
+    if (query.limit) {paginated = paginated.slice(0, query.limit);}
     this.recordActivity();
     return paginated;
   }
 
   async getMemory(memory_id: string): Promise<MemoryObject | null> {
     const mapping = this.memoryMappings.get(memory_id);
-    if (!mapping) return null;
+    if (!mapping) {return null;}
     const content = await this.client.recall(mapping.aosKey, 'system');
     this.recordActivity();
     return {
@@ -305,7 +305,7 @@ export class AgentOSMemoryAdapter extends BaseMemoryVaultAdapter {
       tombstoned_by: options.requested_by,
     };
     const mapping = this.memoryMappings.get(options.memory_id);
-    if (mapping) await this.client.delete(mapping.aosKey, options.reason);
+    if (mapping) {await this.client.delete(mapping.aosKey, options.reason);}
     this.tombstones.set(options.memory_id, info);
     this.recordActivity();
     return info;
@@ -372,7 +372,7 @@ export class AgentOSMemoryAdapter extends BaseMemoryVaultAdapter {
 
   async approveRecallRequest(request_id: string, approver: string): Promise<RecallRequest> {
     const request = this.pendingRequests.get(request_id);
-    if (!request) throw new Error('Request not found');
+    if (!request) {throw new Error('Request not found');}
     request.approved = true;
     request.approved_at = new Date();
     request.approved_by = approver;
@@ -382,7 +382,7 @@ export class AgentOSMemoryAdapter extends BaseMemoryVaultAdapter {
 
   async denyRecallRequest(request_id: string): Promise<RecallRequest> {
     const request = this.pendingRequests.get(request_id);
-    if (!request) throw new Error('Request not found');
+    if (!request) {throw new Error('Request not found');}
     this.pendingRequests.delete(request_id);
     this.recordActivity();
     return request;

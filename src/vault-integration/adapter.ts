@@ -21,6 +21,7 @@ import {
   IntegrityResult,
   ClassificationLevel,
   EncryptionProfile,
+  KeySource,
 } from './types';
 
 /**
@@ -308,7 +309,10 @@ export class MockMemoryVaultAdapter extends BaseMemoryVaultAdapter {
     const derivedFrom = metadata.derived_from as string[] | undefined;
 
     // Remove extension fields from value_metadata to avoid duplication
-    const { contract_id: _, domain: __, context: ___, tool: ____, is_derived: _____, derived_from: ______, ...cleanMetadata } = metadata as any;
+    const extensionFields = ['contract_id', 'domain', 'context', 'tool', 'is_derived', 'derived_from'];
+    const cleanMetadata = Object.fromEntries(
+      Object.entries(metadata).filter(([key]) => !extensionFields.includes(key))
+    );
 
     const memory: MemoryObject = {
       memory_id,
@@ -506,7 +510,7 @@ export class MockMemoryVaultAdapter extends BaseMemoryVaultAdapter {
       return {
         profile_id: 'default',
         cipher: 'AES-256-GCM',
-        key_source: 'HumanPassphrase' as any,
+        key_source: KeySource.HUMAN_PASSPHRASE,
         rotation_policy: 'manual',
         exportable: false,
       };
@@ -519,7 +523,7 @@ export class MockMemoryVaultAdapter extends BaseMemoryVaultAdapter {
     return [{
       profile_id: 'default',
       cipher: 'AES-256-GCM',
-      key_source: 'HumanPassphrase' as any,
+      key_source: KeySource.HUMAN_PASSPHRASE,
       rotation_policy: 'manual',
       exportable: false,
     }];

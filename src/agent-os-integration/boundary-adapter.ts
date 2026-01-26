@@ -127,7 +127,7 @@ export class MockAgentOSBoundaryClient implements AgentOSBoundaryClient {
   }
 
   async performOverride(_operator: string, confirmationCode: string, _reason: string): Promise<boolean> {
-    if (!confirmationCode) return false;
+    if (!confirmationCode) {return false;}
     this.inLockdown = false;
     this.currentMode = 'standard';
     this.networkAllowed = true;
@@ -151,7 +151,7 @@ export class MockAgentOSBoundaryClient implements AgentOSBoundaryClient {
     this.eventListeners.push(callback);
     return () => {
       const index = this.eventListeners.indexOf(callback);
-      if (index > -1) this.eventListeners.splice(index, 1);
+      if (index > -1) {this.eventListeners.splice(index, 1);}
     };
   }
 
@@ -286,7 +286,7 @@ export class AgentOSBoundaryAdapter extends BaseBoundaryDaemonAdapter {
         return { success: false, previous_mode: previousMode, current_mode: this.currentMode, transition_id: transitionId, error: 'Agent-OS denied mode transition request' };
       }
       await this.syncMode();
-      if (previousMode !== this.currentMode) this.notifyModeChange(previousMode, this.currentMode, request.reason);
+      if (previousMode !== this.currentMode) {this.notifyModeChange(previousMode, this.currentMode, request.reason);}
       return { success: true, previous_mode: previousMode, current_mode: this.currentMode, transition_id: transitionId };
     } catch (error) {
       return { success: false, previous_mode: previousMode, current_mode: this.currentMode, transition_id: transitionId, error: error instanceof Error ? error.message : 'Mode transition failed' };
@@ -304,10 +304,10 @@ export class AgentOSBoundaryAdapter extends BaseBoundaryDaemonAdapter {
 
     try {
       const success = await this.client.performOverride(request.operator, request.confirmation_code, request.reason);
-      if (!success) return { success: false, ceremony_id: ceremonyId, error: 'Agent-OS override ceremony failed', logged: true };
+      if (!success) {return { success: false, ceremony_id: ceremonyId, error: 'Agent-OS override ceremony failed', logged: true };}
       const previousMode = this.currentMode;
       await this.syncMode();
-      if (previousMode !== this.currentMode) this.notifyModeChange(previousMode, this.currentMode, `Override: ${request.reason}`);
+      if (previousMode !== this.currentMode) {this.notifyModeChange(previousMode, this.currentMode, `Override: ${request.reason}`);}
       return { success: true, ceremony_id: ceremonyId, new_mode: this.currentMode, logged: true };
     } catch (error) {
       return { success: false, ceremony_id: ceremonyId, error: error instanceof Error ? error.message : 'Override ceremony failed', logged: true };
@@ -321,7 +321,7 @@ export class AgentOSBoundaryAdapter extends BaseBoundaryDaemonAdapter {
     this.tripwireEvents.push(tripwireEvent);
     this.notifyTripwire(tripwireEvent);
     await this.syncMode();
-    if (previousMode !== this.currentMode) this.notifyModeChange(previousMode, this.currentMode, reason);
+    if (previousMode !== this.currentMode) {this.notifyModeChange(previousMode, this.currentMode, reason);}
     return this.getStatus();
   }
 
@@ -331,7 +331,7 @@ export class AgentOSBoundaryAdapter extends BaseBoundaryDaemonAdapter {
 
   async getAuditLog(limit?: number, since?: Date): Promise<BoundaryAuditEntry[]> {
     let entries = await this.client.getAuditLog(limit);
-    if (since) entries = entries.filter((e) => e.timestamp >= since);
+    if (since) {entries = entries.filter((e) => e.timestamp >= since);}
     return entries;
   }
 
@@ -343,7 +343,7 @@ export class AgentOSBoundaryAdapter extends BaseBoundaryDaemonAdapter {
     const status = await this.client.getSecurityStatus();
     this.currentMode = status.lc_mode;
     this.inLockdown = status.in_lockdown;
-    if (this.inLockdown) this.lockdownReason = 'Agent-OS lockdown active';
+    if (this.inLockdown) {this.lockdownReason = 'Agent-OS lockdown active';}
   }
 
   private handleSecurityEvent(event: { type: string; data: Record<string, unknown> }): void {
@@ -363,7 +363,7 @@ export class AgentOSBoundaryAdapter extends BaseBoundaryDaemonAdapter {
   }
 
   async disconnect(): Promise<void> {
-    if (this.unsubscribeSecurityEvents) this.unsubscribeSecurityEvents();
+    if (this.unsubscribeSecurityEvents) {this.unsubscribeSecurityEvents();}
     await this.client.disconnect();
     this.connected = false;
   }

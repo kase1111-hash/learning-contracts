@@ -89,10 +89,10 @@ export class AgentOSConsentBridge {
 
   async revokeConsent(aosConsentId: string, reason: string, revokedBy: string): Promise<boolean> {
     const contractId = this.consentToContract.get(aosConsentId);
-    if (!contractId) return false;
+    if (!contractId) {return false;}
 
     const record = this.consentRecords.get(aosConsentId);
-    if (!record) return false;
+    if (!record) {return false;}
 
     this.lcs.revokeContract(contractId, revokedBy, reason);
     record.active = false;
@@ -104,27 +104,27 @@ export class AgentOSConsentBridge {
   async checkAlignment(contractId?: string, aosConsentId?: string): Promise<ConsentAlignmentResult> {
     if (contractId) {
       const contract = this.lcs.getContract(contractId);
-      if (!contract) return { aligned: false, lc_contract_id: contractId, discrepancies: ['Contract not found'], recommended_action: 'none' };
+      if (!contract) {return { aligned: false, lc_contract_id: contractId, discrepancies: ['Contract not found'], recommended_action: 'none' };}
 
       const consentId = this.contractToConsent.get(contractId);
-      if (!consentId) return { aligned: false, lc_contract_id: contractId, discrepancies: ['No Agent-OS consent associated'], recommended_action: 'none' };
+      if (!consentId) {return { aligned: false, lc_contract_id: contractId, discrepancies: ['No Agent-OS consent associated'], recommended_action: 'none' };}
 
       const record = this.consentRecords.get(consentId);
-      if (!record) return { aligned: false, lc_contract_id: contractId, aos_consent_id: consentId, discrepancies: ['Consent record not found'], recommended_action: 'none' };
+      if (!record) {return { aligned: false, lc_contract_id: contractId, aos_consent_id: consentId, discrepancies: ['Consent record not found'], recommended_action: 'none' };}
 
       const discrepancies: string[] = [];
-      if (contract.state !== ContractState.ACTIVE && record.active) discrepancies.push('Contract is not active but consent is still active');
-      if (contract.state === ContractState.ACTIVE && !record.active) discrepancies.push('Contract is active but consent has been revoked');
+      if (contract.state !== ContractState.ACTIVE && record.active) {discrepancies.push('Contract is not active but consent is still active');}
+      if (contract.state === ContractState.ACTIVE && !record.active) {discrepancies.push('Contract is active but consent has been revoked');}
 
       return { aligned: discrepancies.length === 0, lc_contract_id: contractId, aos_consent_id: consentId, discrepancies: discrepancies.length > 0 ? discrepancies : undefined, recommended_action: discrepancies.length > 0 ? 'update_contract' : 'none' };
     }
 
     if (aosConsentId) {
       const record = this.consentRecords.get(aosConsentId);
-      if (!record) return { aligned: false, aos_consent_id: aosConsentId, discrepancies: ['Consent record not found'], recommended_action: 'create_contract' };
+      if (!record) {return { aligned: false, aos_consent_id: aosConsentId, discrepancies: ['Consent record not found'], recommended_action: 'create_contract' };}
 
       const contract = this.lcs.getContract(record.contract_id);
-      if (!contract) return { aligned: false, aos_consent_id: aosConsentId, lc_contract_id: record.contract_id, discrepancies: ['Associated contract not found'], recommended_action: 'create_contract' };
+      if (!contract) {return { aligned: false, aos_consent_id: aosConsentId, lc_contract_id: record.contract_id, discrepancies: ['Associated contract not found'], recommended_action: 'create_contract' };}
 
       return { aligned: record.active && contract.state === ContractState.ACTIVE, lc_contract_id: record.contract_id, aos_consent_id: aosConsentId, recommended_action: 'none' };
     }
@@ -171,14 +171,14 @@ export class AgentOSConsentBridge {
   }
 
   private isContractTypeCompatible(contractType: ContractType, targetType: ContractType): boolean {
-    if (contractType === ContractType.STRATEGIC) return true;
-    if (contractType === ContractType.PROCEDURAL) return targetType !== ContractType.STRATEGIC;
-    if (contractType === ContractType.EPISODIC) return targetType === ContractType.EPISODIC || targetType === ContractType.OBSERVATION;
+    if (contractType === ContractType.STRATEGIC) {return true;}
+    if (contractType === ContractType.PROCEDURAL) {return targetType !== ContractType.STRATEGIC;}
+    if (contractType === ContractType.EPISODIC) {return targetType === ContractType.EPISODIC || targetType === ContractType.OBSERVATION;}
     return contractType === targetType;
   }
 
   private doesScopeMatch(contract: LearningContract, request: AgentOSConsentRequest): boolean {
-    if (!contract.scope.domains?.length) return true;
+    if (!contract.scope.domains?.length) {return true;}
     return contract.scope.domains.some((d: string) => d === request.data_type || d === '*' || request.data_type.startsWith(d));
   }
 
@@ -215,7 +215,7 @@ export class AgentOSConsentBridge {
     const record: ConsentRecord = { contract_id: contractId, aos_consent_id: aosConsentId, memory_class: request.memory_class, user_id: request.user_id, purpose: request.purpose, granted_at: new Date(), active };
     if (request.retention_requested) {
       const duration = this.parseRetentionDuration(request.retention_requested);
-      if (duration) record.expires_at = new Date(Date.now() + duration);
+      if (duration) {record.expires_at = new Date(Date.now() + duration);}
     }
     this.consentRecords.set(aosConsentId, record);
     this.contractToConsent.set(contractId, aosConsentId);
@@ -225,15 +225,15 @@ export class AgentOSConsentBridge {
 
   private getConditionsFromContract(contract: LearningContract): string[] {
     const conditions: string[] = [];
-    if (contract.scope.domains?.length) conditions.push(`Limited to domains: ${contract.scope.domains.join(', ')}`);
-    if (contract.scope.max_abstraction) conditions.push(`Max abstraction: ${contract.scope.max_abstraction}`);
-    if (!contract.scope.transferable) conditions.push('Non-transferable');
+    if (contract.scope.domains?.length) {conditions.push(`Limited to domains: ${contract.scope.domains.join(', ')}`);}
+    if (contract.scope.max_abstraction) {conditions.push(`Max abstraction: ${contract.scope.max_abstraction}`);}
+    if (!contract.scope.transferable) {conditions.push('Non-transferable');}
     return conditions;
   }
 
   private parseRetentionDuration(duration: string): number | undefined {
     const match = duration.match(/^(\d+)\s*(h|hour|hours|d|day|days|w|week|weeks|m|month|months)$/i);
-    if (!match) return undefined;
+    if (!match) {return undefined;}
     const value = parseInt(match[1], 10);
     const unit = match[2].toLowerCase();
     switch (unit) {
@@ -254,7 +254,7 @@ export class AgentOSConsentBridge {
   getStats(): { total_consents: number; active_consents: number; expired_consents: number; by_memory_class: Record<AgentOSMemoryClass, number> } {
     const records = Array.from(this.consentRecords.values());
     const byClass: Record<AgentOSMemoryClass, number> = { [AgentOSMemoryClass.EPHEMERAL]: 0, [AgentOSMemoryClass.WORKING]: 0, [AgentOSMemoryClass.LONG_TERM]: 0 };
-    for (const record of records) byClass[record.memory_class]++;
+    for (const record of records) {byClass[record.memory_class]++;}
     return {
       total_consents: records.length,
       active_consents: records.filter((r) => r.active).length,

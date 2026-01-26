@@ -92,7 +92,7 @@ export class PermissionManager {
    */
   getOwner(contractId: string): string | null {
     const perms = this.permissions.get(contractId);
-    if (!perms) return null;
+    if (!perms) {return null;}
 
     const ownerPerm = perms.find((p) => p.level === PermissionLevel.OWNER);
     return ownerPerm?.user_id ?? null;
@@ -324,13 +324,13 @@ export class PermissionManager {
    */
   getUserPermissionLevel(contractId: string, userId: string): PermissionLevel | undefined {
     const perms = this.permissions.get(contractId);
-    if (!perms) return undefined;
+    if (!perms) {return undefined;}
 
     const now = new Date();
     const userPerm = perms.find((p) => {
-      if (p.user_id !== userId) return false;
+      if (p.user_id !== userId) {return false;}
       // Check if expired
-      if (p.expires_at && p.expires_at < now) return false;
+      if (p.expires_at && p.expires_at < now) {return false;}
       return true;
     });
 
@@ -399,8 +399,8 @@ export class PermissionManager {
 
     for (const [contractId, perms] of this.permissions.entries()) {
       const userPerm = perms.find((p) => {
-        if (p.user_id !== userId) return false;
-        if (p.expires_at && p.expires_at < now) return false;
+        if (p.user_id !== userId) {return false;}
+        if (p.expires_at && p.expires_at < now) {return false;}
         return true;
       });
 
