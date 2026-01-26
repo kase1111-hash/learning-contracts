@@ -233,7 +233,7 @@ export class SIEMReporter {
 
     // Notify handlers
     for (const event of events) {
-      const handlers = this.eventHandlers.get(event.event_type as SIEMEventType) || [];
+      const handlers = this.eventHandlers.get(event.event_type) || [];
       for (const handler of handlers) {
         try {
           handler(event);

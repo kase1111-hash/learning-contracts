@@ -437,9 +437,9 @@ export class PlainLanguageParser {
   ): number {
     let score = 0.5; // Base score
 
-    if (contractType) score += 0.2;
-    if (domains.length > 0) score += 0.15;
-    if (retention) score += 0.1;
+    if (contractType) {score += 0.2;}
+    if (domains.length > 0) {score += 0.15;}
+    if (retention) {score += 0.1;}
 
     // Reduce for ambiguities
     score -= ambiguityCount * 0.1;
@@ -585,7 +585,7 @@ export class PlainLanguageParser {
           if (Array.isArray(answer.value)) {
             refined.domains = answer.value as string[];
           } else if (typeof answer.value === 'string') {
-            refined.domains = (answer.value as string).split(',').map(d => d.trim());
+            refined.domains = (answer.value).split(',').map(d => d.trim());
           }
           refined.ambiguities = refined.ambiguities.filter(a => a !== 'domains');
           break;

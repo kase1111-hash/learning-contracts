@@ -338,7 +338,7 @@ export class PlainLanguageSummarizer {
    */
   private generateWarnings(contract: LearningContract): string {
     const warnings = this.getWarningList(contract);
-    if (warnings.length === 0) return '';
+    if (warnings.length === 0) {return '';}
 
     return 'Note: ' + warnings.join('. ') + '.';
   }
@@ -407,9 +407,9 @@ export class PlainLanguageSummarizer {
    * Format a list of items
    */
   private formatList(items: string[]): string {
-    if (items.length === 0) return '';
-    if (items.length === 1) return items[0];
-    if (items.length === 2) return `${items[0]} and ${items[1]}`;
+    if (items.length === 0) {return '';}
+    if (items.length === 1) {return items[0];}
+    if (items.length === 2) {return `${items[0]} and ${items[1]}`;}
     return items.slice(0, -1).join(', ') + ', and ' + items[items.length - 1];
   }
 

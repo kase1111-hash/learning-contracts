@@ -302,7 +302,7 @@ export class BoundaryEnforcedSystem {
    */
   suspendContract(contractId: string, reason: string): ContractSuspensionEvent | null {
     const contract = this.resolveContract(contractId);
-    if (!contract) return null;
+    if (!contract) {return null;}
 
     return this.doSuspendContract(contract, reason, this.currentMode, this.currentMode);
   }
@@ -312,7 +312,7 @@ export class BoundaryEnforcedSystem {
    */
   resumeContract(contractId: string, reason: string): ContractResumeEvent | null {
     const suspended = this.suspendedContracts.get(contractId);
-    if (!suspended) return null;
+    if (!suspended) {return null;}
 
     // Check if current mode allows resume
     if (!this.canContractOperate(this.resolveContract(contractId)!)) {
@@ -459,7 +459,7 @@ export class BoundaryEnforcedSystem {
     // Check suspended contracts that can now resume
     for (const suspended of this.suspendedContracts.values()) {
       const contract = this.resolveContract(suspended.contract_id);
-      if (!contract) continue;
+      if (!contract) {continue;}
 
       if (this.canContractOperate(contract)) {
         this.doResumeContract(suspended, `Boundary upgrade: ${reason}`);

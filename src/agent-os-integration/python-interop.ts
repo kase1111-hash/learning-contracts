@@ -48,7 +48,7 @@ export class MockInteropTransport implements InteropTransport {
 
   onEvent(callback: (message: AgentOSInteropMessage) => void): () => void {
     this.eventListeners.push(callback);
-    return () => { const i = this.eventListeners.indexOf(callback); if (i > -1) this.eventListeners.splice(i, 1); };
+    return () => { const i = this.eventListeners.indexOf(callback); if (i > -1) {this.eventListeners.splice(i, 1);} };
   }
 
   isConnected(): boolean { return this._connected; }
@@ -79,7 +79,7 @@ export class HttpInteropTransport implements InteropTransport {
 
   async disconnect(): Promise<void> {
     this._connected = false;
-    if (this.pollingInterval) clearInterval(this.pollingInterval);
+    if (this.pollingInterval) {clearInterval(this.pollingInterval);}
   }
 
   async send(message: AgentOSInteropRequest): Promise<AgentOSInteropResponse> {
@@ -92,7 +92,7 @@ export class HttpInteropTransport implements InteropTransport {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ jsonrpc: '2.0', method: message.method, params: message.params, id: message.message_id }),
       });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      if (!response.ok) {throw new Error(`HTTP ${response.status}`);}
       const data = await response.json();
       return { message_id: uuidv4(), message_type: 'response', source: 'agent_os', timestamp: new Date(), payload: {}, correlation_id: message.message_id, success: !data.error, result: data.result, error: data.error ? { code: String(data.error.code ?? 'UNKNOWN'), message: data.error.message ?? 'Unknown error' } : undefined };
     } catch (error) {
@@ -102,14 +102,14 @@ export class HttpInteropTransport implements InteropTransport {
 
   onEvent(callback: (message: AgentOSInteropMessage) => void): () => void {
     this.eventListeners.push(callback);
-    return () => { const i = this.eventListeners.indexOf(callback); if (i > -1) this.eventListeners.splice(i, 1); };
+    return () => { const i = this.eventListeners.indexOf(callback); if (i > -1) {this.eventListeners.splice(i, 1);} };
   }
 
   isConnected(): boolean { return this._connected; }
 
   private startEventPolling(): void {
     this.pollingInterval = setInterval(async () => {
-      if (!this._connected) return;
+      if (!this._connected) {return;}
       try {
         const response = await fetch(`${this.baseUrl}/events`);
         if (response.ok) {
@@ -140,12 +140,12 @@ export class AgentOSPythonClient {
   async call<T = unknown>(method: string, params: Record<string, unknown> = {}): Promise<T> {
     const request: AgentOSInteropRequest = { message_id: uuidv4(), message_type: 'request', source: 'learning_contracts', timestamp: new Date(), payload: {}, method, params, timeout_ms: this.requestTimeout };
     const response = await this.transport.send(request);
-    if (!response.success) throw new Error(response.error?.message ?? 'Request failed');
+    if (!response.success) {throw new Error(response.error?.message ?? 'Request failed');}
     return response.result as T;
   }
 
   onEvent(callback: (event: Record<string, unknown>) => void): () => void {
-    return this.transport.onEvent((message) => { if (message.message_type === 'event') callback(message.payload); });
+    return this.transport.onEvent((message) => { if (message.message_type === 'event') {callback(message.payload);} });
   }
 
   async getStatus(): Promise<AgentOSIntegrationStatus> {

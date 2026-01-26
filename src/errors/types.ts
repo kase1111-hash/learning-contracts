@@ -209,7 +209,11 @@ export class LearningContractsError extends Error {
     this.name = 'LearningContractsError';
     // Store cause for error chaining (ES2022+ has native support)
     if (options.cause) {
-      (this as unknown as { cause: Error }).cause = options.cause;
+      Object.defineProperty(this, 'cause', {
+        value: options.cause,
+        writable: true,
+        configurable: true,
+      });
     }
     this.code = code;
     this.category = category;
