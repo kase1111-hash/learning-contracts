@@ -232,19 +232,19 @@ export class MockBoundaryDaemonAdapter extends BaseBoundaryDaemonAdapter {
     this.currentMode = initialMode;
   }
 
-  async checkConnection(): Promise<DaemonConnectionStatus> {
+  checkConnection(): Promise<DaemonConnectionStatus> {
     this.connected = true;
     this.lastPing = new Date();
-    return {
+    return Promise.resolve({
       connected: true,
       version: '1.0.0-mock',
       endpoint: 'mock://boundary-daemon',
       last_ping: this.lastPing,
-    };
+    });
   }
 
-  async getStatus(): Promise<BoundaryStatus> {
-    return {
+  getStatus(): Promise<BoundaryStatus> {
+    return Promise.resolve({
       mode: this.currentMode,
       network_status: BOUNDARY_NETWORK_STATUS[this.currentMode],
       max_classification: BOUNDARY_CLASSIFICATION_CAPS[this.currentMode],
@@ -255,14 +255,14 @@ export class MockBoundaryDaemonAdapter extends BaseBoundaryDaemonAdapter {
       last_check: new Date(),
       in_lockdown: this.inLockdown,
       lockdown_reason: this.lockdownReason,
-    };
+    });
   }
 
-  async getCurrentMode(): Promise<DaemonBoundaryMode> {
-    return this.currentMode;
+  getCurrentMode(): Promise<DaemonBoundaryMode> {
+    return Promise.resolve(this.currentMode);
   }
 
-  async checkRecall(request: RecallGateRequest): Promise<RecallGateResult> {
+  checkRecall(request: RecallGateRequest): Promise<RecallGateResult> {
     const maxClass = BOUNDARY_CLASSIFICATION_CAPS[this.currentMode];
 
     // Lockdown blocks all recalls
@@ -274,12 +274,12 @@ export class MockBoundaryDaemonAdapter extends BaseBoundaryDaemonAdapter {
         reason: 'Lockdown active',
       });
 
-      return {
+      return Promise.resolve({
         allowed: false,
         current_mode: this.currentMode,
         max_class: -1,
         reason: 'Vault is in lockdown - all recalls blocked',
-      };
+      });
     }
 
     const allowed = request.memory_class <= maxClass;
@@ -292,40 +292,40 @@ export class MockBoundaryDaemonAdapter extends BaseBoundaryDaemonAdapter {
     });
 
     if (!allowed) {
-      return {
+      return Promise.resolve({
         allowed: false,
         current_mode: this.currentMode,
         max_class: maxClass,
         reason: `Memory class ${request.memory_class} exceeds maximum ${maxClass} for ${this.currentMode} mode`,
-      };
+      });
     }
 
-    return {
+    return Promise.resolve({
       allowed: true,
       current_mode: this.currentMode,
       max_class: maxClass,
-    };
+    });
   }
 
-  async checkTool(request: ToolGateRequest): Promise<ToolGateResult> {
+  checkTool(request: ToolGateRequest): Promise<ToolGateResult> {
     const networkStatus = BOUNDARY_NETWORK_STATUS[this.currentMode];
 
     // Check network requirement
     if (request.requires_network) {
       if (networkStatus === NetworkStatus.BLOCKED) {
-        return {
+        return Promise.resolve({
           allowed: false,
           current_mode: this.currentMode,
           reason: 'Network is blocked in lockdown mode',
-        };
+        });
       }
 
       if (networkStatus === NetworkStatus.OFFLINE) {
-        return {
+        return Promise.resolve({
           allowed: false,
           current_mode: this.currentMode,
           reason: `Tool '${request.tool_name}' requires network but current mode is offline`,
-        };
+        });
       }
     }
 
@@ -335,25 +335,25 @@ export class MockBoundaryDaemonAdapter extends BaseBoundaryDaemonAdapter {
       allowed: true,
     });
 
-    return {
+    return Promise.resolve({
       allowed: true,
       current_mode: this.currentMode,
-    };
+    });
   }
 
-  async requestModeTransition(request: ModeTransitionRequest): Promise<ModeTransitionResult> {
+  requestModeTransition(request: ModeTransitionRequest): Promise<ModeTransitionResult> {
     const previousMode = this.currentMode;
     const transitionId = `trans_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
     // Can't transition out of lockdown without override
     if (this.inLockdown && request.target_mode !== DaemonBoundaryMode.LOCKDOWN) {
-      return {
+      return Promise.resolve({
         success: false,
         previous_mode: previousMode,
         current_mode: this.currentMode,
         transition_id: transitionId,
         error: 'Cannot transition out of lockdown without override ceremony',
-      };
+      });
     }
 
     // Check if downgrade requires cooldown
@@ -381,7 +381,7 @@ export class MockBoundaryDaemonAdapter extends BaseBoundaryDaemonAdapter {
       // Downgrading requires cooldown for significant changes
       const requiresCooldown = targetIndex - currentIndex > 1;
       if (requiresCooldown && !request.override_token) {
-        return {
+        return Promise.resolve({
           success: false,
           previous_mode: previousMode,
           current_mode: this.currentMode,
@@ -389,7 +389,7 @@ export class MockBoundaryDaemonAdapter extends BaseBoundaryDaemonAdapter {
           error: 'Significant downgrade requires override token',
           requires_cooldown: true,
           cooldown_until: new Date(Date.now() + 300000), // 5 minutes
-        };
+        });
       }
 
       this.currentMode = request.target_mode;
@@ -406,35 +406,35 @@ export class MockBoundaryDaemonAdapter extends BaseBoundaryDaemonAdapter {
       this.notifyModeChange(previousMode, this.currentMode, request.reason);
     }
 
-    return {
+    return Promise.resolve({
       success: true,
       previous_mode: previousMode,
       current_mode: this.currentMode,
       transition_id: transitionId,
-    };
+    });
   }
 
-  async performOverrideCeremony(request: OverrideCeremonyRequest): Promise<OverrideCeremonyResult> {
+  performOverrideCeremony(request: OverrideCeremonyRequest): Promise<OverrideCeremonyResult> {
     const ceremonyId = `ceremony_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
     // Validate physical presence
     if (!request.physical_presence_verified) {
-      return {
+      return Promise.resolve({
         success: false,
         ceremony_id: ceremonyId,
         error: 'Physical presence verification required',
         logged: true,
-      };
+      });
     }
 
     // Validate confirmation code (in mock, just check it's not empty)
     if (!request.confirmation_code) {
-      return {
+      return Promise.resolve({
         success: false,
         ceremony_id: ceremonyId,
         error: 'Valid confirmation code required',
         logged: true,
-      };
+      });
     }
 
     const previousMode = this.currentMode;
@@ -458,12 +458,12 @@ export class MockBoundaryDaemonAdapter extends BaseBoundaryDaemonAdapter {
       this.notifyModeChange(previousMode, this.currentMode, `Override: ${request.reason}`);
     }
 
-    return {
+    return Promise.resolve({
       success: true,
       ceremony_id: ceremonyId,
       new_mode: this.currentMode,
       logged: true,
-    };
+    });
   }
 
   async triggerLockdown(reason: string, actor: string): Promise<BoundaryStatus> {
@@ -496,14 +496,14 @@ export class MockBoundaryDaemonAdapter extends BaseBoundaryDaemonAdapter {
     return this.getStatus();
   }
 
-  async getTripwireEvents(since?: Date): Promise<TripwireEvent[]> {
+  getTripwireEvents(since?: Date): Promise<TripwireEvent[]> {
     if (since) {
-      return this.tripwireEvents.filter(t => t.timestamp >= since);
+      return Promise.resolve(this.tripwireEvents.filter(t => t.timestamp >= since));
     }
-    return [...this.tripwireEvents];
+    return Promise.resolve([...this.tripwireEvents]);
   }
 
-  async getAuditLog(limit?: number, since?: Date): Promise<BoundaryAuditEntry[]> {
+  getAuditLog(limit?: number, since?: Date): Promise<BoundaryAuditEntry[]> {
     let entries = [...this.auditEntries];
 
     if (since) {
@@ -516,16 +516,16 @@ export class MockBoundaryDaemonAdapter extends BaseBoundaryDaemonAdapter {
       entries = entries.slice(0, limit);
     }
 
-    return entries;
+    return Promise.resolve(entries);
   }
 
-  async verifyAuditLog(): Promise<AuditVerificationResult> {
+  verifyAuditLog(): Promise<AuditVerificationResult> {
     // In mock, always valid
-    return {
+    return Promise.resolve({
       valid: true,
       entries_verified: this.auditEntries.length,
       verified_at: new Date(),
-    };
+    });
   }
 
   /**

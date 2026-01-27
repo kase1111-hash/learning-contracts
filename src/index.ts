@@ -48,6 +48,7 @@ export {
   MemoryReference,
   MemoryStatus,
   ForgettingResult,
+  generatePurgeToken,
 } from './memory/forgetting';
 
 // Plain-Language Interface

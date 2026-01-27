@@ -87,52 +87,52 @@ export class AgentOSConsentBridge {
     }
   }
 
-  async revokeConsent(aosConsentId: string, reason: string, revokedBy: string): Promise<boolean> {
+  revokeConsent(aosConsentId: string, reason: string, revokedBy: string): Promise<boolean> {
     const contractId = this.consentToContract.get(aosConsentId);
-    if (!contractId) {return false;}
+    if (!contractId) {return Promise.resolve(false);}
 
     const record = this.consentRecords.get(aosConsentId);
-    if (!record) {return false;}
+    if (!record) {return Promise.resolve(false);}
 
     this.lcs.revokeContract(contractId, revokedBy, reason);
     record.active = false;
     this.consentRecords.set(aosConsentId, record);
     this.config.onConsentChange?.(record, 'revoked');
-    return true;
+    return Promise.resolve(true);
   }
 
-  async checkAlignment(contractId?: string, aosConsentId?: string): Promise<ConsentAlignmentResult> {
+  checkAlignment(contractId?: string, aosConsentId?: string): Promise<ConsentAlignmentResult> {
     if (contractId) {
       const contract = this.lcs.getContract(contractId);
-      if (!contract) {return { aligned: false, lc_contract_id: contractId, discrepancies: ['Contract not found'], recommended_action: 'none' };}
+      if (!contract) {return Promise.resolve({ aligned: false, lc_contract_id: contractId, discrepancies: ['Contract not found'], recommended_action: 'none' });}
 
       const consentId = this.contractToConsent.get(contractId);
-      if (!consentId) {return { aligned: false, lc_contract_id: contractId, discrepancies: ['No Agent-OS consent associated'], recommended_action: 'none' };}
+      if (!consentId) {return Promise.resolve({ aligned: false, lc_contract_id: contractId, discrepancies: ['No Agent-OS consent associated'], recommended_action: 'none' });}
 
       const record = this.consentRecords.get(consentId);
-      if (!record) {return { aligned: false, lc_contract_id: contractId, aos_consent_id: consentId, discrepancies: ['Consent record not found'], recommended_action: 'none' };}
+      if (!record) {return Promise.resolve({ aligned: false, lc_contract_id: contractId, aos_consent_id: consentId, discrepancies: ['Consent record not found'], recommended_action: 'none' });}
 
       const discrepancies: string[] = [];
       if (contract.state !== ContractState.ACTIVE && record.active) {discrepancies.push('Contract is not active but consent is still active');}
       if (contract.state === ContractState.ACTIVE && !record.active) {discrepancies.push('Contract is active but consent has been revoked');}
 
-      return { aligned: discrepancies.length === 0, lc_contract_id: contractId, aos_consent_id: consentId, discrepancies: discrepancies.length > 0 ? discrepancies : undefined, recommended_action: discrepancies.length > 0 ? 'update_contract' : 'none' };
+      return Promise.resolve({ aligned: discrepancies.length === 0, lc_contract_id: contractId, aos_consent_id: consentId, discrepancies: discrepancies.length > 0 ? discrepancies : undefined, recommended_action: discrepancies.length > 0 ? 'update_contract' : 'none' });
     }
 
     if (aosConsentId) {
       const record = this.consentRecords.get(aosConsentId);
-      if (!record) {return { aligned: false, aos_consent_id: aosConsentId, discrepancies: ['Consent record not found'], recommended_action: 'create_contract' };}
+      if (!record) {return Promise.resolve({ aligned: false, aos_consent_id: aosConsentId, discrepancies: ['Consent record not found'], recommended_action: 'create_contract' });}
 
       const contract = this.lcs.getContract(record.contract_id);
-      if (!contract) {return { aligned: false, aos_consent_id: aosConsentId, lc_contract_id: record.contract_id, discrepancies: ['Associated contract not found'], recommended_action: 'create_contract' };}
+      if (!contract) {return Promise.resolve({ aligned: false, aos_consent_id: aosConsentId, lc_contract_id: record.contract_id, discrepancies: ['Associated contract not found'], recommended_action: 'create_contract' });}
 
-      return { aligned: record.active && contract.state === ContractState.ACTIVE, lc_contract_id: record.contract_id, aos_consent_id: aosConsentId, recommended_action: 'none' };
+      return Promise.resolve({ aligned: record.active && contract.state === ContractState.ACTIVE, lc_contract_id: record.contract_id, aos_consent_id: aosConsentId, recommended_action: 'none' });
     }
 
-    return { aligned: false, discrepancies: ['No contract or consent ID provided'], recommended_action: 'none' };
+    return Promise.resolve({ aligned: false, discrepancies: ['No contract or consent ID provided'], recommended_action: 'none' });
   }
 
-  async syncAll(): Promise<{ synced: number; revoked: number; errors: string[] }> {
+  syncAll(): Promise<{ synced: number; revoked: number; errors: string[] }> {
     let synced = 0;
     let revoked = 0;
     const errors: string[] = [];
@@ -153,7 +153,7 @@ export class AgentOSConsentBridge {
         errors.push(`Failed to sync consent ${consentId}: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     }
-    return { synced, revoked, errors };
+    return Promise.resolve({ synced, revoked, errors });
   }
 
   getConsentRecord(aosConsentId: string): ConsentRecord | undefined { return this.consentRecords.get(aosConsentId); }
@@ -182,7 +182,7 @@ export class AgentOSConsentBridge {
     return contract.scope.domains.some((d: string) => d === request.data_type || d === '*' || request.data_type.startsWith(d));
   }
 
-  private async createContractFromConsent(request: AgentOSConsentRequest): Promise<LearningContract> {
+  private createContractFromConsent(request: AgentOSConsentRequest): Promise<LearningContract> {
     const contractType = MEMORY_CLASS_TO_CONTRACT_TYPE[request.memory_class];
     const domains = this.config.default_domains ?? [request.data_type];
     const scope = { domains };
@@ -207,7 +207,7 @@ export class AgentOSConsentBridge {
 
     this.lcs.submitForReview(contract.contract_id, request.user_id);
     this.lcs.activateContract(contract.contract_id, request.user_id);
-    return this.lcs.getContract(contract.contract_id)!;
+    return Promise.resolve(this.lcs.getContract(contract.contract_id)!);
   }
 
   private createConsentRecord(contractId: string, request: AgentOSConsentRequest, active: boolean): ConsentRecord {

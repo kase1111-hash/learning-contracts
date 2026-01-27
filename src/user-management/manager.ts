@@ -4,6 +4,7 @@
  * Manages multiple concurrent users with one instance per user enforcement.
  */
 
+import { randomUUID } from 'crypto';
 import {
   User,
   UserConnection,
@@ -22,10 +23,10 @@ import {
 } from './types';
 
 /**
- * Generates a unique ID
+ * Generates a unique ID using cryptographically secure random
  */
 function generateId(): string {
-  return `conn-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  return `conn-${randomUUID()}`;
 }
 
 /**

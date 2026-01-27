@@ -38,25 +38,25 @@ export class MockAgentOSKernelClient implements AgentOSKernelClient {
   private eventListeners: ((event: KernelEvent) => void)[] = [];
   private hookResults: AgentOSHookResult[] = [];
 
-  async connect(): Promise<boolean> { return true; }
-  async disconnect(): Promise<void> { }
+  connect(): Promise<boolean> { return Promise.resolve(true); }
+  disconnect(): Promise<void> { return Promise.resolve(); }
 
-  async registerHook(eventTypes: KernelEventType[], priority: number, handlerName: string): Promise<string> {
+  registerHook(eventTypes: KernelEventType[], priority: number, handlerName: string): Promise<string> {
     const hookId = `hook_${uuidv4()}`;
     this.hooks.set(hookId, { hook_id: hookId, event_types: eventTypes, priority, handler_name: handlerName, registered_at: new Date() });
-    return hookId;
+    return Promise.resolve(hookId);
   }
 
-  async unregisterHook(hookId: string): Promise<boolean> { return this.hooks.delete(hookId); }
+  unregisterHook(hookId: string): Promise<boolean> { return Promise.resolve(this.hooks.delete(hookId)); }
 
   onKernelEvent(callback: (event: KernelEvent) => void): () => void {
     this.eventListeners.push(callback);
     return () => { const i = this.eventListeners.indexOf(callback); if (i > -1) {this.eventListeners.splice(i, 1);} };
   }
 
-  async reportHookResult(result: AgentOSHookResult): Promise<void> { this.hookResults.push(result); }
-  async getVersion(): Promise<string> { return '1.0.0-mock'; }
-  async getRegisteredHooks(): Promise<AgentOSHookRegistration[]> { return Array.from(this.hooks.values()); }
+  reportHookResult(result: AgentOSHookResult): Promise<void> { this.hookResults.push(result); return Promise.resolve(); }
+  getVersion(): Promise<string> { return Promise.resolve('1.0.0-mock'); }
+  getRegisteredHooks(): Promise<AgentOSHookRegistration[]> { return Promise.resolve(Array.from(this.hooks.values())); }
 
   emitEvent(event: KernelEvent): void {
     for (const listener of this.eventListeners) { try { listener(event); } catch { /* ignore */ } }
@@ -85,7 +85,7 @@ export class AgentOSKernelHooks {
   async initialize(): Promise<boolean> {
     const connected = await this.client.connect();
     if (!connected) {return false;}
-    this.unsubscribeKernelEvents = this.client.onKernelEvent((event) => { this.handleKernelEvent(event); });
+    this.unsubscribeKernelEvents = this.client.onKernelEvent((event) => { void this.handleKernelEvent(event); });
     const eventTypes = Array.from(this.handlers.keys());
     const hookId = await this.client.registerHook(eventTypes, 100, 'learning_contracts_enforcement');
     this.registeredHooks.set(hookId, { hook_id: hookId, event_types: eventTypes, priority: 100, handler_name: 'learning_contracts_enforcement', registered_at: new Date() });
@@ -123,61 +123,61 @@ export class AgentOSKernelHooks {
   }
 
   private registerDefaultHandlers(): void {
-    this.handlers.set(KernelEventType.MEMORY_ACCESS, async (event) => this.handleMemoryAccess(event));
-    this.handlers.set(KernelEventType.MEMORY_WRITE, async (event) => this.handleMemoryWrite(event));
-    this.handlers.set(KernelEventType.MEMORY_DELETE, async (event) => this.handleMemoryDelete(event));
-    this.handlers.set(KernelEventType.POLICY_CHECK, async (event) => this.handlePolicyCheck(event));
-    this.handlers.set(KernelEventType.BOUNDARY_CHECK, async (event) => this.handleBoundaryCheck(event));
+    this.handlers.set(KernelEventType.MEMORY_ACCESS, (event) => this.handleMemoryAccess(event));
+    this.handlers.set(KernelEventType.MEMORY_WRITE, (event) => this.handleMemoryWrite(event));
+    this.handlers.set(KernelEventType.MEMORY_DELETE, (event) => this.handleMemoryDelete(event));
+    this.handlers.set(KernelEventType.POLICY_CHECK, (event) => this.handlePolicyCheck(event));
+    this.handlers.set(KernelEventType.BOUNDARY_CHECK, (event) => this.handleBoundaryCheck(event));
   }
 
-  private async handleMemoryAccess(event: KernelEvent): Promise<AgentOSHookResult> {
+  private handleMemoryAccess(event: KernelEvent): Promise<AgentOSHookResult> {
     const domain = event.payload.domain as string | undefined;
     const contracts = this.lcs.getActiveContracts();
     const applicable = contracts.find((c: LearningContract) => c.scope.domains.includes(domain ?? ''));
     if (!applicable) {
-      return { hook_id: 'memory_access', event_id: event.event_id, allowed: false, reason: 'No active contract permits this access', audit_logged: true };
+      return Promise.resolve({ hook_id: 'memory_access', event_id: event.event_id, allowed: false, reason: 'No active contract permits this access', audit_logged: true });
     }
-    return { hook_id: 'memory_access', event_id: event.event_id, allowed: true, audit_logged: true };
+    return Promise.resolve({ hook_id: 'memory_access', event_id: event.event_id, allowed: true, audit_logged: true });
   }
 
-  private async handleMemoryWrite(event: KernelEvent): Promise<AgentOSHookResult> {
+  private handleMemoryWrite(event: KernelEvent): Promise<AgentOSHookResult> {
     const memoryClass = event.payload.memory_class as AgentOSMemoryClass;
     const domain = event.payload.domain as string | undefined;
     const classification = MEMORY_CLASS_TO_CLASSIFICATION[memoryClass] ?? 0;
     const contracts = this.lcs.getActiveContracts();
     const applicable = contracts.find((c: LearningContract) => c.scope.domains.includes(domain ?? '') && c.memory_permissions.classification_cap >= classification);
     if (!applicable) {
-      return { hook_id: 'memory_write', event_id: event.event_id, allowed: false, reason: 'No active contract permits this memory operation', audit_logged: true };
+      return Promise.resolve({ hook_id: 'memory_write', event_id: event.event_id, allowed: false, reason: 'No active contract permits this memory operation', audit_logged: true });
     }
-    return { hook_id: 'memory_write', event_id: event.event_id, allowed: true, modifications: { contract_id: applicable.contract_id }, audit_logged: true };
+    return Promise.resolve({ hook_id: 'memory_write', event_id: event.event_id, allowed: true, modifications: { contract_id: applicable.contract_id }, audit_logged: true });
   }
 
-  private async handleMemoryDelete(event: KernelEvent): Promise<AgentOSHookResult> {
-    return { hook_id: 'memory_delete', event_id: event.event_id, allowed: true, reason: 'Memory deletion permitted', audit_logged: true };
+  private handleMemoryDelete(event: KernelEvent): Promise<AgentOSHookResult> {
+    return Promise.resolve({ hook_id: 'memory_delete', event_id: event.event_id, allowed: true, reason: 'Memory deletion permitted', audit_logged: true });
   }
 
-  private async handlePolicyCheck(event: KernelEvent): Promise<AgentOSHookResult> {
+  private handlePolicyCheck(event: KernelEvent): Promise<AgentOSHookResult> {
     const policyType = event.payload.policy_type as string;
     const domain = event.payload.domain as string | undefined;
     if (policyType === 'learning' || policyType === 'abstraction') {
       const contracts = this.lcs.getActiveContracts();
       const applicable = contracts.find((c: LearningContract) => c.scope.domains.includes(domain ?? ''));
       if (!applicable) {
-        return { hook_id: 'policy_check', event_id: event.event_id, allowed: false, reason: 'No active contract permits this learning operation', audit_logged: true };
+        return Promise.resolve({ hook_id: 'policy_check', event_id: event.event_id, allowed: false, reason: 'No active contract permits this learning operation', audit_logged: true });
       }
     }
-    return { hook_id: 'policy_check', event_id: event.event_id, allowed: true, reason: 'Policy check passed', audit_logged: true };
+    return Promise.resolve({ hook_id: 'policy_check', event_id: event.event_id, allowed: true, reason: 'Policy check passed', audit_logged: true });
   }
 
-  private async handleBoundaryCheck(event: KernelEvent): Promise<AgentOSHookResult> {
+  private handleBoundaryCheck(event: KernelEvent): Promise<AgentOSHookResult> {
     const classification = event.payload.classification as number;
     const boundaryMode = event.payload.boundary_mode as string;
     const lcMode = this.mapBoundaryMode(boundaryMode);
     const maxClassification = BOUNDARY_CLASSIFICATION_CAPS[lcMode];
     if (classification > maxClassification) {
-      return { hook_id: 'boundary_check', event_id: event.event_id, allowed: false, reason: `Classification ${classification} exceeds maximum ${maxClassification} for ${boundaryMode} mode`, audit_logged: true };
+      return Promise.resolve({ hook_id: 'boundary_check', event_id: event.event_id, allowed: false, reason: `Classification ${classification} exceeds maximum ${maxClassification} for ${boundaryMode} mode`, audit_logged: true });
     }
-    return { hook_id: 'boundary_check', event_id: event.event_id, allowed: true, reason: 'Boundary check passed', audit_logged: true };
+    return Promise.resolve({ hook_id: 'boundary_check', event_id: event.event_id, allowed: true, reason: 'Boundary check passed', audit_logged: true });
   }
 
   private mapBoundaryMode(aosMode: string): DaemonBoundaryMode {

@@ -5,8 +5,15 @@
  * Revocation does NOT delete audit traces.
  */
 
+import { createHmac, randomBytes, timingSafeEqual } from 'crypto';
 import { LearningContract, ContractState } from '../types';
 import { AuditLogger } from '../audit/logger';
+
+/**
+ * Secret key for token signing (in production, this should be from secure config)
+ */
+const TOKEN_SECRET = process.env.PURGE_TOKEN_SECRET ?? 'learning-contracts-purge-token-secret';
+const TOKEN_VALIDITY_MS = 300000; // 5 minutes
 
 /**
  * Memory status after contract revocation/expiration
@@ -38,6 +45,64 @@ export interface ForgettingResult {
   affected_derived: string[];
   status: MemoryStatus;
   audit_preserved: boolean;
+}
+
+/**
+ * Generates a secure purge confirmation token
+ * Token format: nonce.timestamp.signature
+ */
+export function generatePurgeToken(contractId: string, owner: string): string {
+  const nonce = randomBytes(16).toString('hex');
+  const timestamp = Date.now().toString();
+  const data = `${contractId}:${owner}:${nonce}:${timestamp}`;
+  const signature = createHmac('sha256', TOKEN_SECRET).update(data).digest('hex');
+  return `${nonce}.${timestamp}.${signature}`;
+}
+
+/**
+ * Validates a purge confirmation token
+ */
+function validatePurgeToken(
+  token: string,
+  contractId: string,
+  owner: string,
+  timestamp: Date
+): { valid: boolean; error?: string } {
+  const parts = token.split('.');
+  if (parts.length !== 3) {
+    return { valid: false, error: 'Invalid token format' };
+  }
+
+  const [nonce, tokenTimestamp, providedSignature] = parts;
+  const tokenTime = parseInt(tokenTimestamp, 10);
+
+  // Check if token has expired
+  const now = Date.now();
+  if (now - tokenTime > TOKEN_VALIDITY_MS) {
+    return { valid: false, error: 'Token has expired' };
+  }
+
+  // Check if confirmation timestamp is after token creation
+  if (timestamp.getTime() < tokenTime) {
+    return { valid: false, error: 'Confirmation timestamp precedes token creation' };
+  }
+
+  // Verify signature using constant-time comparison
+  const data = `${contractId}:${owner}:${nonce}:${tokenTimestamp}`;
+  const expectedSignature = createHmac('sha256', TOKEN_SECRET).update(data).digest('hex');
+
+  const providedBuffer = Buffer.from(providedSignature, 'hex');
+  const expectedBuffer = Buffer.from(expectedSignature, 'hex');
+
+  if (providedBuffer.length !== expectedBuffer.length) {
+    return { valid: false, error: 'Invalid token signature' };
+  }
+
+  if (!timingSafeEqual(providedBuffer, expectedBuffer)) {
+    return { valid: false, error: 'Invalid token signature' };
+  }
+
+  return { valid: true };
 }
 
 export class MemoryForgetting {
@@ -123,9 +188,20 @@ export class MemoryForgetting {
       timestamp: Date;
     }
   ): ForgettingResult {
-    // Verify owner confirmation (in real implementation, would validate token)
+    // Verify owner identity
     if (ownerConfirmation.owner !== contract.created_by) {
       throw new Error('Only contract owner can perform deep purge');
+    }
+
+    // Validate the confirmation token cryptographically
+    const tokenValidation = validatePurgeToken(
+      ownerConfirmation.confirmation_token,
+      contract.contract_id,
+      ownerConfirmation.owner,
+      ownerConfirmation.timestamp
+    );
+    if (!tokenValidation.valid) {
+      throw new Error(`Invalid purge token: ${tokenValidation.error}`);
     }
 
     // Find all memories to purge

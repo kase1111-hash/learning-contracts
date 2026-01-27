@@ -84,67 +84,68 @@ export class MockAgentOSBoundaryClient implements AgentOSBoundaryClient {
   private eventListeners: ((event: { type: string; data: Record<string, unknown> }) => void)[] = [];
   private entryCounter = 0;
 
-  async connect(): Promise<boolean> {
+  connect(): Promise<boolean> {
     this.connected = true;
-    return true;
+    return Promise.resolve(true);
   }
 
-  async disconnect(): Promise<void> {
+  disconnect(): Promise<void> {
     this.connected = false;
+    return Promise.resolve();
   }
 
   isConnected(): boolean {
     return this.connected;
   }
 
-  async getSecurityStatus(): Promise<AgentOSBoundaryStatus> {
+  getSecurityStatus(): Promise<AgentOSBoundaryStatus> {
     const lcMode = AOS_MODE_TO_LC_MODE[this.currentMode] ?? DaemonBoundaryMode.RESTRICTED;
-    return {
+    return Promise.resolve({
       mode_name: this.currentMode,
       lc_mode: lcMode,
       network_available: this.networkAllowed,
       max_classification: BOUNDARY_CLASSIFICATION_CAPS[lcMode],
       in_lockdown: this.inLockdown,
-    };
+    });
   }
 
-  async checkAuthority(_operation: string, requiredTier: AuthorityTier): Promise<boolean> {
-    return requiredTier >= AuthorityTier.SYSTEM;
+  checkAuthority(_operation: string, requiredTier: AuthorityTier): Promise<boolean> {
+    return Promise.resolve(requiredTier >= AuthorityTier.SYSTEM);
   }
 
-  async requestModeChange(targetMode: string, reason: string, requester: string): Promise<boolean> {
+  requestModeChange(targetMode: string, reason: string, requester: string): Promise<boolean> {
     const previousMode = this.currentMode;
     this.currentMode = targetMode;
     this.inLockdown = targetMode === 'lockdown';
     this.networkAllowed = !['lockdown', 'critical', 'secure'].includes(targetMode);
     this.addAuditEntry('mode_change', requester, { previous_mode: previousMode, new_mode: targetMode, reason });
     this.emitEvent('mode_change', { previous_mode: previousMode, new_mode: targetMode, reason });
-    return true;
+    return Promise.resolve(true);
   }
 
-  async triggerLockdown(reason: string, actor: string): Promise<boolean> {
+  triggerLockdown(reason: string, actor: string): Promise<boolean> {
     return this.requestModeChange('lockdown', reason, actor);
   }
 
-  async performOverride(_operator: string, confirmationCode: string, _reason: string): Promise<boolean> {
-    if (!confirmationCode) {return false;}
+  performOverride(_operator: string, confirmationCode: string, _reason: string): Promise<boolean> {
+    if (!confirmationCode) {return Promise.resolve(false);}
     this.inLockdown = false;
     this.currentMode = 'standard';
     this.networkAllowed = true;
-    return true;
+    return Promise.resolve(true);
   }
 
-  async getAuditLog(limit?: number): Promise<BoundaryAuditEntry[]> {
+  getAuditLog(limit?: number): Promise<BoundaryAuditEntry[]> {
     const entries = [...this.auditLog].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
-    return limit ? entries.slice(0, limit) : entries;
+    return Promise.resolve(limit ? entries.slice(0, limit) : entries);
   }
 
-  async isNetworkAllowed(): Promise<boolean> {
-    return this.networkAllowed;
+  isNetworkAllowed(): Promise<boolean> {
+    return Promise.resolve(this.networkAllowed);
   }
 
-  async getVersion(): Promise<string> {
-    return '1.0.0-mock';
+  getVersion(): Promise<string> {
+    return Promise.resolve('1.0.0-mock');
   }
 
   onSecurityEvent(callback: (event: { type: string; data: Record<string, unknown> }) => void): () => void {
@@ -245,16 +246,16 @@ export class AgentOSBoundaryAdapter extends BaseBoundaryDaemonAdapter {
     return this.currentMode;
   }
 
-  async checkRecall(request: RecallGateRequest): Promise<RecallGateResult> {
+  checkRecall(request: RecallGateRequest): Promise<RecallGateResult> {
     const maxClass = BOUNDARY_CLASSIFICATION_CAPS[this.currentMode];
     if (this.inLockdown) {
-      return { allowed: false, current_mode: this.currentMode, max_class: -1, reason: 'Agent-OS is in lockdown - all recalls blocked' };
+      return Promise.resolve({ allowed: false, current_mode: this.currentMode, max_class: -1, reason: 'Agent-OS is in lockdown - all recalls blocked' });
     }
     const allowed = request.memory_class <= maxClass;
     if (!allowed) {
-      return { allowed: false, current_mode: this.currentMode, max_class: maxClass, reason: `Memory class ${request.memory_class} exceeds maximum ${maxClass} for ${this.currentMode} mode` };
+      return Promise.resolve({ allowed: false, current_mode: this.currentMode, max_class: maxClass, reason: `Memory class ${request.memory_class} exceeds maximum ${maxClass} for ${this.currentMode} mode` });
     }
-    return { allowed: true, current_mode: this.currentMode, max_class: maxClass };
+    return Promise.resolve({ allowed: true, current_mode: this.currentMode, max_class: maxClass });
   }
 
   async checkTool(request: ToolGateRequest): Promise<ToolGateResult> {
@@ -325,8 +326,8 @@ export class AgentOSBoundaryAdapter extends BaseBoundaryDaemonAdapter {
     return this.getStatus();
   }
 
-  async getTripwireEvents(since?: Date): Promise<TripwireEvent[]> {
-    return since ? this.tripwireEvents.filter((t) => t.timestamp >= since) : [...this.tripwireEvents];
+  getTripwireEvents(since?: Date): Promise<TripwireEvent[]> {
+    return Promise.resolve(since ? this.tripwireEvents.filter((t) => t.timestamp >= since) : [...this.tripwireEvents]);
   }
 
   async getAuditLog(limit?: number, since?: Date): Promise<BoundaryAuditEntry[]> {
