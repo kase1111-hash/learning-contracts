@@ -63,20 +63,21 @@ export class MockAgentOSMemoryClient implements AgentOSMemoryClient {
   private consents: Map<string, AgentOSConsentResponse> = new Map();
   private inLockdown = false;
 
-  async connect(): Promise<boolean> {
+  connect(): Promise<boolean> {
     this.connected = true;
-    return true;
+    return Promise.resolve(true);
   }
 
-  async disconnect(): Promise<void> {
+  disconnect(): Promise<void> {
     this.connected = false;
+    return Promise.resolve();
   }
 
   isConnected(): boolean {
     return this.connected;
   }
 
-  async requestConsent(request: AgentOSConsentRequest): Promise<AgentOSConsentResponse> {
+  requestConsent(request: AgentOSConsentRequest): Promise<AgentOSConsentResponse> {
     const response: AgentOSConsentResponse = {
       request_id: request.request_id,
       granted: true,
@@ -84,10 +85,10 @@ export class MockAgentOSMemoryClient implements AgentOSMemoryClient {
       expiry: new Date(Date.now() + 86400000),
     };
     this.consents.set(request.request_id, response);
-    return response;
+    return Promise.resolve(response);
   }
 
-  async store(operation: AgentOSMemoryOperation, content: Uint8Array): Promise<string> {
+  store(operation: AgentOSMemoryOperation, content: Uint8Array): Promise<string> {
     const key = operation.memory_key ?? `aos_mem_${uuidv4()}`;
     this.memories.set(key, {
       content,
@@ -98,19 +99,19 @@ export class MockAgentOSMemoryClient implements AgentOSMemoryClient {
         stored_at: new Date().toISOString(),
       },
     });
-    return key;
+    return Promise.resolve(key);
   }
 
-  async recall(memoryKey: string): Promise<Uint8Array | null> {
+  recall(memoryKey: string): Promise<Uint8Array | null> {
     const memory = this.memories.get(memoryKey);
-    return memory?.content ?? null;
+    return Promise.resolve(memory?.content ?? null);
   }
 
-  async delete(memoryKey: string): Promise<boolean> {
-    return this.memories.delete(memoryKey);
+  delete(memoryKey: string): Promise<boolean> {
+    return Promise.resolve(this.memories.delete(memoryKey));
   }
 
-  async query(filters: Record<string, unknown>): Promise<string[]> {
+  query(filters: Record<string, unknown>): Promise<string[]> {
     let keys = Array.from(this.memories.keys());
     if (filters.memory_class) {
       keys = keys.filter((key) => {
@@ -118,19 +119,19 @@ export class MockAgentOSMemoryClient implements AgentOSMemoryClient {
         return meta?.memory_class === filters.memory_class;
       });
     }
-    return keys;
+    return Promise.resolve(keys);
   }
 
-  async getMetadata(memoryKey: string): Promise<Record<string, unknown> | null> {
-    return this.memories.get(memoryKey)?.metadata ?? null;
+  getMetadata(memoryKey: string): Promise<Record<string, unknown> | null> {
+    return Promise.resolve(this.memories.get(memoryKey)?.metadata ?? null);
   }
 
-  async isInLockdown(): Promise<boolean> {
-    return this.inLockdown;
+  isInLockdown(): Promise<boolean> {
+    return Promise.resolve(this.inLockdown);
   }
 
-  async getVersion(): Promise<string> {
-    return '1.0.0-mock';
+  getVersion(): Promise<string> {
+    return Promise.resolve('1.0.0-mock');
   }
 
   setLockdown(locked: boolean): void {
@@ -144,8 +145,8 @@ export class MockAgentOSMemoryClient implements AgentOSMemoryClient {
 }
 
 function classificationToMemoryClass(classification: ClassificationLevel): AgentOSMemoryClass {
-  if (classification <= 0) {return AgentOSMemoryClass.EPHEMERAL;}
-  if (classification <= 2) {return AgentOSMemoryClass.WORKING;}
+  if (classification <= (0 as ClassificationLevel)) {return AgentOSMemoryClass.EPHEMERAL;}
+  if (classification <= (2 as ClassificationLevel)) {return AgentOSMemoryClass.WORKING;}
   return AgentOSMemoryClass.LONG_TERM;
 }
 
@@ -311,19 +312,19 @@ export class AgentOSMemoryAdapter extends BaseMemoryVaultAdapter {
     return info;
   }
 
-  async getTombstoneInfo(memory_id: string): Promise<TombstoneInfo | null> {
+  getTombstoneInfo(memory_id: string): Promise<TombstoneInfo | null> {
     this.recordActivity();
-    return this.tombstones.get(memory_id) ?? null;
+    return Promise.resolve(this.tombstones.get(memory_id) ?? null);
   }
 
-  async listTombstones(): Promise<TombstoneInfo[]> {
+  listTombstones(): Promise<TombstoneInfo[]> {
     this.recordActivity();
-    return Array.from(this.tombstones.values());
+    return Promise.resolve(Array.from(this.tombstones.values()));
   }
 
-  async verifyIntegrity(): Promise<IntegrityResult> {
+  verifyIntegrity(): Promise<IntegrityResult> {
     this.recordActivity();
-    return { valid: true, merkle_root: 'aos_integrity_verified', invalid_memories: [], verified_at: new Date() };
+    return Promise.resolve({ valid: true, merkle_root: 'aos_integrity_verified', invalid_memories: [], verified_at: new Date() });
   }
 
   async getLockdownStatus(): Promise<LockdownStatus> {
@@ -332,60 +333,60 @@ export class AgentOSMemoryAdapter extends BaseMemoryVaultAdapter {
     return { is_locked: inLockdown, reason: inLockdown ? 'Agent-OS lockdown active' : undefined };
   }
 
-  async lockdown(reason: string): Promise<LockdownStatus> {
+  lockdown(reason: string): Promise<LockdownStatus> {
     this.recordActivity();
-    return { is_locked: true, locked_at: new Date(), reason };
+    return Promise.resolve({ is_locked: true, locked_at: new Date(), reason });
   }
 
-  async unlock(): Promise<LockdownStatus> {
+  unlock(): Promise<LockdownStatus> {
     this.recordActivity();
-    return { is_locked: false };
+    return Promise.resolve({ is_locked: false });
   }
 
-  async createBackup(options: VaultBackupOptions): Promise<BackupMetadata> {
+  createBackup(options: VaultBackupOptions): Promise<BackupMetadata> {
     this.recordActivity();
-    return { file_path: options.file_path, incremental: options.incremental ?? false, description: options.description ?? 'Agent-OS memory backup', created_at: new Date(), memory_count: this.memoryMappings.size };
+    return Promise.resolve({ file_path: options.file_path, incremental: options.incremental ?? false, description: options.description ?? 'Agent-OS memory backup', created_at: new Date(), memory_count: this.memoryMappings.size });
   }
 
-  async listBackups(): Promise<BackupMetadata[]> {
+  listBackups(): Promise<BackupMetadata[]> {
     this.recordActivity();
-    return [];
+    return Promise.resolve([]);
   }
 
-  async getEncryptionProfile(profile_id: string): Promise<EncryptionProfile | null> {
+  getEncryptionProfile(profile_id: string): Promise<EncryptionProfile | null> {
     this.recordActivity();
     if (profile_id === 'default' || profile_id === 'agent-os') {
-      return { profile_id, cipher: 'AES-256-GCM', key_source: 'HumanPassphrase' as never, rotation_policy: 'manual', exportable: false };
+      return Promise.resolve({ profile_id, cipher: 'AES-256-GCM', key_source: 'HumanPassphrase' as never, rotation_policy: 'manual', exportable: false });
     }
-    return null;
+    return Promise.resolve(null);
   }
 
-  async listEncryptionProfiles(): Promise<EncryptionProfile[]> {
+  listEncryptionProfiles(): Promise<EncryptionProfile[]> {
     this.recordActivity();
-    return [{ profile_id: 'agent-os', cipher: 'AES-256-GCM', key_source: 'HumanPassphrase' as never, rotation_policy: 'manual', exportable: false }];
+    return Promise.resolve([{ profile_id: 'agent-os', cipher: 'AES-256-GCM', key_source: 'HumanPassphrase' as never, rotation_policy: 'manual', exportable: false }]);
   }
 
-  async getPendingRecallRequests(): Promise<RecallRequest[]> {
+  getPendingRecallRequests(): Promise<RecallRequest[]> {
     this.recordActivity();
-    return Array.from(this.pendingRequests.values()).filter((r) => !r.approved);
+    return Promise.resolve(Array.from(this.pendingRequests.values()).filter((r) => !r.approved));
   }
 
-  async approveRecallRequest(request_id: string, approver: string): Promise<RecallRequest> {
+  approveRecallRequest(request_id: string, approver: string): Promise<RecallRequest> {
     const request = this.pendingRequests.get(request_id);
     if (!request) {throw new Error('Request not found');}
     request.approved = true;
     request.approved_at = new Date();
     request.approved_by = approver;
     this.recordActivity();
-    return request;
+    return Promise.resolve(request);
   }
 
-  async denyRecallRequest(request_id: string): Promise<RecallRequest> {
+  denyRecallRequest(request_id: string): Promise<RecallRequest> {
     const request = this.pendingRequests.get(request_id);
     if (!request) {throw new Error('Request not found');}
     this.pendingRequests.delete(request_id);
     this.recordActivity();
-    return request;
+    return Promise.resolve(request);
   }
 
   getAgentOSMemoryClass(memory_id: string): AgentOSMemoryClass | null {
@@ -401,8 +402,8 @@ export class AgentOSMemoryAdapter extends BaseMemoryVaultAdapter {
    * Cryptographic hash function using SHA-256
    * Provides secure content verification with collision resistance
    */
-  private async hashContent(content: Uint8Array): Promise<string> {
-    return createHash('sha256').update(content).digest('hex');
+  private hashContent(content: Uint8Array): Promise<string> {
+    return Promise.resolve(createHash('sha256').update(content).digest('hex'));
   }
 
   clear(): void {

@@ -274,14 +274,14 @@ export class MockMemoryVaultAdapter extends BaseMemoryVaultAdapter {
     }
   }
 
-  async checkConnection(): Promise<VaultConnectionStatus> {
+  checkConnection(): Promise<VaultConnectionStatus> {
     this.connected = true;
     this.recordActivity();
-    return {
+    return Promise.resolve({
       connected: true,
       version: '1.0.0-mock',
       last_activity: this.lastActivity,
-    };
+    });
   }
 
   async storeMemory(options: VaultStoreOptions): Promise<StoreResult> {
@@ -344,40 +344,40 @@ export class MockMemoryVaultAdapter extends BaseMemoryVaultAdapter {
     };
   }
 
-  async recallMemory(options: VaultRecallOptions): Promise<RecallResult> {
+  recallMemory(options: VaultRecallOptions): Promise<RecallResult> {
     if (this.isLocked) {
-      return {
+      return Promise.resolve({
         success: false,
         error: 'Vault is locked',
-      };
+      });
     }
 
     const memory = this.memories.get(options.memory_id);
     if (!memory) {
-      return {
+      return Promise.resolve({
         success: false,
         error: 'Memory not found',
-      };
+      });
     }
 
     if (this.tombstones.has(options.memory_id)) {
-      return {
+      return Promise.resolve({
         success: false,
         error: 'Memory has been tombstoned',
         denial_reason: 'Memory is no longer accessible',
-      };
+      });
     }
 
     this.recordActivity();
 
-    return {
+    return Promise.resolve({
       success: true,
       memory,
       content: memory.content_plaintext,
-    };
+    });
   }
 
-  async queryMemories(query: MemoryQuery): Promise<MemoryObject[]> {
+  queryMemories(query: MemoryQuery): Promise<MemoryObject[]> {
     let results = Array.from(this.memories.values());
 
     // Filter by contract_id
@@ -422,15 +422,15 @@ export class MockMemoryVaultAdapter extends BaseMemoryVaultAdapter {
     }
 
     this.recordActivity();
-    return results;
+    return Promise.resolve(results);
   }
 
-  async getMemory(memory_id: string): Promise<MemoryObject | null> {
+  getMemory(memory_id: string): Promise<MemoryObject | null> {
     this.recordActivity();
-    return this.memories.get(memory_id) ?? null;
+    return Promise.resolve(this.memories.get(memory_id) ?? null);
   }
 
-  async tombstoneMemory(options: VaultTombstoneOptions): Promise<TombstoneInfo> {
+  tombstoneMemory(options: VaultTombstoneOptions): Promise<TombstoneInfo> {
     const info: TombstoneInfo = {
       memory_id: options.memory_id,
       reason: options.reason,
@@ -440,36 +440,36 @@ export class MockMemoryVaultAdapter extends BaseMemoryVaultAdapter {
 
     this.tombstones.set(options.memory_id, info);
     this.recordActivity();
-    return info;
+    return Promise.resolve(info);
   }
 
-  async getTombstoneInfo(memory_id: string): Promise<TombstoneInfo | null> {
+  getTombstoneInfo(memory_id: string): Promise<TombstoneInfo | null> {
     this.recordActivity();
-    return this.tombstones.get(memory_id) ?? null;
+    return Promise.resolve(this.tombstones.get(memory_id) ?? null);
   }
 
-  async listTombstones(): Promise<TombstoneInfo[]> {
+  listTombstones(): Promise<TombstoneInfo[]> {
     this.recordActivity();
-    return Array.from(this.tombstones.values());
+    return Promise.resolve(Array.from(this.tombstones.values()));
   }
 
-  async verifyIntegrity(): Promise<IntegrityResult> {
+  verifyIntegrity(): Promise<IntegrityResult> {
     this.recordActivity();
-    return {
+    return Promise.resolve({
       valid: true,
       merkle_root: 'mock_merkle_root',
       invalid_memories: [],
       verified_at: new Date(),
-    };
+    });
   }
 
-  async getLockdownStatus(): Promise<LockdownStatus> {
+  getLockdownStatus(): Promise<LockdownStatus> {
     this.recordActivity();
-    return {
+    return Promise.resolve({
       is_locked: this.isLocked,
       locked_at: this.lockTime,
       reason: this.lockReason,
-    };
+    });
   }
 
   async lockdown(reason: string): Promise<LockdownStatus> {
@@ -488,53 +488,53 @@ export class MockMemoryVaultAdapter extends BaseMemoryVaultAdapter {
     return this.getLockdownStatus();
   }
 
-  async createBackup(options: VaultBackupOptions): Promise<BackupMetadata> {
+  createBackup(options: VaultBackupOptions): Promise<BackupMetadata> {
     this.recordActivity();
-    return {
+    return Promise.resolve({
       file_path: options.file_path,
       incremental: options.incremental ?? false,
       description: options.description ?? 'Mock backup',
       created_at: new Date(),
       memory_count: this.memories.size,
-    };
+    });
   }
 
-  async listBackups(): Promise<BackupMetadata[]> {
+  listBackups(): Promise<BackupMetadata[]> {
     this.recordActivity();
-    return [];
+    return Promise.resolve([]);
   }
 
-  async getEncryptionProfile(profile_id: string): Promise<EncryptionProfile | null> {
+  getEncryptionProfile(profile_id: string): Promise<EncryptionProfile | null> {
     this.recordActivity();
     if (profile_id === 'default') {
-      return {
+      return Promise.resolve({
         profile_id: 'default',
         cipher: 'AES-256-GCM',
         key_source: KeySource.HUMAN_PASSPHRASE,
         rotation_policy: 'manual',
         exportable: false,
-      };
+      });
     }
-    return null;
+    return Promise.resolve(null);
   }
 
-  async listEncryptionProfiles(): Promise<EncryptionProfile[]> {
+  listEncryptionProfiles(): Promise<EncryptionProfile[]> {
     this.recordActivity();
-    return [{
+    return Promise.resolve([{
       profile_id: 'default',
       cipher: 'AES-256-GCM',
       key_source: KeySource.HUMAN_PASSPHRASE,
       rotation_policy: 'manual',
       exportable: false,
-    }];
+    }]);
   }
 
-  async getPendingRecallRequests(): Promise<RecallRequest[]> {
+  getPendingRecallRequests(): Promise<RecallRequest[]> {
     this.recordActivity();
-    return Array.from(this.pendingRequests.values()).filter(r => !r.approved);
+    return Promise.resolve(Array.from(this.pendingRequests.values()).filter(r => !r.approved));
   }
 
-  async approveRecallRequest(request_id: string, approver: string): Promise<RecallRequest> {
+  approveRecallRequest(request_id: string, approver: string): Promise<RecallRequest> {
     const request = this.pendingRequests.get(request_id);
     if (!request) {
       throw new Error('Request not found');
@@ -544,10 +544,10 @@ export class MockMemoryVaultAdapter extends BaseMemoryVaultAdapter {
     request.approved_at = new Date();
     request.approved_by = approver;
     this.recordActivity();
-    return request;
+    return Promise.resolve(request);
   }
 
-  async denyRecallRequest(request_id: string, _reason: string): Promise<RecallRequest> {
+  denyRecallRequest(request_id: string, _reason: string): Promise<RecallRequest> {
     const request = this.pendingRequests.get(request_id);
     if (!request) {
       throw new Error('Request not found');
@@ -555,15 +555,15 @@ export class MockMemoryVaultAdapter extends BaseMemoryVaultAdapter {
 
     this.pendingRequests.delete(request_id);
     this.recordActivity();
-    return request;
+    return Promise.resolve(request);
   }
 
   /**
    * Cryptographic hash function using SHA-256
    * Provides secure content verification with collision resistance
    */
-  private async hashContent(content: Uint8Array): Promise<string> {
-    return createHash('sha256').update(content).digest('hex');
+  private hashContent(content: Uint8Array): Promise<string> {
+    return Promise.resolve(createHash('sha256').update(content).digest('hex'));
   }
 
   /**

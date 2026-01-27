@@ -4,9 +4,17 @@
  * JSON file-based storage adapter for persistent storage.
  * Uses atomic writes to prevent data corruption.
  * Includes SHA-256 integrity verification to detect tampering.
+ * Supports AES-256-GCM encryption at rest.
  */
 
-import { createHash, timingSafeEqual } from 'crypto';
+import {
+  createHash,
+  timingSafeEqual,
+  createCipheriv,
+  createDecipheriv,
+  pbkdf2Sync,
+  randomBytes,
+} from 'crypto';
 import * as fsPromises from 'fs/promises';
 import * as path from 'path';
 import { LearningContract } from '../types';
@@ -16,6 +24,31 @@ import {
   serializeContract,
   deserializeContract,
 } from './adapter';
+
+/**
+ * Encryption configuration for file storage
+ */
+export interface EncryptionConfig {
+  /**
+   * Enable encryption at rest
+   */
+  enabled: boolean;
+
+  /**
+   * Passphrase for key derivation (required if enabled)
+   */
+  passphrase?: string;
+
+  /**
+   * Salt for key derivation (auto-generated if not provided)
+   */
+  salt?: string;
+
+  /**
+   * PBKDF2 iterations for key derivation (default: 100000)
+   */
+  iterations?: number;
+}
 
 export interface FileStorageConfig {
   /**
@@ -32,6 +65,11 @@ export interface FileStorageConfig {
    * Whether to pretty-print JSON (default: false for performance)
    */
   prettyPrint?: boolean;
+
+  /**
+   * Encryption configuration for data at rest
+   */
+  encryption?: EncryptionConfig;
 }
 
 interface StorageFileFormat {
@@ -41,22 +79,52 @@ interface StorageFileFormat {
   checksum?: string; // SHA-256 hash of contracts array for integrity verification
 }
 
+interface EncryptedStorageFileFormat {
+  version: number;
+  encrypted: true;
+  updated_at: string;
+  salt: string;      // Hex-encoded salt for key derivation
+  iv: string;        // Hex-encoded initialization vector
+  authTag: string;   // Hex-encoded authentication tag
+  ciphertext: string; // Base64-encoded encrypted data
+}
+
+const ENCRYPTION_ALGORITHM = 'aes-256-gcm';
+const KEY_LENGTH = 32; // 256 bits
+const IV_LENGTH = 12;  // 96 bits for GCM
+const DEFAULT_ITERATIONS = 100000;
+
 export class FileStorageAdapter implements StorageAdapter {
   private contracts: Map<string, LearningContract> = new Map();
   private filePath: string;
   private createIfMissing: boolean;
   private prettyPrint: boolean;
   private initialized = false;
+  private encryptionConfig?: EncryptionConfig;
+  private encryptionKey?: Buffer;
+  private encryptionSalt?: string;
 
   constructor(config: FileStorageConfig) {
     this.filePath = path.resolve(config.filePath);
     this.createIfMissing = config.createIfMissing ?? true;
     this.prettyPrint = config.prettyPrint ?? false;
+    this.encryptionConfig = config.encryption;
+
+    // Validate encryption config
+    if (this.encryptionConfig?.enabled && !this.encryptionConfig.passphrase) {
+      throw new Error('Encryption passphrase is required when encryption is enabled');
+    }
   }
 
   async initialize(): Promise<void> {
     if (this.initialized) {
       return;
+    }
+
+    // Initialize encryption if enabled
+    if (this.encryptionConfig?.enabled) {
+      this.encryptionSalt = this.encryptionConfig.salt ?? randomBytes(16).toString('hex');
+      this.deriveEncryptionKey();
     }
 
     // Ensure directory exists
@@ -80,6 +148,66 @@ export class FileStorageAdapter implements StorageAdapter {
     }
 
     this.initialized = true;
+  }
+
+  /**
+   * Derives the encryption key from passphrase using PBKDF2
+   */
+  private deriveEncryptionKey(): void {
+    if (!this.encryptionConfig?.passphrase || !this.encryptionSalt) {
+      throw new Error('Cannot derive key without passphrase and salt');
+    }
+
+    const iterations = this.encryptionConfig.iterations ?? DEFAULT_ITERATIONS;
+    this.encryptionKey = pbkdf2Sync(
+      this.encryptionConfig.passphrase,
+      Buffer.from(this.encryptionSalt, 'hex'),
+      iterations,
+      KEY_LENGTH,
+      'sha256'
+    );
+  }
+
+  /**
+   * Encrypts data using AES-256-GCM
+   */
+  private encrypt(plaintext: string): { iv: string; authTag: string; ciphertext: string } {
+    if (!this.encryptionKey) {
+      throw new Error('Encryption key not initialized');
+    }
+
+    const iv = randomBytes(IV_LENGTH);
+    const cipher = createCipheriv(ENCRYPTION_ALGORITHM, this.encryptionKey, iv);
+
+    let encrypted = cipher.update(plaintext, 'utf-8', 'base64');
+    encrypted += cipher.final('base64');
+
+    return {
+      iv: iv.toString('hex'),
+      authTag: cipher.getAuthTag().toString('hex'),
+      ciphertext: encrypted,
+    };
+  }
+
+  /**
+   * Decrypts data using AES-256-GCM
+   */
+  private decrypt(iv: string, authTag: string, ciphertext: string): string {
+    if (!this.encryptionKey) {
+      throw new Error('Encryption key not initialized');
+    }
+
+    const decipher = createDecipheriv(
+      ENCRYPTION_ALGORITHM,
+      this.encryptionKey,
+      Buffer.from(iv, 'hex')
+    );
+    decipher.setAuthTag(Buffer.from(authTag, 'hex'));
+
+    let decrypted = decipher.update(ciphertext, 'base64', 'utf-8');
+    decrypted += decipher.final('utf-8');
+
+    return decrypted;
   }
 
   async save(contract: LearningContract): Promise<void> {
@@ -145,7 +273,15 @@ export class FileStorageAdapter implements StorageAdapter {
   private async loadFromFile(): Promise<void> {
     try {
       const content = await fsPromises.readFile(this.filePath, 'utf-8');
-      const data: StorageFileFormat = JSON.parse(content);
+      const rawData = JSON.parse(content) as { encrypted?: boolean };
+
+      // Check if file is encrypted
+      if (rawData.encrypted) {
+        await this.loadEncryptedFile(content);
+        return;
+      }
+
+      const data = rawData as StorageFileFormat;
 
       // Validate version
       if (data.version !== 1) {
@@ -185,8 +321,52 @@ export class FileStorageAdapter implements StorageAdapter {
   }
 
   /**
+   * Loads and decrypts an encrypted storage file
+   */
+  private async loadEncryptedFile(content: string): Promise<void> {
+    if (!this.encryptionConfig?.enabled) {
+      throw new Error('File is encrypted but encryption is not configured');
+    }
+
+    const encryptedData: EncryptedStorageFileFormat = JSON.parse(content);
+
+    // Use the salt from the file for key derivation
+    this.encryptionSalt = encryptedData.salt;
+    this.deriveEncryptionKey();
+
+    // Decrypt the content
+    const decryptedContent = this.decrypt(
+      encryptedData.iv,
+      encryptedData.authTag,
+      encryptedData.ciphertext
+    );
+
+    const data: StorageFileFormat = JSON.parse(decryptedContent);
+
+    // Verify integrity checksum if present
+    if (data.checksum) {
+      const contractsJson = JSON.stringify(data.contracts);
+      const calculatedChecksum = createHash('sha256').update(contractsJson).digest('hex');
+
+      if (!this.constantTimeCompare(calculatedChecksum, data.checksum)) {
+        throw new Error(
+          'Contract file integrity check failed - possible tampering detected.'
+        );
+      }
+    }
+
+    // Load contracts
+    this.contracts.clear();
+    for (const serialized of data.contracts) {
+      const contract = deserializeContract(serialized);
+      this.contracts.set(contract.contract_id, contract);
+    }
+  }
+
+  /**
    * Saves contracts to the storage file using atomic write
    * Includes SHA-256 checksum for integrity verification
+   * Encrypts if encryption is enabled
    */
   private async saveToFile(): Promise<void> {
     const contracts = Array.from(this.contracts.values()).map(serializeContract);
@@ -195,16 +375,38 @@ export class FileStorageAdapter implements StorageAdapter {
     const contractsJson = JSON.stringify(contracts);
     const checksum = createHash('sha256').update(contractsJson).digest('hex');
 
-    const data: StorageFileFormat = {
+    const innerData: StorageFileFormat = {
       version: 1,
       updated_at: new Date().toISOString(),
       contracts,
       checksum,
     };
 
-    const content = this.prettyPrint
-      ? JSON.stringify(data, null, 2)
-      : JSON.stringify(data);
+    let content: string;
+
+    if (this.encryptionConfig?.enabled && this.encryptionKey && this.encryptionSalt) {
+      // Encrypt the data
+      const plaintext = JSON.stringify(innerData);
+      const encrypted = this.encrypt(plaintext);
+
+      const encryptedData: EncryptedStorageFileFormat = {
+        version: 1,
+        encrypted: true,
+        updated_at: new Date().toISOString(),
+        salt: this.encryptionSalt,
+        iv: encrypted.iv,
+        authTag: encrypted.authTag,
+        ciphertext: encrypted.ciphertext,
+      };
+
+      content = this.prettyPrint
+        ? JSON.stringify(encryptedData, null, 2)
+        : JSON.stringify(encryptedData);
+    } else {
+      content = this.prettyPrint
+        ? JSON.stringify(innerData, null, 2)
+        : JSON.stringify(innerData);
+    }
 
     // Atomic write: write to temp file, then rename
     const tempPath = `${this.filePath}.tmp`;

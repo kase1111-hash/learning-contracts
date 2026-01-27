@@ -24,7 +24,7 @@ function validateId(id: string, type: 'contract' | 'user'): void {
     throw new Error(`Invalid ${type} ID: exceeds maximum length of 256 characters`);
   }
   // Allow alphanumeric, hyphens, underscores, and periods
-  if (!/^[a-zA-Z0-9_\-\.]+$/.test(id)) {
+  if (!/^[a-zA-Z0-9_\-.]+$/.test(id)) {
     throw new Error(`Invalid ${type} ID: contains invalid characters`);
   }
 }

@@ -77,6 +77,103 @@ import {
   UserManagerStats,
 } from './user-management';
 
+/**
+ * Rate limiter configuration
+ */
+export interface RateLimitConfig {
+  /** Maximum contracts per user per window */
+  maxContractsPerWindow: number;
+  /** Window duration in milliseconds */
+  windowMs: number;
+  /** Enable rate limiting */
+  enabled: boolean;
+}
+
+const DEFAULT_RATE_LIMIT: RateLimitConfig = {
+  maxContractsPerWindow: 100,
+  windowMs: 60000, // 1 minute
+  enabled: false, // Disabled by default for backward compatibility
+};
+
+/**
+ * Token bucket rate limiter for contract creation
+ */
+class RateLimiter {
+  private buckets: Map<string, { tokens: number; lastRefill: number }> = new Map();
+  private config: RateLimitConfig;
+
+  constructor(config: RateLimitConfig) {
+    this.config = config;
+  }
+
+  /**
+   * Attempts to consume a token for the given user
+   * Returns true if allowed, false if rate limited
+   */
+  tryConsume(userId: string): { allowed: boolean; retryAfterMs?: number } {
+    if (!this.config.enabled) {
+      return { allowed: true };
+    }
+
+    const now = Date.now();
+    let bucket = this.buckets.get(userId);
+
+    if (!bucket) {
+      bucket = { tokens: this.config.maxContractsPerWindow, lastRefill: now };
+      this.buckets.set(userId, bucket);
+    }
+
+    // Refill tokens if window has passed
+    const timeSinceRefill = now - bucket.lastRefill;
+    if (timeSinceRefill >= this.config.windowMs) {
+      bucket.tokens = this.config.maxContractsPerWindow;
+      bucket.lastRefill = now;
+    }
+
+    if (bucket.tokens > 0) {
+      bucket.tokens--;
+      return { allowed: true };
+    }
+
+    // Calculate time until next refill
+    const retryAfterMs = this.config.windowMs - timeSinceRefill;
+    return { allowed: false, retryAfterMs };
+  }
+
+  /**
+   * Gets the current rate limit status for a user
+   */
+  getStatus(userId: string): { remaining: number; resetMs: number } {
+    if (!this.config.enabled) {
+      return { remaining: this.config.maxContractsPerWindow, resetMs: 0 };
+    }
+
+    const bucket = this.buckets.get(userId);
+    if (!bucket) {
+      return { remaining: this.config.maxContractsPerWindow, resetMs: 0 };
+    }
+
+    const timeSinceRefill = Date.now() - bucket.lastRefill;
+    const resetMs = Math.max(0, this.config.windowMs - timeSinceRefill);
+
+    return { remaining: bucket.tokens, resetMs };
+  }
+
+  /**
+   * Clears rate limit data for a user
+   */
+  clearUser(userId: string): void {
+    this.buckets.delete(userId);
+  }
+
+  /**
+   * Clears all rate limit data
+   */
+  clearAll(): void {
+    this.buckets.clear();
+  }
+}
+
 export class LearningContractsSystem {
   private auditLogger: AuditLogger;
   private repository: ContractRepository;
@@ -91,6 +188,7 @@ export class LearningContractsSystem {
   private emergencyOverrideManager: EmergencyOverrideManager;
   private userManager: UserManager;
   private permissionManager: PermissionManager;
+  private rateLimiter: RateLimiter;
 
   constructor() {
     this.auditLogger = new AuditLogger();
@@ -156,6 +254,24 @@ export class LearningContractsSystem {
     // Initialize multi-user management
     this.userManager = new UserManager();
     this.permissionManager = new PermissionManager();
+
+    // Initialize rate limiter
+    this.rateLimiter = new RateLimiter(DEFAULT_RATE_LIMIT);
+  }
+
+  /**
+   * Configure rate limiting for contract creation
+   */
+  configureRateLimit(config: Partial<RateLimitConfig>): void {
+    const mergedConfig = { ...DEFAULT_RATE_LIMIT, ...config };
+    this.rateLimiter = new RateLimiter(mergedConfig);
+  }
+
+  /**
+   * Get rate limit status for a user
+   */
+  getRateLimitStatus(userId: string): { remaining: number; resetMs: number } {
+    return this.rateLimiter.getStatus(userId);
   }
 
   /**
@@ -163,6 +279,15 @@ export class LearningContractsSystem {
    */
 
   createContract(draft: ContractDraft): LearningContract {
+    // Check rate limit before creating contract
+    const rateLimitResult = this.rateLimiter.tryConsume(draft.created_by);
+    if (!rateLimitResult.allowed) {
+      throw new Error(
+        `Rate limit exceeded for user '${draft.created_by}'. ` +
+        `Please wait ${Math.ceil((rateLimitResult.retryAfterMs ?? 0) / 1000)} seconds before creating more contracts.`
+      );
+    }
+
     const contract = this.lifecycleManager.createDraft(draft);
     this.repository.save(contract);
     // Set owner permission for the contract creator (using internal token for security)
