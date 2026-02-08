@@ -17,7 +17,7 @@ describe('Session Management', () => {
 
   describe('Session Lifecycle', () => {
     test('should start a new session', () => {
-      const session = system.startSession('alice');
+      const session = system.sessions.startSession('alice');
 
       expect(session).toBeDefined();
       expect(session.session_id).toBeDefined();
@@ -28,7 +28,7 @@ describe('Session Management', () => {
     });
 
     test('should start session with metadata', () => {
-      const session = system.startSession('alice', {
+      const session = system.sessions.startSession('alice', {
         project: 'test-project',
         timeoutMs: 3600000,
       });
@@ -40,66 +40,66 @@ describe('Session Management', () => {
     });
 
     test('should get session by ID', () => {
-      const session = system.startSession('alice');
-      const retrieved = system.getSession(session.session_id);
+      const session = system.sessions.startSession('alice');
+      const retrieved = system.sessions.getSession(session.session_id);
 
       expect(retrieved).toEqual(session);
     });
 
     test('should return null for non-existent session', () => {
-      const retrieved = system.getSession('non-existent');
+      const retrieved = system.sessions.getSession('non-existent');
       expect(retrieved).toBeNull();
     });
 
     test('should get all active sessions', () => {
-      system.startSession('alice');
-      system.startSession('bob');
+      system.sessions.startSession('alice');
+      system.sessions.startSession('bob');
 
-      const activeSessions = system.getActiveSessions();
+      const activeSessions = system.sessions.getActiveSessions();
       expect(activeSessions).toHaveLength(2);
     });
 
     test('should get sessions for a specific user', () => {
-      system.startSession('alice');
-      system.startSession('alice');
-      system.startSession('bob');
+      system.sessions.startSession('alice');
+      system.sessions.startSession('alice');
+      system.sessions.startSession('bob');
 
-      const aliceSessions = system.getUserSessions('alice');
+      const aliceSessions = system.sessions.getUserSessions('alice');
       expect(aliceSessions).toHaveLength(2);
       expect(aliceSessions.every(s => s.user_id === 'alice')).toBe(true);
     });
 
     test('should end a session', () => {
-      const session = system.startSession('alice');
-      const result = system.endSession(session.session_id);
+      const session = system.sessions.startSession('alice');
+      const result = system.sessions.endSession(session.session_id);
 
       expect(result.session_id).toBe(session.session_id);
       expect(result.ended_at).toBeDefined();
       expect(result.errors).toHaveLength(0);
 
-      const endedSession = system.getSession(session.session_id);
+      const endedSession = system.sessions.getSession(session.session_id);
       expect(endedSession?.status).toBe(SessionStatus.ENDED);
       expect(endedSession?.ended_at).toBeDefined();
     });
 
     test('should handle ending non-existent session', () => {
-      const result = system.endSession('non-existent');
+      const result = system.sessions.endSession('non-existent');
 
       expect(result.errors).toContain('Session not found');
     });
 
     test('should handle ending already ended session', () => {
-      const session = system.startSession('alice');
-      system.endSession(session.session_id);
+      const session = system.sessions.startSession('alice');
+      system.sessions.endSession(session.session_id);
 
-      const result = system.endSession(session.session_id);
+      const result = system.sessions.endSession(session.session_id);
       expect(result.errors).toContain('Session already ended');
     });
   });
 
   describe('Contract Association', () => {
     test('should associate session-scoped contract with session', () => {
-      const session = system.startSession('alice');
+      const session = system.sessions.startSession('alice');
 
       // Create a session-scoped contract
       let contract = system.createEpisodicContract('alice', {
@@ -110,21 +110,21 @@ describe('Session Management', () => {
       contract = system.submitForReview(contract.contract_id, 'alice');
       contract = system.activateContract(contract.contract_id, 'alice');
 
-      const associated = system.associateContractWithSession(
+      const associated = system.sessions.associateContract(
         session.session_id,
         contract.contract_id
       );
 
       expect(associated).toBe(true);
-      expect(system.isContractInSession(contract.contract_id)).toBe(true);
-      expect(system.getContractSession(contract.contract_id)).toBe(session.session_id);
+      expect(system.sessions.isContractInSession(contract.contract_id)).toBe(true);
+      expect(system.sessions.getContractSession(contract.contract_id)).toBe(session.session_id);
 
-      const updatedSession = system.getSession(session.session_id);
+      const updatedSession = system.sessions.getSession(session.session_id);
       expect(updatedSession?.contract_ids).toContain(contract.contract_id);
     });
 
     test('should not associate non-session-scoped contract', () => {
-      const session = system.startSession('alice');
+      const session = system.sessions.startSession('alice');
 
       // Create a permanent contract
       let contract = system.createEpisodicContract('alice', {
@@ -135,13 +135,13 @@ describe('Session Management', () => {
       contract = system.submitForReview(contract.contract_id, 'alice');
       contract = system.activateContract(contract.contract_id, 'alice');
 
-      const associated = system.associateContractWithSession(
+      const associated = system.sessions.associateContract(
         session.session_id,
         contract.contract_id
       );
 
       expect(associated).toBe(false);
-      expect(system.isContractInSession(contract.contract_id)).toBe(false);
+      expect(system.sessions.isContractInSession(contract.contract_id)).toBe(false);
     });
 
     test('should not associate contract with non-existent session', () => {
@@ -153,7 +153,7 @@ describe('Session Management', () => {
       contract = system.submitForReview(contract.contract_id, 'alice');
       contract = system.activateContract(contract.contract_id, 'alice');
 
-      const associated = system.associateContractWithSession(
+      const associated = system.sessions.associateContract(
         'non-existent',
         contract.contract_id
       );
@@ -162,8 +162,8 @@ describe('Session Management', () => {
     });
 
     test('should not associate contract with ended session', () => {
-      const session = system.startSession('alice');
-      system.endSession(session.session_id);
+      const session = system.sessions.startSession('alice');
+      system.sessions.endSession(session.session_id);
 
       let contract = system.createEpisodicContract('alice', {
         domains: ['coding'],
@@ -173,7 +173,7 @@ describe('Session Management', () => {
       contract = system.submitForReview(contract.contract_id, 'alice');
       contract = system.activateContract(contract.contract_id, 'alice');
 
-      const associated = system.associateContractWithSession(
+      const associated = system.sessions.associateContract(
         session.session_id,
         contract.contract_id
       );
@@ -184,7 +184,7 @@ describe('Session Management', () => {
 
   describe('Session Cleanup', () => {
     test('should expire contracts when session ends', () => {
-      const session = system.startSession('alice');
+      const session = system.sessions.startSession('alice');
 
       // Create and associate a session-scoped contract
       let contract = system.createEpisodicContract('alice', {
@@ -195,10 +195,10 @@ describe('Session Management', () => {
       contract = system.submitForReview(contract.contract_id, 'alice');
       contract = system.activateContract(contract.contract_id, 'alice');
 
-      system.associateContractWithSession(session.session_id, contract.contract_id);
+      system.sessions.associateContract(session.session_id, contract.contract_id);
 
       // End the session
-      const result = system.endSession(session.session_id);
+      const result = system.sessions.endSession(session.session_id);
 
       expect(result.contracts_cleaned).toContain(contract.contract_id);
 
@@ -208,7 +208,7 @@ describe('Session Management', () => {
     });
 
     test('should clean up multiple contracts when session ends', () => {
-      const session = system.startSession('alice');
+      const session = system.sessions.startSession('alice');
 
       // Create multiple session-scoped contracts
       const contracts = [];
@@ -220,12 +220,12 @@ describe('Session Management', () => {
         });
         contract = system.submitForReview(contract.contract_id, 'alice');
         contract = system.activateContract(contract.contract_id, 'alice');
-        system.associateContractWithSession(session.session_id, contract.contract_id);
+        system.sessions.associateContract(session.session_id, contract.contract_id);
         contracts.push(contract);
       }
 
       // End the session
-      const result = system.endSession(session.session_id);
+      const result = system.sessions.endSession(session.session_id);
 
       expect(result.contracts_cleaned).toHaveLength(3);
 
@@ -237,7 +237,7 @@ describe('Session Management', () => {
     });
 
     test('should not affect non-session contracts when session ends', () => {
-      const session = system.startSession('alice');
+      const session = system.sessions.startSession('alice');
 
       // Create a permanent contract (not associated with session)
       let permanentContract = system.createEpisodicContract('alice', {
@@ -256,10 +256,10 @@ describe('Session Management', () => {
       });
       sessionContract = system.submitForReview(sessionContract.contract_id, 'alice');
       sessionContract = system.activateContract(sessionContract.contract_id, 'alice');
-      system.associateContractWithSession(session.session_id, sessionContract.contract_id);
+      system.sessions.associateContract(session.session_id, sessionContract.contract_id);
 
       // End the session
-      system.endSession(session.session_id);
+      system.sessions.endSession(session.session_id);
 
       // Permanent contract should still be active
       const stillActive = system.getContract(permanentContract.contract_id);
@@ -273,19 +273,19 @@ describe('Session Management', () => {
 
   describe('Session End Listeners', () => {
     test('should notify listeners when session ends', () => {
-      const session = system.startSession('alice');
+      const session = system.sessions.startSession('alice');
 
       let notified = false;
       let receivedSession: any = null;
       let receivedResult: any = null;
 
-      system.onSessionEnd((s, r) => {
+      system.sessions.onSessionEnd((s, r) => {
         notified = true;
         receivedSession = s;
         receivedResult = r;
       });
 
-      system.endSession(session.session_id);
+      system.sessions.endSession(session.session_id);
 
       expect(notified).toBe(true);
       expect(receivedSession.session_id).toBe(session.session_id);
@@ -293,15 +293,15 @@ describe('Session Management', () => {
     });
 
     test('should allow unsubscribing from session end events', () => {
-      const session = system.startSession('alice');
+      const session = system.sessions.startSession('alice');
 
       let callCount = 0;
-      const unsubscribe = system.onSessionEnd(() => {
+      const unsubscribe = system.sessions.onSessionEnd(() => {
         callCount++;
       });
 
       unsubscribe();
-      system.endSession(session.session_id);
+      system.sessions.endSession(session.session_id);
 
       expect(callCount).toBe(0);
     });
@@ -310,14 +310,14 @@ describe('Session Management', () => {
   describe('Session Statistics', () => {
     test('should provide session statistics', () => {
       // Start some sessions
-      system.startSession('alice');
-      const session2 = system.startSession('bob');
-      system.startSession('charlie');
+      system.sessions.startSession('alice');
+      const session2 = system.sessions.startSession('bob');
+      system.sessions.startSession('charlie');
 
       // End one session
-      system.endSession(session2.session_id);
+      system.sessions.endSession(session2.session_id);
 
-      const stats = system.getSessionStats();
+      const stats = system.sessions.getStats();
 
       expect(stats.totalSessions).toBe(3);
       expect(stats.activeSessions).toBe(2);
@@ -325,7 +325,7 @@ describe('Session Management', () => {
     });
 
     test('should track contracts in sessions', () => {
-      const session = system.startSession('alice');
+      const session = system.sessions.startSession('alice');
 
       let contract1 = system.createEpisodicContract('alice', {
         domains: ['domain1'],
@@ -339,49 +339,49 @@ describe('Session Management', () => {
       contract2 = system.submitForReview(contract2.contract_id, 'alice');
       contract2 = system.activateContract(contract2.contract_id, 'alice');
 
-      system.associateContractWithSession(session.session_id, contract1.contract_id);
-      system.associateContractWithSession(session.session_id, contract2.contract_id);
+      system.sessions.associateContract(session.session_id, contract1.contract_id);
+      system.sessions.associateContract(session.session_id, contract2.contract_id);
 
-      const stats = system.getSessionStats();
+      const stats = system.sessions.getStats();
       expect(stats.totalContractsInSessions).toBe(2);
     });
   });
 
   describe('Session Cleanup Utility', () => {
     test('should clean up old ended sessions', () => {
-      const session1 = system.startSession('alice');
-      const session2 = system.startSession('bob');
+      const session1 = system.sessions.startSession('alice');
+      const session2 = system.sessions.startSession('bob');
 
-      system.endSession(session1.session_id);
-      system.endSession(session2.session_id);
+      system.sessions.endSession(session1.session_id);
+      system.sessions.endSession(session2.session_id);
 
       // Both sessions should still be in memory
-      expect(system.getSessionStats().totalSessions).toBe(2);
+      expect(system.sessions.getStats().totalSessions).toBe(2);
 
       // Clean up with 0 maxAge (all ended sessions)
-      const cleaned = system.cleanupOldSessions(0);
+      const cleaned = system.sessions.cleanupOldSessions(0);
 
       expect(cleaned).toBe(2);
-      expect(system.getSessionStats().totalSessions).toBe(0);
+      expect(system.sessions.getStats().totalSessions).toBe(0);
     });
 
     test('should not clean up active sessions', () => {
-      system.startSession('alice');
-      system.startSession('bob');
+      system.sessions.startSession('alice');
+      system.sessions.startSession('bob');
 
-      const cleaned = system.cleanupOldSessions(0);
+      const cleaned = system.sessions.cleanupOldSessions(0);
 
       expect(cleaned).toBe(0);
-      expect(system.getSessionStats().activeSessions).toBe(2);
+      expect(system.sessions.getStats().activeSessions).toBe(2);
     });
   });
 
   describe('End All User Sessions', () => {
     test('should end all sessions for a user', () => {
       // Create multiple sessions for alice
-      const session1 = system.startSession('alice');
-      const session2 = system.startSession('alice');
-      system.startSession('bob'); // Should not be affected
+      const session1 = system.sessions.startSession('alice');
+      const session2 = system.sessions.startSession('alice');
+      system.sessions.startSession('bob'); // Should not be affected
 
       // Associate contracts with alice's sessions
       let contract1 = system.createEpisodicContract('alice', {
@@ -389,17 +389,17 @@ describe('Session Management', () => {
       }, { retention: 'session' });
       contract1 = system.submitForReview(contract1.contract_id, 'alice');
       contract1 = system.activateContract(contract1.contract_id, 'alice');
-      system.associateContractWithSession(session1.session_id, contract1.contract_id);
+      system.sessions.associateContract(session1.session_id, contract1.contract_id);
 
       let contract2 = system.createEpisodicContract('alice', {
         domains: ['domain2'],
       }, { retention: 'session' });
       contract2 = system.submitForReview(contract2.contract_id, 'alice');
       contract2 = system.activateContract(contract2.contract_id, 'alice');
-      system.associateContractWithSession(session2.session_id, contract2.contract_id);
+      system.sessions.associateContract(session2.session_id, contract2.contract_id);
 
       // End all of alice's sessions
-      const results = system.endUserSessions('alice');
+      const results = system.sessions.endUserSessions('alice');
 
       expect(results).toHaveLength(2);
 
@@ -408,23 +408,23 @@ describe('Session Management', () => {
       expect(system.getContract(contract2.contract_id)?.state).toBe(ContractState.EXPIRED);
 
       // Bob's session should still be active
-      const stats = system.getSessionStats();
+      const stats = system.sessions.getStats();
       expect(stats.activeSessions).toBe(1);
     });
   });
 
   describe('Audit Logging', () => {
     test('should log session events to audit log', () => {
-      const session = system.startSession('alice');
+      const session = system.sessions.startSession('alice');
 
       let contract = system.createEpisodicContract('alice', {
         domains: ['coding'],
       }, { retention: 'session' });
       contract = system.submitForReview(contract.contract_id, 'alice');
       contract = system.activateContract(contract.contract_id, 'alice');
-      system.associateContractWithSession(session.session_id, contract.contract_id);
+      system.sessions.associateContract(session.session_id, contract.contract_id);
 
-      system.endSession(session.session_id);
+      system.sessions.endSession(session.session_id);
 
       const auditLog = system.getAuditLog();
 

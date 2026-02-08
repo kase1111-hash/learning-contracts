@@ -3,6 +3,18 @@
  *
  * Main integration point for the Learning Contracts system.
  * Combines all components: lifecycle, enforcement, audit, and storage.
+ *
+ * Subsystems are exposed as public readonly properties for direct access:
+ *   system.sessions      - Session lifecycle management
+ *   system.expiry        - Timebound contract expiry
+ *   system.emergencyOverride - Emergency override controls
+ *   system.users         - Multi-user connection management
+ *   system.permissions   - Contract permission management
+ *   system.conversations - Plain-language contract builder
+ *   system.summarizer    - Contract plain-language summaries
+ *   system.parser        - Natural language intent parsing
+ *
+ * Orchestration methods that coordinate multiple subsystems remain on this class.
  */
 
 import {
@@ -23,12 +35,7 @@ import {
   PlainLanguageSummarizer,
   PlainLanguageParser,
   ContractDraftFromLanguage,
-  ConversationAnswer,
-  BuilderResponse,
   SummaryOptions,
-  CONTRACT_TEMPLATES,
-  ContractTemplate,
-  searchTemplates,
 } from './plain-language';
 import {
   ContractEnforcedVault,
@@ -40,41 +47,16 @@ import {
   BoundaryDaemonAdapter,
   BoundaryAuditEvent,
 } from './boundary-integration';
-import {
-  SessionManager,
-  Session,
-  SessionEndResult,
-  SessionCleanupOptions,
-} from './session';
-import {
-  TimeboundExpiryManager,
-  ExpiryCycleResult,
-  ExpiryCheckResult,
-  ExpiryManagerStats,
-} from './expiry';
+import { SessionManager } from './session';
+import { TimeboundExpiryManager } from './expiry';
 import {
   EmergencyOverrideManager,
-  EmergencyOverrideStatus,
   OverrideTriggerResult,
-  OverrideDisableResult,
-  OverrideTriggerListener,
-  OverrideDisableListener,
-  BlockedOperationListener,
 } from './emergency-override';
 import {
   UserManager,
   PermissionManager,
-  User,
-  ConnectionResult,
-  DisconnectionResult,
   PermissionLevel,
-  PermissionCheckResult,
-  GrantPermissionOptions,
-  ContractPermission,
-  UserConnectListener,
-  UserDisconnectListener,
-  ConnectionRejectedListener,
-  UserManagerStats,
 } from './user-management';
 
 /**
@@ -175,19 +157,26 @@ class RateLimiter {
 }
 
 export class LearningContractsSystem {
+  // ==========================================
+  // Public Subsystems (direct access)
+  // ==========================================
+  public readonly sessions: SessionManager;
+  public readonly expiry: TimeboundExpiryManager;
+  public readonly emergencyOverride: EmergencyOverrideManager;
+  public readonly users: UserManager;
+  public readonly permissions: PermissionManager;
+  public readonly conversations: ConversationalContractBuilder;
+  public readonly summarizer: PlainLanguageSummarizer;
+  public readonly parser: PlainLanguageParser;
+
+  // ==========================================
+  // Private Internals
+  // ==========================================
   private auditLogger: AuditLogger;
   private repository: ContractRepository;
   private lifecycleManager: ContractLifecycleManager;
   private enforcementEngine: EnforcementEngine;
   private memoryForgetting: MemoryForgetting;
-  private conversationBuilder: ConversationalContractBuilder;
-  private summarizer: PlainLanguageSummarizer;
-  private parser: PlainLanguageParser;
-  private sessionManager: SessionManager;
-  private expiryManager: TimeboundExpiryManager;
-  private emergencyOverrideManager: EmergencyOverrideManager;
-  private userManager: UserManager;
-  private permissionManager: PermissionManager;
   private rateLimiter: RateLimiter;
 
   constructor() {
@@ -201,14 +190,14 @@ export class LearningContractsSystem {
     this.memoryForgetting = new MemoryForgetting(this.auditLogger);
 
     // Initialize emergency override manager and connect to enforcement engine
-    this.emergencyOverrideManager = new EmergencyOverrideManager(this.auditLogger);
-    this.enforcementEngine.setEmergencyOverrideManager(this.emergencyOverrideManager);
-    this.conversationBuilder = new ConversationalContractBuilder();
+    this.emergencyOverride = new EmergencyOverrideManager(this.auditLogger);
+    this.enforcementEngine.setEmergencyOverrideManager(this.emergencyOverride);
+    this.conversations = new ConversationalContractBuilder();
     this.summarizer = new PlainLanguageSummarizer();
     this.parser = new PlainLanguageParser();
 
     // Initialize session manager with callbacks
-    this.sessionManager = new SessionManager({
+    this.sessions = new SessionManager({
       contractResolver: (contractId: string) => this.getContract(contractId),
       contractExpirer: (contractId: string, actor: string) => {
         const contract = this.getContract(contractId);
@@ -230,7 +219,7 @@ export class LearningContractsSystem {
     });
 
     // Initialize timebound expiry manager
-    this.expiryManager = new TimeboundExpiryManager({
+    this.expiry = new TimeboundExpiryManager({
       findTimeboundExpired: () => this.repository.getTimeboundExpiredContracts(),
       contractResolver: (contractId: string) => this.getContract(contractId),
       contractExpirer: (contractId: string, actor: string) => {
@@ -252,31 +241,29 @@ export class LearningContractsSystem {
     });
 
     // Initialize multi-user management
-    this.userManager = new UserManager();
-    this.permissionManager = new PermissionManager();
+    this.users = new UserManager();
+    this.permissions = new PermissionManager();
 
     // Initialize rate limiter
     this.rateLimiter = new RateLimiter(DEFAULT_RATE_LIMIT);
   }
 
-  /**
-   * Configure rate limiting for contract creation
-   */
+  // ==========================================
+  // Rate Limiting
+  // ==========================================
+
   configureRateLimit(config: Partial<RateLimitConfig>): void {
     const mergedConfig = { ...DEFAULT_RATE_LIMIT, ...config };
     this.rateLimiter = new RateLimiter(mergedConfig);
   }
 
-  /**
-   * Get rate limit status for a user
-   */
   getRateLimitStatus(userId: string): { remaining: number; resetMs: number } {
     return this.rateLimiter.getStatus(userId);
   }
 
-  /**
-   * Contract Creation Methods
-   */
+  // ==========================================
+  // Contract Creation (coordinates rate limiter + lifecycle + repository + permissions)
+  // ==========================================
 
   createContract(draft: ContractDraft): LearningContract {
     // Check rate limit before creating contract
@@ -291,10 +278,10 @@ export class LearningContractsSystem {
     const contract = this.lifecycleManager.createDraft(draft);
     this.repository.save(contract);
     // Set owner permission for the contract creator (using internal token for security)
-    this.permissionManager.setOwner(
+    this.permissions.setOwner(
       contract.contract_id,
       contract.created_by,
-      this.permissionManager.getInternalToken()
+      this.permissions.getInternalToken()
     );
     return contract;
   }
@@ -336,9 +323,9 @@ export class LearningContractsSystem {
     return this.createContract(draft);
   }
 
-  /**
-   * Contract Lifecycle Methods
-   */
+  // ==========================================
+  // Contract Lifecycle (coordinates lifecycle + repository)
+  // ==========================================
 
   submitForReview(contractId: string, actor: string): LearningContract {
     const contract = this.getContract(contractId);
@@ -394,9 +381,9 @@ export class LearningContractsSystem {
     return result;
   }
 
-  /**
-   * Enforcement Methods (Four Mandatory Hooks)
-   */
+  // ==========================================
+  // Enforcement Hooks (coordinates repository + enforcement engine)
+  // ==========================================
 
   checkMemoryCreation(
     contractId: string,
@@ -492,9 +479,9 @@ export class LearningContractsSystem {
     return this.enforcementEngine.checkExport(enforcementContext);
   }
 
-  /**
-   * Memory Forgetting Methods
-   */
+  // ==========================================
+  // Memory Forgetting (coordinates repository + memory forgetting)
+  // ==========================================
 
   freezeMemories(
     contractId: string,
@@ -533,9 +520,9 @@ export class LearningContractsSystem {
     return this.memoryForgetting.deepPurge(contract, memories, ownerConfirmation);
   }
 
-  /**
-   * Query Methods
-   */
+  // ==========================================
+  // Query Methods
+  // ==========================================
 
   getContract(contractId: string): LearningContract | null {
     return this.repository.get(contractId);
@@ -557,9 +544,9 @@ export class LearningContractsSystem {
     return this.repository.findApplicableContract(domain, context, tool);
   }
 
-  /**
-   * Audit Methods
-   */
+  // ==========================================
+  // Audit Methods
+  // ==========================================
 
   getAuditLog() {
     return this.auditLogger.export();
@@ -573,9 +560,9 @@ export class LearningContractsSystem {
     return this.auditLogger.getViolations();
   }
 
-  /**
-   * Maintenance Methods
-   */
+  // ==========================================
+  // Maintenance
+  // ==========================================
 
   expireOldContracts(actor: string = 'system'): LearningContract[] {
     const expired = this.repository.getExpiredContracts();
@@ -587,40 +574,10 @@ export class LearningContractsSystem {
     });
   }
 
-  /**
-   * Plain-Language Interface Methods
-   */
+  // ==========================================
+  // Plain-Language Orchestration (coordinates multiple subsystems)
+  // ==========================================
 
-  /**
-   * Start a new plain-language contract creation conversation
-   */
-  startPlainLanguageConversation(userId: string): BuilderResponse {
-    return this.conversationBuilder.startConversation(userId);
-  }
-
-  /**
-   * Process input in a plain-language conversation
-   */
-  processConversationInput(
-    conversationId: string,
-    input: string | ConversationAnswer
-  ): BuilderResponse {
-    return this.conversationBuilder.processInput(conversationId, input);
-  }
-
-  /**
-   * Use a template in a conversation
-   */
-  useTemplateInConversation(
-    conversationId: string,
-    templateId: string
-  ): BuilderResponse {
-    return this.conversationBuilder.useTemplate(conversationId, templateId);
-  }
-
-  /**
-   * Create a contract from a plain-language draft
-   */
   createContractFromPlainLanguage(
     draft: ContractDraftFromLanguage
   ): LearningContract {
@@ -655,9 +612,6 @@ export class LearningContractsSystem {
     return this.createContract(contractDraft);
   }
 
-  /**
-   * Get plain-language summary of a contract
-   */
   getContractSummary(
     contractId: string,
     options?: SummaryOptions
@@ -669,9 +623,6 @@ export class LearningContractsSystem {
     return this.summarizer.summarize(contract, options);
   }
 
-  /**
-   * Get short summary of a contract
-   */
   getContractShortSummary(contractId: string): string | null {
     const contract = this.getContract(contractId);
     if (!contract) {
@@ -680,44 +631,93 @@ export class LearningContractsSystem {
     return this.summarizer.shortSummary(contract);
   }
 
-  /**
-   * Parse natural language to understand intent (without starting a conversation)
-   */
-  parseNaturalLanguage(input: string) {
-    return this.parser.parse(input);
+  // ==========================================
+  // Integration Factories (coordinates callbacks across subsystems)
+  // ==========================================
+
+  createContractEnforcedVault(
+    adapter: MemoryVaultAdapter,
+    boundaryMode: BoundaryMode,
+    defaultActor?: string
+  ): ContractEnforcedVault {
+    return new ContractEnforcedVault({
+      adapter,
+      contractResolver: (contractId: string) => this.getContract(contractId),
+      contractFinder: (domain, context, tool) =>
+        this.findApplicableContract(domain, context, tool),
+      auditLogger: (event: VaultAuditEvent) => this.logVaultEvent(event),
+      boundaryMode,
+      defaultActor,
+    });
   }
 
-  /**
-   * Get all available contract templates
-   */
-  getContractTemplates(): ContractTemplate[] {
-    return CONTRACT_TEMPLATES;
+  createBoundaryEnforcedSystem(
+    adapter: BoundaryDaemonAdapter,
+    autoResumeOnUpgrade: boolean = true
+  ): BoundaryEnforcedSystem {
+    return new BoundaryEnforcedSystem({
+      adapter,
+      contractResolver: (contractId: string) => this.getContract(contractId),
+      activeContractsProvider: () => this.getActiveContracts(),
+      auditLogger: (event: BoundaryAuditEvent) => this.logBoundaryEvent(event),
+      autoResumeOnUpgrade,
+    });
   }
 
-  /**
-   * Search contract templates
-   */
-  searchContractTemplates(query: string): ContractTemplate[] {
-    return searchTemplates(query);
+  // ==========================================
+  // Emergency Override (coordinates repository + override manager)
+  // ==========================================
+
+  triggerEmergencyOverride(
+    triggeredBy: string,
+    reason: string
+  ): OverrideTriggerResult {
+    const activeContracts = this.repository.query({ active_only: true });
+    return this.emergencyOverride.triggerOverride(
+      triggeredBy,
+      reason,
+      activeContracts.length
+    );
   }
 
-  /**
-   * Cancel a plain-language conversation
-   */
-  cancelConversation(conversationId: string): boolean {
-    return this.conversationBuilder.cancelConversation(conversationId);
+  // ==========================================
+  // Cross-Subsystem Queries (coordinates permissions + repository)
+  // ==========================================
+
+  getContractsForUser(userId: string): LearningContract[] {
+    const accessible = this.permissions.getUserContracts(userId);
+    const contracts: LearningContract[] = [];
+
+    for (const { contractId } of accessible) {
+      const contract = this.getContract(contractId);
+      if (contract) {
+        contracts.push(contract);
+      }
+    }
+
+    return contracts;
   }
 
-  /**
-   * Clean up old conversations
-   */
-  cleanupOldConversations(maxAgeMs?: number): number {
-    return this.conversationBuilder.cleanupOldConversations(maxAgeMs);
+  getOwnedContracts(userId: string): LearningContract[] {
+    const accessible = this.permissions.getUserContracts(userId);
+    const contracts: LearningContract[] = [];
+
+    for (const { contractId, level } of accessible) {
+      if (level === PermissionLevel.OWNER) {
+        const contract = this.getContract(contractId);
+        if (contract) {
+          contracts.push(contract);
+        }
+      }
+    }
+
+    return contracts;
   }
 
-  /**
-   * Get abstraction level based on contract type
-   */
+  // ==========================================
+  // Private Helpers
+  // ==========================================
+
   private getMaxAbstraction(
     contractType: string,
     allowGeneralization: boolean
@@ -738,40 +738,6 @@ export class LearningContractsSystem {
     }
   }
 
-  /**
-   * Memory Vault Integration Methods
-   */
-
-  /**
-   * Create a contract-enforced vault instance
-   *
-   * The returned vault enforces all Learning Contract rules before
-   * allowing memory operations. This is the recommended way to
-   * integrate with Memory Vault.
-   *
-   * @param adapter - The vault adapter to wrap (e.g., HTTP adapter, mock)
-   * @param boundaryMode - Current boundary mode for enforcement
-   * @param defaultActor - Default actor for operations
-   */
-  createContractEnforcedVault(
-    adapter: MemoryVaultAdapter,
-    boundaryMode: BoundaryMode,
-    defaultActor?: string
-  ): ContractEnforcedVault {
-    return new ContractEnforcedVault({
-      adapter,
-      contractResolver: (contractId: string) => this.getContract(contractId),
-      contractFinder: (domain, context, tool) =>
-        this.findApplicableContract(domain, context, tool),
-      auditLogger: (event: VaultAuditEvent) => this.logVaultEvent(event),
-      boundaryMode,
-      defaultActor,
-    });
-  }
-
-  /**
-   * Log a vault audit event to the main audit log
-   */
   private logVaultEvent(event: VaultAuditEvent): void {
     const contractId = event.contract_id ?? 'unknown';
     const memoryId = event.memory_id ?? 'unknown';
@@ -817,35 +783,6 @@ export class LearningContractsSystem {
     }
   }
 
-  /**
-   * Boundary Daemon Integration Methods
-   */
-
-  /**
-   * Create a boundary-enforced system instance
-   *
-   * The returned system monitors boundary mode changes and automatically
-   * suspends/resumes contracts based on their required boundary modes.
-   *
-   * @param adapter - The boundary daemon adapter to use
-   * @param autoResumeOnUpgrade - Whether to auto-resume suspended contracts on upgrade
-   */
-  createBoundaryEnforcedSystem(
-    adapter: BoundaryDaemonAdapter,
-    autoResumeOnUpgrade: boolean = true
-  ): BoundaryEnforcedSystem {
-    return new BoundaryEnforcedSystem({
-      adapter,
-      contractResolver: (contractId: string) => this.getContract(contractId),
-      activeContractsProvider: () => this.getActiveContracts(),
-      auditLogger: (event: BoundaryAuditEvent) => this.logBoundaryEvent(event),
-      autoResumeOnUpgrade,
-    });
-  }
-
-  /**
-   * Log a boundary audit event to the main audit log
-   */
   private logBoundaryEvent(event: BoundaryAuditEvent): void {
     switch (event.event_type) {
       case 'suspension':
@@ -898,702 +835,5 @@ export class LearningContractsSystem {
         // These are informational events
         break;
     }
-  }
-
-  /**
-   * Session Management Methods
-   */
-
-  /**
-   * Start a new session
-   *
-   * Sessions track active usage periods. Session-scoped contracts
-   * are automatically expired when their session ends.
-   *
-   * @param userId - User who owns this session
-   * @param metadata - Optional session metadata
-   */
-  startSession(userId: string, metadata?: Record<string, unknown>): Session {
-    return this.sessionManager.startSession(userId, metadata);
-  }
-
-  /**
-   * Get a session by ID
-   */
-  getSession(sessionId: string): Session | null {
-    return this.sessionManager.getSession(sessionId);
-  }
-
-  /**
-   * Get all active sessions
-   */
-  getActiveSessions(): Session[] {
-    return this.sessionManager.getActiveSessions();
-  }
-
-  /**
-   * Get all sessions for a user
-   */
-  getUserSessions(userId: string): Session[] {
-    return this.sessionManager.getUserSessions(userId);
-  }
-
-  /**
-   * Associate a session-scoped contract with a session
-   *
-   * Only contracts with retention='session' can be associated.
-   *
-   * @param sessionId - Session to associate with
-   * @param contractId - Contract to associate
-   */
-  associateContractWithSession(sessionId: string, contractId: string): boolean {
-    return this.sessionManager.associateContract(sessionId, contractId);
-  }
-
-  /**
-   * Get the session ID for a contract
-   */
-  getContractSession(contractId: string): string | null {
-    return this.sessionManager.getContractSession(contractId);
-  }
-
-  /**
-   * Check if a contract is associated with a session
-   */
-  isContractInSession(contractId: string): boolean {
-    return this.sessionManager.isContractInSession(contractId);
-  }
-
-  /**
-   * End a session and clean up associated contracts
-   *
-   * All session-scoped contracts associated with this session
-   * will be expired and their memories frozen.
-   *
-   * @param sessionId - Session to end
-   * @param options - Cleanup options
-   */
-  endSession(
-    sessionId: string,
-    options: SessionCleanupOptions = {}
-  ): SessionEndResult {
-    return this.sessionManager.endSession(sessionId, options);
-  }
-
-  /**
-   * End all sessions for a user
-   */
-  endUserSessions(
-    userId: string,
-    options: SessionCleanupOptions = {}
-  ): SessionEndResult[] {
-    return this.sessionManager.endUserSessions(userId, options);
-  }
-
-  /**
-   * Check for and expire timed-out sessions
-   *
-   * Call this periodically to clean up stale sessions.
-   */
-  expireTimedOutSessions(options: SessionCleanupOptions = {}): SessionEndResult[] {
-    return this.sessionManager.expireTimedOutSessions(options);
-  }
-
-  /**
-   * Register a listener for session end events
-   */
-  onSessionEnd(listener: (session: Session, result: SessionEndResult) => void): () => void {
-    return this.sessionManager.onSessionEnd(listener);
-  }
-
-  /**
-   * Get session statistics
-   */
-  getSessionStats(): {
-    totalSessions: number;
-    activeSessions: number;
-    endedSessions: number;
-    expiredSessions: number;
-    totalContractsInSessions: number;
-  } {
-    return this.sessionManager.getStats();
-  }
-
-  /**
-   * Clean up old ended/expired sessions from memory
-   */
-  cleanupOldSessions(maxAgeMs?: number): number {
-    return this.sessionManager.cleanupOldSessions(maxAgeMs);
-  }
-
-  /**
-   * Timebound Expiry Methods
-   */
-
-  /**
-   * Start automatic timebound expiry checking
-   *
-   * When running, the system will periodically check for contracts
-   * with expired retention_until timestamps and automatically expire them.
-   */
-  startTimeboundExpiryChecks(): void {
-    this.expiryManager.start();
-  }
-
-  /**
-   * Stop automatic timebound expiry checking
-   */
-  stopTimeboundExpiryChecks(): void {
-    this.expiryManager.stop();
-  }
-
-  /**
-   * Check if automatic timebound expiry checking is running
-   */
-  isTimeboundExpiryRunning(): boolean {
-    return this.expiryManager.isRunning();
-  }
-
-  /**
-   * Run a single timebound expiry check cycle
-   *
-   * Can be called manually even when automatic checking is not running.
-   * Useful for testing or manual maintenance.
-   */
-  runTimeboundExpiryCycle(): ExpiryCycleResult {
-    return this.expiryManager.runExpiryCycle();
-  }
-
-  /**
-   * Check a specific contract for timebound expiry (dry run)
-   *
-   * Returns information about whether the contract would be expired
-   * without actually expiring it.
-   */
-  checkTimeboundExpiry(contractId: string): ExpiryCheckResult | null {
-    return this.expiryManager.checkContract(contractId);
-  }
-
-  /**
-   * Force expire a specific contract immediately
-   *
-   * Bypasses the scheduled check and expires the contract now.
-   */
-  forceTimeboundExpiry(contractId: string): ExpiryCheckResult {
-    return this.expiryManager.forceExpire(contractId);
-  }
-
-  /**
-   * Register a listener for individual contract expiry events
-   */
-  onTimeboundExpiry(
-    listener: (contract: LearningContract, result: ExpiryCheckResult) => void
-  ): () => void {
-    return this.expiryManager.onExpiry(listener);
-  }
-
-  /**
-   * Register a listener for expiry cycle completion events
-   */
-  onExpiryCycleComplete(listener: (result: ExpiryCycleResult) => void): () => void {
-    return this.expiryManager.onCycleComplete(listener);
-  }
-
-  /**
-   * Get the timebound expiry check interval in milliseconds
-   */
-  getTimeboundExpiryInterval(): number {
-    return this.expiryManager.getCheckInterval();
-  }
-
-  /**
-   * Set a new timebound expiry check interval
-   *
-   * If automatic checking is running, it will be restarted with the new interval.
-   */
-  setTimeboundExpiryInterval(intervalMs: number): void {
-    this.expiryManager.setCheckInterval(intervalMs);
-  }
-
-  /**
-   * Get timebound expiry manager statistics
-   */
-  getTimeboundExpiryStats(): ExpiryManagerStats {
-    return this.expiryManager.getStats();
-  }
-
-  /**
-   * Reset timebound expiry statistics
-   */
-  resetTimeboundExpiryStats(): void {
-    this.expiryManager.resetStats();
-  }
-
-  // ==========================================
-  // Emergency Override Methods
-  // ==========================================
-
-  /**
-   * Triggers an emergency override that blocks all learning operations.
-   *
-   * When triggered:
-   * - All memory creation is blocked
-   * - All abstraction/generalization is blocked
-   * - All recall operations are blocked
-   * - All export operations are blocked
-   *
-   * This implements the "pause all learning" command for human supremacy.
-   *
-   * @param triggeredBy - Identifier of who/what triggered the override
-   * @param reason - Reason for triggering the override
-   * @returns Result of the trigger operation
-   */
-  triggerEmergencyOverride(
-    triggeredBy: string,
-    reason: string
-  ): OverrideTriggerResult {
-    const activeContracts = this.repository.query({ active_only: true });
-    return this.emergencyOverrideManager.triggerOverride(
-      triggeredBy,
-      reason,
-      activeContracts.length
-    );
-  }
-
-  /**
-   * Disables an active emergency override, resuming normal operation.
-   *
-   * @param disabledBy - Identifier of who/what is disabling the override
-   * @param reason - Optional reason for disabling
-   * @returns Result of the disable operation
-   */
-  disableEmergencyOverride(
-    disabledBy: string,
-    reason?: string
-  ): OverrideDisableResult {
-    return this.emergencyOverrideManager.disableOverride(disabledBy, reason);
-  }
-
-  /**
-   * Gets the current status of the emergency override.
-   *
-   * @returns Current emergency override status
-   */
-  getEmergencyOverrideStatus(): EmergencyOverrideStatus {
-    return this.emergencyOverrideManager.getStatus();
-  }
-
-  /**
-   * Checks if emergency override is currently active.
-   *
-   * @returns True if emergency override is active
-   */
-  isEmergencyOverrideActive(): boolean {
-    return this.emergencyOverrideManager.isActive();
-  }
-
-  /**
-   * Registers a listener for emergency override trigger events.
-   *
-   * @param listener - Callback to invoke when override is triggered
-   * @returns Unsubscribe function
-   */
-  onEmergencyOverrideTrigger(listener: OverrideTriggerListener): () => void {
-    return this.emergencyOverrideManager.onTrigger(listener);
-  }
-
-  /**
-   * Registers a listener for emergency override disable events.
-   *
-   * @param listener - Callback to invoke when override is disabled
-   * @returns Unsubscribe function
-   */
-  onEmergencyOverrideDisable(listener: OverrideDisableListener): () => void {
-    return this.emergencyOverrideManager.onDisable(listener);
-  }
-
-  /**
-   * Registers a listener for blocked operation events during emergency override.
-   *
-   * @param listener - Callback to invoke when an operation is blocked
-   * @returns Unsubscribe function
-   */
-  onEmergencyOverrideBlockedOperation(
-    listener: BlockedOperationListener
-  ): () => void {
-    return this.emergencyOverrideManager.onBlockedOperation(listener);
-  }
-
-  // ==========================================
-  // Multi-User Management Methods
-  // ==========================================
-
-  /**
-   * Connects a user from an access point.
-   *
-   * Enforces one instance per user - if the user is already connected
-   * from another access point, the connection will be rejected.
-   *
-   * @param userId - User identifier
-   * @param accessPoint - Access point identifier (e.g., IP, device ID)
-   * @param metadata - Optional connection metadata
-   * @returns Connection result
-   */
-  connectUser(
-    userId: string,
-    accessPoint: string,
-    metadata?: Record<string, unknown>
-  ): ConnectionResult {
-    return this.userManager.connect(userId, accessPoint, metadata);
-  }
-
-  /**
-   * Disconnects a user.
-   *
-   * @param userId - User identifier
-   * @param reason - Reason for disconnection
-   * @returns Disconnection result
-   */
-  disconnectUser(
-    userId: string,
-    reason: 'logout' | 'timeout' | 'kicked' | 'replaced' = 'logout'
-  ): DisconnectionResult {
-    return this.userManager.disconnect(userId, reason);
-  }
-
-  /**
-   * Kicks a user (forcibly disconnects).
-   *
-   * @param userId - User identifier
-   * @returns Disconnection result
-   */
-  kickUser(userId: string): DisconnectionResult {
-    return this.userManager.kickUser(userId);
-  }
-
-  /**
-   * Gets a user by ID.
-   *
-   * @param userId - User identifier
-   * @returns User or null if not found
-   */
-  getUser(userId: string): User | null {
-    return this.userManager.getUser(userId);
-  }
-
-  /**
-   * Checks if a user is currently connected.
-   *
-   * @param userId - User identifier
-   * @returns True if connected
-   */
-  isUserConnected(userId: string): boolean {
-    return this.userManager.isConnected(userId);
-  }
-
-  /**
-   * Gets all currently connected users.
-   *
-   * @returns Array of connected users
-   */
-  getConnectedUsers(): User[] {
-    return this.userManager.getConnectedUsers();
-  }
-
-  /**
-   * Gets all registered users.
-   *
-   * @returns Array of all users
-   */
-  getAllUsers(): User[] {
-    return this.userManager.getAllUsers();
-  }
-
-  /**
-   * Gets the number of currently connected users.
-   *
-   * @returns Connected user count
-   */
-  getConnectedUserCount(): number {
-    return this.userManager.getConnectedCount();
-  }
-
-  /**
-   * Updates the last activity timestamp for a user.
-   *
-   * Call this periodically to prevent timeout.
-   *
-   * @param userId - User identifier
-   * @returns True if activity was updated
-   */
-  updateUserActivity(userId: string): boolean {
-    return this.userManager.updateActivity(userId);
-  }
-
-  /**
-   * Gets user manager statistics.
-   *
-   * @returns User manager stats
-   */
-  getUserManagerStats(): UserManagerStats {
-    return this.userManager.getStats();
-  }
-
-  /**
-   * Registers a listener for user connect events.
-   *
-   * @param listener - Callback to invoke when user connects
-   * @returns Unsubscribe function
-   */
-  onUserConnect(listener: UserConnectListener): () => void {
-    return this.userManager.onConnect(listener);
-  }
-
-  /**
-   * Registers a listener for user disconnect events.
-   *
-   * @param listener - Callback to invoke when user disconnects
-   * @returns Unsubscribe function
-   */
-  onUserDisconnect(listener: UserDisconnectListener): () => void {
-    return this.userManager.onDisconnect(listener);
-  }
-
-  /**
-   * Registers a listener for connection rejected events.
-   *
-   * @param listener - Callback to invoke when connection is rejected
-   * @returns Unsubscribe function
-   */
-  onConnectionRejected(listener: ConnectionRejectedListener): () => void {
-    return this.userManager.onConnectionRejected(listener);
-  }
-
-  /**
-   * Starts automatic timeout checking for inactive users.
-   *
-   * @param intervalMs - Check interval in milliseconds (default: 60000)
-   */
-  startUserTimeoutChecks(intervalMs?: number): void {
-    this.userManager.startTimeoutChecks(intervalMs);
-  }
-
-  /**
-   * Stops automatic timeout checking.
-   */
-  stopUserTimeoutChecks(): void {
-    this.userManager.stopTimeoutChecks();
-  }
-
-  /**
-   * Checks for and returns timed-out users.
-   *
-   * @returns Array of user IDs that have timed out
-   */
-  checkUserTimeouts(): string[] {
-    return this.userManager.checkTimeouts();
-  }
-
-  // ==========================================
-  // Contract Permission Methods
-  // ==========================================
-
-  /**
-   * Grants a permission on a contract to another user.
-   *
-   * Only the contract owner can grant permissions.
-   *
-   * @param contractId - Contract identifier
-   * @param granterId - User granting the permission (must be owner)
-   * @param userId - User receiving the permission
-   * @param level - Permission level to grant
-   * @param options - Optional grant options (expiration, etc.)
-   * @returns Permission check result
-   */
-  grantContractPermission(
-    contractId: string,
-    granterId: string,
-    userId: string,
-    level: PermissionLevel,
-    options?: GrantPermissionOptions
-  ): PermissionCheckResult {
-    return this.permissionManager.grantPermission(
-      contractId,
-      granterId,
-      userId,
-      level,
-      options
-    );
-  }
-
-  /**
-   * Revokes a permission on a contract from a user.
-   *
-   * Only the contract owner can revoke permissions.
-   *
-   * @param contractId - Contract identifier
-   * @param revokerId - User revoking the permission (must be owner)
-   * @param userId - User losing the permission
-   * @returns Permission check result
-   */
-  revokeContractPermission(
-    contractId: string,
-    revokerId: string,
-    userId: string
-  ): PermissionCheckResult {
-    return this.permissionManager.revokePermission(contractId, revokerId, userId);
-  }
-
-  /**
-   * Transfers ownership of a contract to another user.
-   *
-   * Only the current owner can transfer ownership.
-   *
-   * @param contractId - Contract identifier
-   * @param currentOwnerId - Current owner (must match)
-   * @param newOwnerId - User who will become the new owner
-   * @returns Permission check result
-   */
-  transferContractOwnership(
-    contractId: string,
-    currentOwnerId: string,
-    newOwnerId: string
-  ): PermissionCheckResult {
-    return this.permissionManager.transferOwnership(
-      contractId,
-      currentOwnerId,
-      newOwnerId
-    );
-  }
-
-  /**
-   * Gets the owner of a contract.
-   *
-   * @param contractId - Contract identifier
-   * @returns Owner user ID or null
-   */
-  getContractOwner(contractId: string): string | null {
-    return this.permissionManager.getOwner(contractId);
-  }
-
-  /**
-   * Gets a user's permission level on a contract.
-   *
-   * @param contractId - Contract identifier
-   * @param userId - User identifier
-   * @returns Permission level or undefined if no permission
-   */
-  getUserPermissionLevel(
-    contractId: string,
-    userId: string
-  ): PermissionLevel | undefined {
-    return this.permissionManager.getUserPermissionLevel(contractId, userId);
-  }
-
-  /**
-   * Checks if a user has at least a certain permission level on a contract.
-   *
-   * @param contractId - Contract identifier
-   * @param userId - User identifier
-   * @param requiredLevel - Minimum required permission level
-   * @returns Permission check result
-   */
-  checkUserPermission(
-    contractId: string,
-    userId: string,
-    requiredLevel: PermissionLevel
-  ): PermissionCheckResult {
-    return this.permissionManager.hasPermission(contractId, userId, requiredLevel);
-  }
-
-  /**
-   * Checks if a user can perform an operation on a contract.
-   *
-   * @param contractId - Contract identifier
-   * @param userId - User identifier
-   * @param operation - Operation to check ('read', 'use', 'modify', 'share')
-   * @returns Permission check result
-   */
-  checkContractOperation(
-    contractId: string,
-    userId: string,
-    operation: 'read' | 'use' | 'modify' | 'share'
-  ): PermissionCheckResult {
-    return this.permissionManager.checkOperation(contractId, userId, operation);
-  }
-
-  /**
-   * Gets all permissions on a contract.
-   *
-   * @param contractId - Contract identifier
-   * @returns Array of contract permissions
-   */
-  getContractPermissions(contractId: string): ContractPermission[] {
-    return this.permissionManager.getContractPermissions(contractId);
-  }
-
-  /**
-   * Gets all contracts a user has access to.
-   *
-   * @param userId - User identifier
-   * @returns Array of contract IDs with permission levels
-   */
-  getUserAccessibleContracts(
-    userId: string
-  ): { contractId: string; level: PermissionLevel }[] {
-    return this.permissionManager.getUserContracts(userId);
-  }
-
-  /**
-   * Gets contracts the user can view (READER or higher).
-   *
-   * @param userId - User identifier
-   * @returns Array of contracts the user can read
-   */
-  getContractsForUser(userId: string): LearningContract[] {
-    const accessible = this.permissionManager.getUserContracts(userId);
-    const contracts: LearningContract[] = [];
-
-    for (const { contractId } of accessible) {
-      const contract = this.getContract(contractId);
-      if (contract) {
-        contracts.push(contract);
-      }
-    }
-
-    return contracts;
-  }
-
-  /**
-   * Gets contracts owned by a user.
-   *
-   * @param userId - User identifier
-   * @returns Array of contracts owned by the user
-   */
-  getOwnedContracts(userId: string): LearningContract[] {
-    const accessible = this.permissionManager.getUserContracts(userId);
-    const contracts: LearningContract[] = [];
-
-    for (const { contractId, level } of accessible) {
-      if (level === PermissionLevel.OWNER) {
-        const contract = this.getContract(contractId);
-        if (contract) {
-          contracts.push(contract);
-        }
-      }
-    }
-
-    return contracts;
-  }
-
-  /**
-   * Cleans up expired permissions.
-   *
-   * Call this periodically to remove expired temporary permissions.
-   *
-   * @returns Number of permissions removed
-   */
-  cleanupExpiredPermissions(): number {
-    return this.permissionManager.cleanupExpired();
   }
 }

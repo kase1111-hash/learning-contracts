@@ -645,56 +645,56 @@ describe('Multi-User Support', () => {
 
     describe('User Connection Integration', () => {
       test('should connect users through the system', () => {
-        const result = system.connectUser('alice', 'terminal-1');
+        const result = system.users.connect('alice', 'terminal-1');
 
         expect(result.success).toBe(true);
-        expect(system.isUserConnected('alice')).toBe(true);
+        expect(system.users.isConnected('alice')).toBe(true);
       });
 
       test('should enforce one instance per user', () => {
-        system.connectUser('alice', 'terminal-1');
+        system.users.connect('alice', 'terminal-1');
 
-        const result = system.connectUser('alice', 'terminal-2');
+        const result = system.users.connect('alice', 'terminal-2');
 
         expect(result.success).toBe(false);
-        expect(system.getConnectedUserCount()).toBe(1);
+        expect(system.users.getConnectedCount()).toBe(1);
       });
 
       test('should disconnect users through the system', () => {
-        system.connectUser('alice', 'terminal-1');
+        system.users.connect('alice', 'terminal-1');
 
-        const result = system.disconnectUser('alice');
+        const result = system.users.disconnect('alice');
 
         expect(result.success).toBe(true);
-        expect(system.isUserConnected('alice')).toBe(false);
+        expect(system.users.isConnected('alice')).toBe(false);
       });
 
       test('should kick users through the system', () => {
-        system.connectUser('alice', 'terminal-1');
+        system.users.connect('alice', 'terminal-1');
 
-        const result = system.kickUser('alice');
+        const result = system.users.kickUser('alice');
 
         expect(result.success).toBe(true);
-        expect(system.getUser('alice')?.status).toBe(UserStatus.KICKED);
+        expect(system.users.getUser('alice')?.status).toBe(UserStatus.KICKED);
       });
 
       test('should get all connected users', () => {
-        system.connectUser('alice', 'terminal-1');
-        system.connectUser('bob', 'terminal-2');
-        system.connectUser('charlie', 'terminal-3');
-        system.disconnectUser('bob');
+        system.users.connect('alice', 'terminal-1');
+        system.users.connect('bob', 'terminal-2');
+        system.users.connect('charlie', 'terminal-3');
+        system.users.disconnect('bob');
 
-        const connected = system.getConnectedUsers();
+        const connected = system.users.getConnectedUsers();
 
         expect(connected.length).toBe(2);
       });
 
       test('should track user manager stats', () => {
-        system.connectUser('alice', 'terminal-1');
-        system.connectUser('bob', 'terminal-2');
-        system.disconnectUser('alice');
+        system.users.connect('alice', 'terminal-1');
+        system.users.connect('bob', 'terminal-2');
+        system.users.disconnect('alice');
 
-        const stats = system.getUserManagerStats();
+        const stats = system.users.getStats();
 
         expect(stats.total_connections).toBe(2);
         expect(stats.total_disconnections).toBe(1);
@@ -708,7 +708,7 @@ describe('Multi-User Support', () => {
           domains: ['coding'],
         });
 
-        const owner = system.getContractOwner(contract.contract_id);
+        const owner = system.permissions.getOwner(contract.contract_id);
         expect(owner).toBe('alice');
       });
 
@@ -717,7 +717,7 @@ describe('Multi-User Support', () => {
           domains: ['coding'],
         });
 
-        const result = system.grantContractPermission(
+        const result = system.permissions.grantPermission(
           contract.contract_id,
           'alice',
           'bob',
@@ -725,7 +725,7 @@ describe('Multi-User Support', () => {
         );
 
         expect(result.allowed).toBe(true);
-        expect(system.getUserPermissionLevel(contract.contract_id, 'bob')).toBe(
+        expect(system.permissions.getUserPermissionLevel(contract.contract_id, 'bob')).toBe(
           PermissionLevel.DELEGATE
         );
       });
@@ -734,21 +734,21 @@ describe('Multi-User Support', () => {
         const contract = system.createEpisodicContract('alice', {
           domains: ['coding'],
         });
-        system.grantContractPermission(
+        system.permissions.grantPermission(
           contract.contract_id,
           'alice',
           'bob',
           PermissionLevel.DELEGATE
         );
 
-        const result = system.revokeContractPermission(
+        const result = system.permissions.revokePermission(
           contract.contract_id,
           'alice',
           'bob'
         );
 
         expect(result.allowed).toBe(true);
-        expect(system.getUserPermissionLevel(contract.contract_id, 'bob')).toBeUndefined();
+        expect(system.permissions.getUserPermissionLevel(contract.contract_id, 'bob')).toBeUndefined();
       });
 
       test('should transfer ownership through the system', () => {
@@ -756,28 +756,28 @@ describe('Multi-User Support', () => {
           domains: ['coding'],
         });
 
-        const result = system.transferContractOwnership(
+        const result = system.permissions.transferOwnership(
           contract.contract_id,
           'alice',
           'bob'
         );
 
         expect(result.allowed).toBe(true);
-        expect(system.getContractOwner(contract.contract_id)).toBe('bob');
+        expect(system.permissions.getOwner(contract.contract_id)).toBe('bob');
       });
 
       test('should check user permissions through the system', () => {
         const contract = system.createEpisodicContract('alice', {
           domains: ['coding'],
         });
-        system.grantContractPermission(
+        system.permissions.grantPermission(
           contract.contract_id,
           'alice',
           'bob',
           PermissionLevel.DELEGATE
         );
 
-        const result = system.checkUserPermission(
+        const result = system.permissions.hasPermission(
           contract.contract_id,
           'bob',
           PermissionLevel.DELEGATE
@@ -790,17 +790,17 @@ describe('Multi-User Support', () => {
         const contract = system.createEpisodicContract('alice', {
           domains: ['coding'],
         });
-        system.grantContractPermission(
+        system.permissions.grantPermission(
           contract.contract_id,
           'alice',
           'bob',
           PermissionLevel.DELEGATE
         );
 
-        expect(system.checkContractOperation(contract.contract_id, 'bob', 'use').allowed).toBe(
+        expect(system.permissions.checkOperation(contract.contract_id, 'bob', 'use').allowed).toBe(
           true
         );
-        expect(system.checkContractOperation(contract.contract_id, 'bob', 'modify').allowed).toBe(
+        expect(system.permissions.checkOperation(contract.contract_id, 'bob', 'modify').allowed).toBe(
           false
         );
       });
@@ -812,7 +812,7 @@ describe('Multi-User Support', () => {
         const contract2 = system.createEpisodicContract('bob', {
           domains: ['design'],
         });
-        system.grantContractPermission(
+        system.permissions.grantPermission(
           contract2.contract_id,
           'bob',
           'alice',
@@ -834,7 +834,7 @@ describe('Multi-User Support', () => {
         const contract3 = system.createEpisodicContract('bob', {
           domains: ['testing'],
         });
-        system.grantContractPermission(
+        system.permissions.grantPermission(
           contract3.contract_id,
           'bob',
           'alice',
@@ -853,20 +853,20 @@ describe('Multi-User Support', () => {
         const contract = system.createEpisodicContract('alice', {
           domains: ['coding'],
         });
-        system.grantContractPermission(
+        system.permissions.grantPermission(
           contract.contract_id,
           'alice',
           'bob',
           PermissionLevel.DELEGATE
         );
-        system.grantContractPermission(
+        system.permissions.grantPermission(
           contract.contract_id,
           'alice',
           'charlie',
           PermissionLevel.READER
         );
 
-        const perms = system.getContractPermissions(contract.contract_id);
+        const perms = system.permissions.getContractPermissions(contract.contract_id);
 
         expect(perms.length).toBe(3);
       });
@@ -878,14 +878,14 @@ describe('Multi-User Support', () => {
         const contract2 = system.createEpisodicContract('bob', {
           domains: ['design'],
         });
-        system.grantContractPermission(
+        system.permissions.grantPermission(
           contract2.contract_id,
           'bob',
           'alice',
           PermissionLevel.DELEGATE
         );
 
-        const accessible = system.getUserAccessibleContracts('alice');
+        const accessible = system.permissions.getUserContracts('alice');
 
         expect(accessible.length).toBe(2);
         expect(accessible.find((a) => a.contractId === contract1.contract_id)?.level).toBe(
@@ -900,9 +900,9 @@ describe('Multi-User Support', () => {
     describe('Multiple User Workflow', () => {
       test('should support multiple users with different contracts', () => {
         // Connect users
-        system.connectUser('alice', 'terminal-1');
-        system.connectUser('bob', 'terminal-2');
-        system.connectUser('charlie', 'terminal-3');
+        system.users.connect('alice', 'terminal-1');
+        system.users.connect('bob', 'terminal-2');
+        system.users.connect('charlie', 'terminal-3');
 
         // Create contracts
         const aliceContract = system.createEpisodicContract('alice', {
@@ -913,13 +913,13 @@ describe('Multi-User Support', () => {
         });
 
         // Share access
-        system.grantContractPermission(
+        system.permissions.grantPermission(
           aliceContract.contract_id,
           'alice',
           'charlie',
           PermissionLevel.DELEGATE
         );
-        system.grantContractPermission(
+        system.permissions.grantPermission(
           bobContract.contract_id,
           'bob',
           'charlie',
@@ -933,32 +933,32 @@ describe('Multi-User Support', () => {
 
         // Verify permissions
         expect(
-          system.checkContractOperation(aliceContract.contract_id, 'charlie', 'use').allowed
+          system.permissions.checkOperation(aliceContract.contract_id, 'charlie', 'use').allowed
         ).toBe(true);
         expect(
-          system.checkContractOperation(bobContract.contract_id, 'charlie', 'use').allowed
+          system.permissions.checkOperation(bobContract.contract_id, 'charlie', 'use').allowed
         ).toBe(false); // Reader can't use
 
         // Disconnect a user
-        system.disconnectUser('bob');
-        expect(system.getConnectedUserCount()).toBe(2);
+        system.users.disconnect('bob');
+        expect(system.users.getConnectedCount()).toBe(2);
 
         // Permissions should still work after disconnect
-        expect(system.getContractOwner(bobContract.contract_id)).toBe('bob');
+        expect(system.permissions.getOwner(bobContract.contract_id)).toBe('bob');
       });
 
       test('should prevent duplicate user connections', () => {
-        system.connectUser('alice', 'terminal-1');
-        system.connectUser('bob', 'terminal-2');
+        system.users.connect('alice', 'terminal-1');
+        system.users.connect('bob', 'terminal-2');
 
         // Try to connect alice again
-        const result = system.connectUser('alice', 'terminal-3');
+        const result = system.users.connect('alice', 'terminal-3');
 
         expect(result.success).toBe(false);
-        expect(system.getConnectedUserCount()).toBe(2);
+        expect(system.users.getConnectedCount()).toBe(2);
 
         // Verify alice's connection is still from terminal-1
-        const alice = system.getUser('alice');
+        const alice = system.users.getUser('alice');
         expect(alice?.connection?.access_point).toBe('terminal-1');
       });
     });

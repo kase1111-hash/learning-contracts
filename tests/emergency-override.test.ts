@@ -64,14 +64,14 @@ describe('Emergency Override System', () => {
     test('should successfully disable active override', () => {
       system.triggerEmergencyOverride('admin', 'Security incident');
 
-      const result = system.disableEmergencyOverride('admin', 'Incident resolved');
+      const result = system.emergencyOverride.disableOverride('admin', 'Incident resolved');
 
       expect(result.success).toBe(true);
       expect(result.duration_ms).toBeGreaterThanOrEqual(0);
     });
 
     test('should fail to disable when not active', () => {
-      const result = system.disableEmergencyOverride('admin', 'No active override');
+      const result = system.emergencyOverride.disableOverride('admin', 'No active override');
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('not active');
@@ -96,7 +96,7 @@ describe('Emergency Override System', () => {
         requester: 'alice',
       });
 
-      const result = system.disableEmergencyOverride('admin', 'Resolved');
+      const result = system.emergencyOverride.disableOverride('admin', 'Resolved');
 
       expect(result.success).toBe(true);
       expect(result.operations_blocked_during).toBe(2);
@@ -105,7 +105,7 @@ describe('Emergency Override System', () => {
 
   describe('Emergency Override Status', () => {
     test('should report inactive when not triggered', () => {
-      const status = system.getEmergencyOverrideStatus();
+      const status = system.emergencyOverride.getStatus();
 
       expect(status.active).toBe(false);
       expect(status.reason).toBeUndefined();
@@ -116,7 +116,7 @@ describe('Emergency Override System', () => {
     test('should report active when triggered', () => {
       system.triggerEmergencyOverride('admin', 'Security incident');
 
-      const status = system.getEmergencyOverrideStatus();
+      const status = system.emergencyOverride.getStatus();
 
       expect(status.active).toBe(true);
       expect(status.reason).toBe('Security incident');
@@ -125,15 +125,15 @@ describe('Emergency Override System', () => {
     });
 
     test('isEmergencyOverrideActive should return correct value', () => {
-      expect(system.isEmergencyOverrideActive()).toBe(false);
+      expect(system.emergencyOverride.isActive()).toBe(false);
 
       system.triggerEmergencyOverride('admin', 'Test');
 
-      expect(system.isEmergencyOverrideActive()).toBe(true);
+      expect(system.emergencyOverride.isActive()).toBe(true);
 
-      system.disableEmergencyOverride('admin');
+      system.emergencyOverride.disableOverride('admin');
 
-      expect(system.isEmergencyOverrideActive()).toBe(false);
+      expect(system.emergencyOverride.isActive()).toBe(false);
     });
   });
 
@@ -168,7 +168,7 @@ describe('Emergency Override System', () => {
       expect(duringResult.reason).toContain('Emergency override active');
 
       // After override disabled - should succeed again
-      system.disableEmergencyOverride('admin');
+      system.emergencyOverride.disableOverride('admin');
       const afterResult = system.checkMemoryCreation(
         contract.contract_id,
         BoundaryMode.NORMAL,
@@ -237,7 +237,7 @@ describe('Emergency Override System', () => {
       let triggered = false;
       let receivedEvent: any = null;
 
-      system.onEmergencyOverrideTrigger((event) => {
+      system.emergencyOverride.onTrigger((event) => {
         triggered = true;
         receivedEvent = event;
       });
@@ -253,13 +253,13 @@ describe('Emergency Override System', () => {
       let disabled = false;
       let receivedEvent: any = null;
 
-      system.onEmergencyOverrideDisable((event) => {
+      system.emergencyOverride.onDisable((event) => {
         disabled = true;
         receivedEvent = event;
       });
 
       system.triggerEmergencyOverride('admin', 'Security incident');
-      system.disableEmergencyOverride('admin', 'Resolved');
+      system.emergencyOverride.disableOverride('admin', 'Resolved');
 
       expect(disabled).toBe(true);
       expect(receivedEvent.disabled_by).toBe('admin');
@@ -269,7 +269,7 @@ describe('Emergency Override System', () => {
     test('should notify blocked operation listeners', () => {
       const blockedOps: { operation: string; contractId: string }[] = [];
 
-      system.onEmergencyOverrideBlockedOperation((op, contractId) => {
+      system.emergencyOverride.onBlockedOperation((op, contractId) => {
         blockedOps.push({ operation: op, contractId });
       });
 
@@ -297,12 +297,12 @@ describe('Emergency Override System', () => {
     test('should allow unsubscribing from listeners', () => {
       let count = 0;
 
-      const unsubscribe = system.onEmergencyOverrideTrigger(() => {
+      const unsubscribe = system.emergencyOverride.onTrigger(() => {
         count++;
       });
 
       system.triggerEmergencyOverride('admin', 'First');
-      system.disableEmergencyOverride('admin');
+      system.emergencyOverride.disableOverride('admin');
 
       unsubscribe();
 
@@ -326,7 +326,7 @@ describe('Emergency Override System', () => {
 
     test('should log disable event to audit trail', () => {
       system.triggerEmergencyOverride('admin', 'Security incident');
-      system.disableEmergencyOverride('admin', 'Resolved');
+      system.emergencyOverride.disableOverride('admin', 'Resolved');
 
       const audit = system.getAuditLog();
       const disableEvent = audit.find(
@@ -400,11 +400,11 @@ describe('Emergency Override System', () => {
         const trigger = system.triggerEmergencyOverride('admin', `Trigger ${i}`);
         expect(trigger.success).toBe(true);
 
-        const disable = system.disableEmergencyOverride('admin', `Disable ${i}`);
+        const disable = system.emergencyOverride.disableOverride('admin', `Disable ${i}`);
         expect(disable.success).toBe(true);
       }
 
-      expect(system.isEmergencyOverrideActive()).toBe(false);
+      expect(system.emergencyOverride.isActive()).toBe(false);
     });
 
     test('should preserve override state across multiple operations', () => {
@@ -428,7 +428,7 @@ describe('Emergency Override System', () => {
       }
 
       // Status should reflect all blocked operations
-      const status = system.getEmergencyOverrideStatus();
+      const status = system.emergencyOverride.getStatus();
       expect(status.operations_blocked).toBe(10);
     });
 
