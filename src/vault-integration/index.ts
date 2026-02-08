@@ -41,9 +41,9 @@ export {
 export {
   ContractEnforcedVault,
   ContractEnforcedVaultConfig,
-  ContractResolver,
+  VaultContractResolver,
   ContractFinder,
-  AuditLogger,
+  VaultAuditLogger,
   VaultAuditEvent,
   EnforcedOperationResult,
 } from './enforced-vault';

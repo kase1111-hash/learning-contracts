@@ -60,7 +60,7 @@ export interface EnforcedOperationResult<T> {
  * Contract resolver function type
  * Used to look up contracts by ID
  */
-export type ContractResolver = (contract_id: string) => LearningContract | null;
+export type VaultContractResolver = (contract_id: string) => LearningContract | null;
 
 /**
  * Contract finder function type
@@ -76,7 +76,7 @@ export type ContractFinder = (
  * Audit logger function type
  * Called for every operation (success or failure)
  */
-export type AuditLogger = (event: VaultAuditEvent) => void;
+export type VaultAuditLogger = (event: VaultAuditEvent) => void;
 
 /**
  * Vault audit event
@@ -109,11 +109,11 @@ export interface ContractEnforcedVaultConfig {
   /** Vault adapter to wrap */
   adapter: MemoryVaultAdapter;
   /** Function to resolve contracts by ID */
-  contractResolver: ContractResolver;
+  contractResolver: VaultContractResolver;
   /** Function to find applicable contract */
   contractFinder: ContractFinder;
   /** Audit logger (optional) */
-  auditLogger?: AuditLogger;
+  auditLogger?: VaultAuditLogger;
   /** Current boundary mode */
   boundaryMode: BoundaryMode;
   /** Default actor for operations */
@@ -127,9 +127,9 @@ export interface ContractEnforcedVaultConfig {
  */
 export class ContractEnforcedVault {
   private adapter: MemoryVaultAdapter;
-  private resolveContract: ContractResolver;
+  private resolveContract: VaultContractResolver;
   private findContract: ContractFinder;
-  private logAudit: AuditLogger;
+  private logAudit: VaultAuditLogger;
   private boundaryMode: BoundaryMode;
   private defaultActor: string;
 
