@@ -4,6 +4,9 @@
 
 import {
   LearningContractsSystem,
+} from 'learning-contracts';
+
+import {
   MockBoundaryDaemonAdapter,
   BoundaryEnforcedSystem,
   DaemonBoundaryMode,
@@ -218,7 +221,11 @@ describe('BoundaryEnforcedSystem', () => {
   beforeEach(() => {
     system = new LearningContractsSystem();
     adapter = new MockBoundaryDaemonAdapter(DaemonBoundaryMode.OPEN);
-    boundarySystem = system.createBoundaryEnforcedSystem(adapter);
+    boundarySystem = new BoundaryEnforcedSystem({
+      adapter,
+      contractResolver: (id: string) => system.getContract(id),
+      activeContractsProvider: () => system.getActiveContracts(),
+    });
   });
 
   afterEach(() => {
@@ -477,63 +484,6 @@ describe('BoundaryEnforcedSystem', () => {
       const suspended = boundarySystem.getSuspendedContracts();
 
       expect(suspended.length).toBe(2);
-    });
-  });
-});
-
-describe('LearningContractsSystem - Boundary Integration', () => {
-  let system: LearningContractsSystem;
-  let adapter: MockBoundaryDaemonAdapter;
-
-  beforeEach(() => {
-    system = new LearningContractsSystem();
-    adapter = new MockBoundaryDaemonAdapter();
-  });
-
-  describe('createBoundaryEnforcedSystem', () => {
-    test('should create a boundary-enforced system', () => {
-      const boundarySystem = system.createBoundaryEnforcedSystem(adapter);
-
-      expect(boundarySystem).toBeInstanceOf(BoundaryEnforcedSystem);
-      boundarySystem.destroy();
-    });
-
-    test('should use system contract resolver', async () => {
-      let contract = system.createEpisodicContract('alice', {
-        domains: ['test'],
-      });
-      contract = system.submitForReview(contract.contract_id, 'alice');
-      contract = system.activateContract(contract.contract_id, 'alice');
-
-      const boundarySystem = system.createBoundaryEnforcedSystem(adapter);
-      await boundarySystem.initialize();
-
-      // Contract should be found by the resolver
-      expect(boundarySystem.canContractOperate(contract)).toBe(true);
-      boundarySystem.destroy();
-    });
-
-    test('should use system active contracts provider', async () => {
-      let contract1 = system.createEpisodicContract('alice', {
-        domains: ['test1'],
-      });
-      contract1 = system.submitForReview(contract1.contract_id, 'alice');
-      contract1 = system.activateContract(contract1.contract_id, 'alice');
-
-      let contract2 = system.createProceduralContract('bob', {
-        domains: ['test2'],
-      });
-      contract2 = system.submitForReview(contract2.contract_id, 'bob');
-      contract2 = system.activateContract(contract2.contract_id, 'bob');
-
-      const boundarySystem = system.createBoundaryEnforcedSystem(adapter);
-      await boundarySystem.initialize();
-
-      // Trigger lockdown to suspend all
-      await boundarySystem.triggerLockdown('Test', 'admin');
-
-      expect(boundarySystem.getSuspendedContracts().length).toBe(2);
-      boundarySystem.destroy();
     });
   });
 });

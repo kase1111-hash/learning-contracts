@@ -23,7 +23,7 @@ import {
   DAEMON_TO_LC_MODE,
 } from './types';
 import { BoundaryDaemonAdapter, ModeChangeListener, TripwireListener } from './adapter';
-import { LearningContract, ContractState, BoundaryMode } from '../types';
+import { LearningContract, ContractState, BoundaryMode } from 'learning-contracts';
 
 /**
  * Contract suspension state

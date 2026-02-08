@@ -9,9 +9,13 @@
     "README.md",
     "LICENSE"
   ],
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "build": "tsc",
     "test": "jest",
+    "test:all": "jest && npm test --workspaces --if-present",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "lint": "eslint src",

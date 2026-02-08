@@ -4,9 +4,12 @@
 
 import {
   LearningContractsSystem,
+  BoundaryMode,
+} from 'learning-contracts';
+
+import {
   MockMemoryVaultAdapter,
   ContractEnforcedVault,
-  BoundaryMode,
   ClassificationLevel,
 } from '../src';
 
@@ -189,11 +192,13 @@ describe('ContractEnforcedVault', () => {
   beforeEach(() => {
     system = new LearningContractsSystem();
     adapter = new MockMemoryVaultAdapter();
-    vault = system.createContractEnforcedVault(
+    vault = new ContractEnforcedVault({
       adapter,
-      BoundaryMode.NORMAL,
-      'test-agent'
-    );
+      contractResolver: (id: string) => system.getContract(id),
+      contractFinder: (domain, context, tool) => system.findApplicableContract(domain, context, tool),
+      boundaryMode: BoundaryMode.NORMAL,
+      defaultActor: 'test-agent',
+    });
   });
 
   describe('storeMemory - Contract Enforcement', () => {
@@ -397,11 +402,13 @@ describe('ContractEnforcedVault', () => {
       strategicContract = system.activateContract(strategicContract.contract_id, 'alice');
 
       // Create a vault with TRUSTED mode for storing
-      const trustedVault = system.createContractEnforcedVault(
+      const trustedVault = new ContractEnforcedVault({
         adapter,
-        BoundaryMode.TRUSTED,
-        'test-agent'
-      );
+        contractResolver: (id: string) => system.getContract(id),
+        contractFinder: (domain, context, tool) => system.findApplicableContract(domain, context, tool),
+        boundaryMode: BoundaryMode.TRUSTED,
+        defaultActor: 'test-agent',
+      });
 
       const storeResult = await trustedVault.storeMemory(
         {
@@ -533,7 +540,7 @@ describe('ContractEnforcedVault', () => {
   });
 });
 
-describe('LearningContractsSystem - Vault Integration', () => {
+describe('ContractEnforcedVault - Direct Construction', () => {
   let system: LearningContractsSystem;
   let adapter: MockMemoryVaultAdapter;
 
@@ -542,92 +549,143 @@ describe('LearningContractsSystem - Vault Integration', () => {
     adapter = new MockMemoryVaultAdapter();
   });
 
-  describe('createContractEnforcedVault', () => {
-    test('should create a contract-enforced vault', () => {
-      const vault = system.createContractEnforcedVault(
-        adapter,
-        BoundaryMode.NORMAL,
-        'test-agent'
-      );
-
-      expect(vault).toBeInstanceOf(ContractEnforcedVault);
-      expect(vault.getBoundaryMode()).toBe(BoundaryMode.NORMAL);
+  test('should create a contract-enforced vault with resolver callbacks', () => {
+    const vault = new ContractEnforcedVault({
+      adapter,
+      contractResolver: (id: string) => system.getContract(id),
+      contractFinder: (domain, context, tool) => system.findApplicableContract(domain, context, tool),
+      boundaryMode: BoundaryMode.NORMAL,
+      defaultActor: 'test-agent',
     });
 
-    test('should use system contract resolver', async () => {
-      let contract = system.createEpisodicContract('alice', {
-        domains: ['test'],
-      });
-      contract = system.submitForReview(contract.contract_id, 'alice');
-      contract = system.activateContract(contract.contract_id, 'alice');
-
-      const vault = system.createContractEnforcedVault(
-        adapter,
-        BoundaryMode.NORMAL,
-        'test-agent'
-      );
-
-      const result = await vault.storeMemory(
-        { content: 'Test', classification: ClassificationLevel.LOW, domain: 'test' },
-        contract.contract_id
-      );
-
-      expect(result.success).toBe(true);
-      expect(result.contract_id).toBe(contract.contract_id);
-    });
-
-    test('should use system contract finder', async () => {
-      let contract = system.createEpisodicContract('alice', {
-        domains: ['coding'],
-        contexts: ['project-x'],
-      });
-      contract = system.submitForReview(contract.contract_id, 'alice');
-      contract = system.activateContract(contract.contract_id, 'alice');
-
-      const vault = system.createContractEnforcedVault(
-        adapter,
-        BoundaryMode.NORMAL,
-        'test-agent'
-      );
-
-      // Store without explicit contract_id - should find matching contract
-      const result = await vault.storeMemory({
-        content: 'Test',
-        classification: ClassificationLevel.LOW,
-        domain: 'coding',
-        context: 'project-x',
-      });
-
-      expect(result.success).toBe(true);
-      expect(result.contract_id).toBe(contract.contract_id);
-    });
+    expect(vault).toBeInstanceOf(ContractEnforcedVault);
+    expect(vault.getBoundaryMode()).toBe(BoundaryMode.NORMAL);
   });
 
-  describe('Audit Integration', () => {
-    test('should log vault events to audit log', async () => {
-      let contract = system.createEpisodicContract('alice', {
-        domains: ['test'],
-      });
-      contract = system.submitForReview(contract.contract_id, 'alice');
-      contract = system.activateContract(contract.contract_id, 'alice');
-
-      const vault = system.createContractEnforcedVault(
-        adapter,
-        BoundaryMode.NORMAL,
-        'test-agent'
-      );
-
-      await vault.storeMemory(
-        { content: 'Test', classification: ClassificationLevel.LOW, domain: 'test' },
-        contract.contract_id
-      );
-
-      const auditLog = system.getAuditLog();
-      const memoryCreatedEvents = auditLog.filter(
-        e => e.details?.memory_id !== undefined
-      );
-
-      expect(memoryCreatedEvents.length).toBeGreaterThan(0);
+  test('should use contract resolver from system', async () => {
+    let contract = system.createEpisodicContract('alice', {
+      domains: ['test'],
     });
+    contract = system.submitForReview(contract.contract_id, 'alice');
+    contract = system.activateContract(contract.contract_id, 'alice');
+
+    const vault = new ContractEnforcedVault({
+      adapter,
+      contractResolver: (id: string) => system.getContract(id),
+      contractFinder: (domain, context, tool) => system.findApplicableContract(domain, context, tool),
+      boundaryMode: BoundaryMode.NORMAL,
+      defaultActor: 'test-agent',
+    });
+
+    const result = await vault.storeMemory(
+      { content: 'Test', classification: ClassificationLevel.LOW, domain: 'test' },
+      contract.contract_id
+    );
+
+    expect(result.success).toBe(true);
+    expect(result.contract_id).toBe(contract.contract_id);
+  });
+
+  test('should use contract finder from system', async () => {
+    let contract = system.createEpisodicContract('alice', {
+      domains: ['coding'],
+      contexts: ['project-x'],
+    });
+    contract = system.submitForReview(contract.contract_id, 'alice');
+    contract = system.activateContract(contract.contract_id, 'alice');
+
+    const vault = new ContractEnforcedVault({
+      adapter,
+      contractResolver: (id: string) => system.getContract(id),
+      contractFinder: (domain, context, tool) => system.findApplicableContract(domain, context, tool),
+      boundaryMode: BoundaryMode.NORMAL,
+      defaultActor: 'test-agent',
+    });
+
+    // Store without explicit contract_id - should find matching contract
+    const result = await vault.storeMemory({
+      content: 'Test',
+      classification: ClassificationLevel.LOW,
+      domain: 'coding',
+      context: 'project-x',
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.contract_id).toBe(contract.contract_id);
+  });
+
+  test('should enforce owner presence for memory recall', async () => {
+    const vault = new ContractEnforcedVault({
+      adapter,
+      contractResolver: (id: string) => system.getContract(id),
+      contractFinder: (domain, context, tool) => system.findApplicableContract(domain, context, tool),
+      boundaryMode: BoundaryMode.NORMAL,
+      defaultActor: 'agent',
+    });
+
+    // Create and activate a contract
+    let contract = system.createEpisodicContract('alice', {
+      domains: ['coding'],
+    });
+    contract = system.submitForReview(contract.contract_id, 'alice');
+    contract = system.activateContract(contract.contract_id, 'alice');
+
+    // Store a memory
+    const storeResult = await vault.storeMemory({
+      content: 'test memory',
+      classification: ClassificationLevel.LOW,
+      domain: 'coding',
+    }, contract.contract_id);
+
+    expect(storeResult.success).toBe(true);
+
+    // Non-owner trying to recall should be denied
+    const memoryId = storeResult.result?.memory_id;
+    expect(memoryId).toBeDefined();
+    const recallResult = await vault.recallMemory({
+      memory_id: memoryId!,
+      requester: 'bob', // Not the owner
+      justification: 'Testing',
+    });
+
+    expect(recallResult.success).toBe(false);
+    expect(recallResult.error).toContain('owner presence');
+  });
+
+  test('should allow owner to recall memory', async () => {
+    const vault = new ContractEnforcedVault({
+      adapter,
+      contractResolver: (id: string) => system.getContract(id),
+      contractFinder: (domain, context, tool) => system.findApplicableContract(domain, context, tool),
+      boundaryMode: BoundaryMode.NORMAL,
+      defaultActor: 'agent',
+    });
+
+    // Create and activate a contract
+    let contract = system.createEpisodicContract('alice', {
+      domains: ['coding'],
+    });
+    contract = system.submitForReview(contract.contract_id, 'alice');
+    contract = system.activateContract(contract.contract_id, 'alice');
+
+    // Store a memory
+    const storeResult = await vault.storeMemory({
+      content: 'test memory',
+      classification: ClassificationLevel.LOW,
+      domain: 'coding',
+    }, contract.contract_id);
+
+    expect(storeResult.success).toBe(true);
+
+    // Owner should be able to recall
+    const memoryId = storeResult.result?.memory_id;
+    expect(memoryId).toBeDefined();
+    const recallResult = await vault.recallMemory({
+      memory_id: memoryId!,
+      requester: 'alice', // The owner
+      justification: 'Testing',
+    });
+
+    expect(recallResult.success).toBe(true);
   });
 });

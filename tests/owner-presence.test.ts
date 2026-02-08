@@ -5,8 +5,6 @@
 import {
   LearningContractsSystem,
   BoundaryMode,
-  MockMemoryVaultAdapter,
-  ClassificationLevel,
 } from '../src';
 
 describe('Owner Presence Validation', () => {
@@ -170,81 +168,6 @@ describe('Owner Presence Validation', () => {
         (v) => v.reason?.includes('owner presence')
       );
       expect(ownerViolation).toBeDefined();
-    });
-  });
-
-  describe('Contract-Enforced Vault - Owner Presence', () => {
-    test('should enforce owner presence for memory recall', async () => {
-      const adapter = new MockMemoryVaultAdapter();
-      const vault = system.createContractEnforcedVault(
-        adapter,
-        BoundaryMode.NORMAL,
-        'agent'
-      );
-
-      // Create and activate a contract
-      let contract = system.createEpisodicContract('alice', {
-        domains: ['coding'],
-      });
-      contract = system.submitForReview(contract.contract_id, 'alice');
-      contract = system.activateContract(contract.contract_id, 'alice');
-
-      // Store a memory
-      const storeResult = await vault.storeMemory({
-        content: 'test memory',
-        classification: ClassificationLevel.LOW,
-        domain: 'coding',
-      }, contract.contract_id);
-
-      expect(storeResult.success).toBe(true);
-
-      // Non-owner trying to recall should be denied
-      const memoryId = storeResult.result?.memory_id;
-      expect(memoryId).toBeDefined();
-      const recallResult = await vault.recallMemory({
-        memory_id: memoryId!,
-        requester: 'bob', // Not the owner
-        justification: 'Testing',
-      });
-
-      expect(recallResult.success).toBe(false);
-      expect(recallResult.error).toContain('owner presence');
-    });
-
-    test('should allow owner to recall memory', async () => {
-      const adapter = new MockMemoryVaultAdapter();
-      const vault = system.createContractEnforcedVault(
-        adapter,
-        BoundaryMode.NORMAL,
-        'agent'
-      );
-
-      // Create and activate a contract
-      let contract = system.createEpisodicContract('alice', {
-        domains: ['coding'],
-      });
-      contract = system.submitForReview(contract.contract_id, 'alice');
-      contract = system.activateContract(contract.contract_id, 'alice');
-
-      // Store a memory
-      const storeResult = await vault.storeMemory({
-        content: 'test memory',
-        classification: ClassificationLevel.LOW,
-        domain: 'coding',
-      }, contract.contract_id);
-
-      expect(storeResult.success).toBe(true);
-
-      // Owner should be able to recall
-      const memoryId = storeResult.result?.memory_id;
-      expect(memoryId).toBeDefined();
-      const recallResult = await vault.recallMemory({
-        memory_id: memoryId!,
-        requester: 'alice', // The owner
-        justification: 'Testing',
-      });
-
-      expect(recallResult.success).toBe(true);
     });
   });
 

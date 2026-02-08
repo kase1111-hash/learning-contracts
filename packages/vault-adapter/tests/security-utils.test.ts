@@ -10,7 +10,7 @@ import {
   constantTimeCompare,
   withSecureMemory,
   createSecureCopy,
-} from '../src/vault-integration/security-utils';
+} from '../src/security-utils';
 
 describe('Security Utilities', () => {
   describe('zeroMemory', () => {

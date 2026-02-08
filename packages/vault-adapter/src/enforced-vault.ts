@@ -36,7 +36,7 @@ import {
   ContractState,
   ContractType,
   BoundaryMode,
-} from '../types';
+} from 'learning-contracts';
 
 /**
  * Result of a contract-enforced operation
