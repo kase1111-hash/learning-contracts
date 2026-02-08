@@ -114,7 +114,6 @@ learning-contracts/
 │   ├── expiry/             # Timebound expiry
 │   ├── emergency-override/ # Emergency controls
 │   ├── user-management/    # Multi-user support
-│   ├── agent-os-integration/ # Agent-OS integration
 │   ├── types/              # TypeScript type definitions
 │   ├── system.ts           # Main system orchestrator
 │   └── index.ts            # Public exports

@@ -10,7 +10,7 @@ Learning Contracts provide **learning boundary agreements** and **AI data govern
 
 **Nothing is learned by default.**
 
-**v0.1.0-alpha** - Part of the [Agent OS](https://github.com/kase1111-hash/Agent-OS) ecosystem for **digital sovereignty** and **human-AI collaboration**, integrating with [Boundary-SIEM](https://github.com/kase1111-hash/Boundary-SIEM) and [Boundary Daemon](https://github.com/kase1111-hash/boundary-daemon-).
+**v0.1.0-alpha** - Part of the [Agent OS](https://github.com/kase1111-hash/Agent-OS) ecosystem for **digital sovereignty** and **human-AI collaboration**.
 
 ## What Problem Does This Solve?
 
@@ -450,83 +450,6 @@ The integration provides:
 - All operations logged for audit compliance
 - Boundary mode changes are respected
 
-## Integration with Boundary Daemon
-
-Learning Contracts integrate with the Boundary Daemon to automatically suspend/resume contracts based on boundary mode changes.
-
-### Creating a Boundary-Enforced System
-
-```typescript
-import {
-  LearningContractsSystem,
-  MockBoundaryDaemonAdapter,
-  DaemonBoundaryMode
-} from 'learning-contracts';
-
-// Initialize system and boundary adapter
-const system = new LearningContractsSystem();
-const adapter = new MockBoundaryDaemonAdapter();
-
-// Create a boundary-enforced system
-const boundarySystem = system.createBoundaryEnforcedSystem(adapter);
-await boundarySystem.initialize();
-
-// Check if contract can operate in current mode
-const canOperate = boundarySystem.canContractOperate(contract);
-
-// Check recall gate before memory access
-const recallResult = await boundarySystem.checkRecallGate({
-  memory_id: 'mem-123',
-  memory_class: 3,
-  requester: 'user',
-});
-
-// Check tool gate before tool execution
-const toolResult = await boundarySystem.checkToolGate({
-  tool_name: 'web-search',
-  requires_network: true,
-});
-
-// Listen for contract suspension/resume events
-boundarySystem.onSuspension((event) => {
-  console.log(`Contract ${event.contract_id} suspended: ${event.reason}`);
-});
-
-boundarySystem.onResume((event) => {
-  console.log(`Contract ${event.contract_id} resumed`);
-});
-
-// Trigger emergency lockdown (suspends ALL contracts)
-await boundarySystem.triggerLockdown('Security breach detected', 'admin');
-```
-
-### Boundary Modes
-
-The Boundary Daemon defines six security modes (least to most restrictive):
-
-| Mode | Description | Classification Cap |
-|------|-------------|-------------------|
-| OPEN | Full network access | 1 |
-| RESTRICTED | Limited network, monitored | 2 |
-| TRUSTED | VPN/encrypted only | 3 |
-| AIRGAP | No network, local only | 4 |
-| COLDROOM | Encrypted storage only | 5 |
-| LOCKDOWN | Emergency shutdown | -1 (none) |
-
-### Contract Mode Requirements
-
-- **Strategic Learning** → requires Trusted or Privileged
-- **Procedural Learning** → requires Normal or higher
-- **Episodic Learning** → requires Normal or higher
-- **Observation** → requires Normal or higher
-
-### Automatic Contract Suspension
-
-- When boundary mode decreases, contracts requiring higher modes are suspended
-- When boundary upgrades, suspended contracts are automatically resumed
-- LOCKDOWN mode suspends ALL contracts immediately
-- All suspension/resume events are logged to the audit trail
-
 ## Session Management
 
 Sessions track active usage periods and provide automatic cleanup for session-scoped contracts.
@@ -712,36 +635,23 @@ Contributions are welcome! Please ensure:
 
 ## Error Handling
 
-Learning Contracts provides structured error handling with SIEM integration:
+Learning Contracts provides structured error handling:
 
 ```typescript
 import {
   CentralErrorHandler,
-  SIEMReporter,
-  DaemonConnector,
   SecurityError,
   ErrorCode,
   ErrorSeverity
 } from 'learning-contracts';
 
-// Set up error handler with SIEM reporting
+// Set up error handler
 const errorHandler = new CentralErrorHandler({
   console_logging: true,
-  siem_reporting: true,
   lockdown_on_critical: true,
 });
 
-// Connect to SIEM
-const siem = new SIEMReporter({
-  base_url: 'https://your-siem.example.com',
-  api_key: 'your-api-key',
-});
-await siem.initialize();
-
-// Wire up error reporting
-errorHandler.setSiemReporter((events) => siem.reportErrors(events));
-
-// Errors are automatically formatted and sent to SIEM
+// Errors are automatically formatted and logged
 try {
   // ... operation that may fail
 } catch (error) {
@@ -768,157 +678,6 @@ try {
 - **MEDIUM** (2) - Functionality affected
 - **HIGH** (3) - Core functionality affected
 - **CRITICAL** (4) - System-threatening, triggers lockdown
-
-## Boundary-SIEM Integration
-
-Report security events to [Boundary-SIEM](https://github.com/kase1111-hash/Boundary-SIEM):
-
-```typescript
-import { SIEMReporter, SIEMEventType } from 'learning-contracts';
-
-const siem = new SIEMReporter({
-  base_url: 'https://siem.example.com',
-  api_key: 'your-api-key',
-  // Optional CEF endpoint for redundancy
-  cef_endpoint: {
-    host: 'siem.example.com',
-    port: 514,
-    protocol: 'udp',
-  },
-});
-
-await siem.initialize();
-
-// Report contract events
-await siem.reportContractEvent({
-  event_type: 'activated',
-  contract_id: 'contract-123',
-  contract_type: 'episodic',
-  owner_id: 'alice',
-  domains: ['coding'],
-});
-
-// Report enforcement events
-await siem.reportEnforcementEvent({
-  event_type: 'memory_creation',
-  contract_id: 'contract-123',
-  outcome: 'denied',
-  boundary_mode: 'RESTRICTED',
-  denial_reason: 'Classification exceeds cap',
-});
-
-// Report security violations (sent immediately)
-await siem.reportSecurityViolation({
-  violation_type: 'tampering_attempt',
-  severity: ErrorSeverity.CRITICAL,
-  description: 'Contract file integrity check failed',
-  mitre_technique: 'T1565',
-});
-
-// Check SIEM health
-const health = await siem.healthCheck();
-console.log(`SIEM healthy: ${health.healthy}, latency: ${health.latency_ms}ms`);
-```
-
-### Supported Event Types
-
-- **error** - System errors
-- **security_violation** - Security incidents
-- **contract** - Contract lifecycle events
-- **enforcement** - Policy enforcement decisions
-- **audit** - Audit log entries
-- **connection** - System connectivity events
-
-## Boundary Daemon Connector
-
-Integrate with [Boundary Daemon](https://github.com/kase1111-hash/boundary-daemon-) for policy enforcement:
-
-```typescript
-import {
-  DaemonConnector,
-  PolicyOperation,
-  DaemonClassificationLevel,
-  DaemonBoundaryMode,
-} from 'learning-contracts';
-
-const daemon = new DaemonConnector({
-  socket_path: '/var/run/boundary-daemon.sock',
-  // Or use HTTP:
-  // http_endpoint: 'https://daemon.example.com',
-  auth_token: 'your-token',
-});
-
-// Connect and register
-await daemon.connect();
-
-// Request policy decision before operations
-const decision = await daemon.checkPolicy(PolicyOperation.MEMORY_CREATE, {
-  contract_id: 'contract-123',
-  classification: DaemonClassificationLevel.CONFIDENTIAL,
-  domain: 'coding',
-});
-
-if (decision.allowed) {
-  // Proceed with operation
-} else {
-  console.log(`Denied: ${decision.reason}`);
-  console.log(`Required mode: ${decision.required_mode}`);
-}
-
-// Check current boundary mode
-const mode = daemon.getCurrentMode();
-console.log(`Current mode: ${mode}`);
-
-// Check if classification is allowed
-const allowed = daemon.isClassificationAllowed(DaemonClassificationLevel.SENSITIVE);
-
-// Listen for mode changes
-daemon.setEventHandlers({
-  onModeChange: (event) => {
-    console.log(`Mode changed: ${event.previous_mode} → ${event.new_mode}`);
-    if (event.suspend_contracts) {
-      // Handle contract suspension
-    }
-  },
-  onTripwire: (event) => {
-    console.log(`Tripwire triggered: ${event.description}`);
-  },
-  onLockdown: (reason) => {
-    console.log(`LOCKDOWN: ${reason}`);
-  },
-});
-
-// Request component attestation
-const attestation = await daemon.requestAttestation([
-  'contract_enforcement',
-  'memory_operations',
-]);
-if (attestation.success) {
-  console.log(`Attestation token expires: ${attestation.expires_at}`);
-}
-```
-
-### Boundary Modes
-
-| Mode | Network | Classification Cap |
-|------|---------|-------------------|
-| OPEN | Full access | 1 (PUBLIC) |
-| RESTRICTED | Limited, monitored | 2 (INTERNAL) |
-| TRUSTED | VPN only | 3 (CONFIDENTIAL) |
-| AIRGAP | None | 4 (SENSITIVE) |
-| COLDROOM | None | 5 (RESTRICTED) |
-| LOCKDOWN | None | -1 (No access) |
-
-### Classification Levels
-
-| Level | Value | Description |
-|-------|-------|-------------|
-| PUBLIC | 0 | Public information |
-| INTERNAL | 1 | Internal use only |
-| CONFIDENTIAL | 2 | Confidential |
-| SENSITIVE | 3 | Sensitive |
-| RESTRICTED | 4 | Restricted |
-| CROWN_JEWEL | 5 | Highest protection |
 
 ## Connected Repositories
 

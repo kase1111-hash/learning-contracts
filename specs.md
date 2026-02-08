@@ -946,17 +946,6 @@ The following are explicitly **NOT** goals of Learning Contracts:
 | Structured error types | ✅ Complete | `src/errors/types.ts` |
 | CentralErrorHandler | ✅ Complete | `src/errors/handler.ts` |
 | CEF format support | ✅ Complete | `src/errors/types.ts` |
-| Boundary-SIEM Integration | ✅ Complete | `src/siem-integration/` |
-| SIEMReporter | ✅ Complete | `src/siem-integration/reporter.ts` |
-| JSON HTTP API reporting | ✅ Complete | `src/siem-integration/reporter.ts` |
-| CEF over UDP/TCP | ✅ Complete | `src/siem-integration/reporter.ts` |
-| Event batching and retry | ✅ Complete | `src/siem-integration/reporter.ts` |
-| Boundary Daemon Connector | ✅ Complete | `src/daemon-connector/` |
-| DaemonConnector | ✅ Complete | `src/daemon-connector/connector.ts` |
-| Policy decision requests | ✅ Complete | `src/daemon-connector/connector.ts` |
-| Component attestation | ✅ Complete | `src/daemon-connector/connector.ts` |
-| mTLS support | ✅ Complete | `src/daemon-connector/connector.ts` |
-| MockDaemonConnector | ✅ Complete | `src/daemon-connector/connector.ts` |
 
 ### Not Implemented
 
