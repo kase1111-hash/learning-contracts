@@ -1,0 +1,22 @@
+{
+  "name": "@learning-contracts/vault-adapter",
+  "version": "0.1.0-alpha",
+  "description": "Memory Vault adapter for Learning Contracts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "jest"
+  },
+  "peerDependencies": {
+    "learning-contracts": "^0.1.0"
+  },
+  "dependencies": {
+    "uuid": "^13.0.0"
+  },
+  "license": "MIT"
+}

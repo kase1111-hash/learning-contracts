@@ -37,16 +37,6 @@ import {
   ContractDraftFromLanguage,
   SummaryOptions,
 } from './plain-language';
-import {
-  ContractEnforcedVault,
-  MemoryVaultAdapter,
-  VaultAuditEvent,
-} from './vault-integration';
-import {
-  BoundaryEnforcedSystem,
-  BoundaryDaemonAdapter,
-  BoundaryAuditEvent,
-} from './boundary-integration';
 import { SessionManager } from './session';
 import { TimeboundExpiryManager } from './expiry';
 import {
@@ -632,39 +622,6 @@ export class LearningContractsSystem {
   }
 
   // ==========================================
-  // Integration Factories (coordinates callbacks across subsystems)
-  // ==========================================
-
-  createContractEnforcedVault(
-    adapter: MemoryVaultAdapter,
-    boundaryMode: BoundaryMode,
-    defaultActor?: string
-  ): ContractEnforcedVault {
-    return new ContractEnforcedVault({
-      adapter,
-      contractResolver: (contractId: string) => this.getContract(contractId),
-      contractFinder: (domain, context, tool) =>
-        this.findApplicableContract(domain, context, tool),
-      auditLogger: (event: VaultAuditEvent) => this.logVaultEvent(event),
-      boundaryMode,
-      defaultActor,
-    });
-  }
-
-  createBoundaryEnforcedSystem(
-    adapter: BoundaryDaemonAdapter,
-    autoResumeOnUpgrade: boolean = true
-  ): BoundaryEnforcedSystem {
-    return new BoundaryEnforcedSystem({
-      adapter,
-      contractResolver: (contractId: string) => this.getContract(contractId),
-      activeContractsProvider: () => this.getActiveContracts(),
-      auditLogger: (event: BoundaryAuditEvent) => this.logBoundaryEvent(event),
-      autoResumeOnUpgrade,
-    });
-  }
-
-  // ==========================================
   // Emergency Override (coordinates repository + override manager)
   // ==========================================
 
@@ -738,102 +695,4 @@ export class LearningContractsSystem {
     }
   }
 
-  private logVaultEvent(event: VaultAuditEvent): void {
-    const contractId = event.contract_id ?? 'unknown';
-    const memoryId = event.memory_id ?? 'unknown';
-
-    switch (event.event_type) {
-      case 'store':
-        if (event.allowed) {
-          this.auditLogger.logMemoryCreated(
-            contractId,
-            memoryId,
-            (event.details?.classification as number) ?? 0,
-            event.actor
-          );
-        }
-        break;
-
-      case 'recall':
-        if (event.allowed) {
-          this.auditLogger.logMemoryRecalled(contractId, memoryId, event.actor);
-        }
-        break;
-
-      case 'tombstone':
-        this.auditLogger.logMemoryTombstoned(
-          contractId,
-          [memoryId],
-          []
-        );
-        break;
-
-      case 'violation':
-        // Violations are logged via enforcement check
-        this.auditLogger.logGeneralizationAttempt(
-          contractId,
-          false,
-          event.denial_reason
-        );
-        break;
-
-      case 'query':
-        // Queries don't have a specific log method, they're not sensitive
-        break;
-    }
-  }
-
-  private logBoundaryEvent(event: BoundaryAuditEvent): void {
-    switch (event.event_type) {
-      case 'suspension':
-        if (event.contract_id) {
-          const suspendedContract = this.getContract(event.contract_id);
-          if (suspendedContract) {
-            this.auditLogger.logStateTransition(
-              event.contract_id,
-              event.actor,
-              suspendedContract.state,
-              suspendedContract.state,
-              {
-                boundary_event_id: event.event_id,
-                boundary_event_type: 'suspension',
-                reason: event.details?.reason,
-                previous_mode: event.details?.previous_mode,
-                new_mode: event.details?.new_mode,
-              }
-            );
-          }
-        }
-        break;
-
-      case 'resume':
-        if (event.contract_id) {
-          const resumedContract = this.getContract(event.contract_id);
-          if (resumedContract) {
-            this.auditLogger.logStateTransition(
-              event.contract_id,
-              event.actor,
-              resumedContract.state,
-              resumedContract.state,
-              {
-                boundary_event_id: event.event_id,
-                boundary_event_type: 'resume',
-                reason: event.details?.reason,
-              }
-            );
-          }
-        }
-        break;
-
-      case 'mode_change':
-        // Mode changes are logged but don't need contract-specific logging
-        break;
-
-      case 'recall_gate':
-      case 'tool_gate':
-      case 'tripwire':
-        // These are informational events
-        break;
-    }
-  }
 }

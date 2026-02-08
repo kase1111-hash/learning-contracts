@@ -23,7 +23,7 @@ import {
   DAEMON_TO_LC_MODE,
 } from './types';
 import { BoundaryDaemonAdapter, ModeChangeListener, TripwireListener } from './adapter';
-import { LearningContract, ContractState, BoundaryMode } from '../types';
+import { LearningContract, ContractState, BoundaryMode } from 'learning-contracts';
 
 /**
  * Contract suspension state
@@ -42,7 +42,7 @@ interface SuspendedContract {
 /**
  * Contract resolver function type
  */
-export type ContractResolver = (contract_id: string) => LearningContract | null;
+export type BoundaryContractResolver = (contract_id: string) => LearningContract | null;
 
 /**
  * Active contracts provider function type
@@ -89,7 +89,7 @@ export interface BoundaryEnforcedSystemConfig {
   /** Boundary daemon adapter */
   adapter: BoundaryDaemonAdapter;
   /** Contract resolver function */
-  contractResolver: ContractResolver;
+  contractResolver: BoundaryContractResolver;
   /** Active contracts provider */
   activeContractsProvider: ActiveContractsProvider;
   /** Audit logger */
@@ -141,7 +141,7 @@ function isDowngrade(previousMode: DaemonBoundaryMode, newMode: DaemonBoundaryMo
  */
 export class BoundaryEnforcedSystem {
   private adapter: BoundaryDaemonAdapter;
-  private resolveContract: ContractResolver;
+  private resolveContract: BoundaryContractResolver;
   private getActiveContracts: ActiveContractsProvider;
   private logAudit: BoundaryAuditLogger;
   private autoResumeOnUpgrade: boolean;

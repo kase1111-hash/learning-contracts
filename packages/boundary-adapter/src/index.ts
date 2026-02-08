@@ -46,7 +46,7 @@ export {
 export {
   BoundaryEnforcedSystem,
   BoundaryEnforcedSystemConfig,
-  ContractResolver,
+  BoundaryContractResolver,
   ActiveContractsProvider,
   SuspensionListener,
   ResumeListener,
