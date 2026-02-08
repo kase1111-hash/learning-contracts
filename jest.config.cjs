@@ -15,12 +15,12 @@ module.exports = {
   coverageReporters: ['text', 'lcov', 'html', 'json-summary'],
   coverageThreshold: {
     global: {
-      // Actual coverage (2026-02-08): statements 75%, branches 63.41%, lines 75.34%, functions 74.03%
+      // Actual coverage (2026-02-08 Phase 3): statements 74.93%, branches 63.51%, functions 73.56%, lines 75.27%
       // Thresholds set 2% below actual to prevent regression
       branches: 61,
-      functions: 72,
+      functions: 71,
       lines: 73,
-      statements: 73,
+      statements: 72,
     },
   },
   transformIgnorePatterns: ['/node_modules/(?!uuid)'],

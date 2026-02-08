@@ -324,7 +324,7 @@ describe('LearningContractsSystem - Plain Language Integration', () => {
 
   describe('startPlainLanguageConversation', () => {
     test('should start a conversation', () => {
-      const response = system.startPlainLanguageConversation('alice');
+      const response = system.conversations.startConversation('alice');
 
       expect(response.isComplete).toBe(false);
       expect(response.questions.length).toBeGreaterThan(0);
@@ -333,7 +333,7 @@ describe('LearningContractsSystem - Plain Language Integration', () => {
 
   describe('parseNaturalLanguage', () => {
     test('should parse natural language input', () => {
-      const result = system.parseNaturalLanguage(
+      const result = system.parser.parse(
         'Learn coding patterns from my Python sessions'
       );
 
@@ -376,7 +376,7 @@ describe('LearningContractsSystem - Plain Language Integration', () => {
 
   describe('getContractTemplates', () => {
     test('should return all templates', () => {
-      const templates = system.getContractTemplates();
+      const templates = CONTRACT_TEMPLATES;
 
       expect(templates.length).toBeGreaterThan(0);
     });
@@ -384,7 +384,7 @@ describe('LearningContractsSystem - Plain Language Integration', () => {
 
   describe('searchContractTemplates', () => {
     test('should search templates', () => {
-      const results = system.searchContractTemplates('gaming');
+      const results = searchTemplates('gaming');
 
       expect(results.length).toBeGreaterThan(0);
     });

@@ -16,7 +16,7 @@ describe('Timebound Auto-Expiry', () => {
 
   afterEach(() => {
     // Ensure any automatic checks are stopped
-    system.stopTimeboundExpiryChecks();
+    system.expiry.stop();
   });
 
   describe('Repository - getTimeboundExpiredContracts', () => {
@@ -35,7 +35,7 @@ describe('Timebound Auto-Expiry', () => {
       contract = system.activateContract(contract.contract_id, 'alice');
 
       // Run a manual expiry cycle
-      const result = system.runTimeboundExpiryCycle();
+      const result = system.expiry.runExpiryCycle();
 
       expect(result.contracts_checked).toBe(1);
       expect(result.contracts_expired).toBe(1);
@@ -57,7 +57,7 @@ describe('Timebound Auto-Expiry', () => {
       contract = system.activateContract(contract.contract_id, 'alice');
 
       // Run a manual expiry cycle
-      const result = system.runTimeboundExpiryCycle();
+      const result = system.expiry.runExpiryCycle();
 
       expect(result.contracts_checked).toBe(0);
       expect(result.contracts_expired).toBe(0);
@@ -74,7 +74,7 @@ describe('Timebound Auto-Expiry', () => {
       contract = system.activateContract(contract.contract_id, 'alice');
 
       // Run a manual expiry cycle
-      const result = system.runTimeboundExpiryCycle();
+      const result = system.expiry.runExpiryCycle();
 
       expect(result.contracts_checked).toBe(0);
     });
@@ -96,7 +96,7 @@ describe('Timebound Auto-Expiry', () => {
       system.revokeContract(contract.contract_id, 'alice', 'Manual revocation');
 
       // Run a manual expiry cycle
-      const result = system.runTimeboundExpiryCycle();
+      const result = system.expiry.runExpiryCycle();
 
       expect(result.contracts_checked).toBe(0);
     });
@@ -120,7 +120,7 @@ describe('Timebound Auto-Expiry', () => {
       }
 
       // Run a manual expiry cycle
-      const result = system.runTimeboundExpiryCycle();
+      const result = system.expiry.runExpiryCycle();
 
       expect(result.contracts_checked).toBe(3);
       expect(result.contracts_expired).toBe(3);
@@ -128,7 +128,7 @@ describe('Timebound Auto-Expiry', () => {
     });
 
     test('should return cycle metadata', () => {
-      const result = system.runTimeboundExpiryCycle();
+      const result = system.expiry.runExpiryCycle();
 
       expect(result.cycle_id).toBeDefined();
       expect(result.started_at).toBeInstanceOf(Date);
@@ -152,10 +152,10 @@ describe('Timebound Auto-Expiry', () => {
       system.activateContract(contract.contract_id, 'alice');
 
       // Run multiple cycles
-      system.runTimeboundExpiryCycle();
-      system.runTimeboundExpiryCycle();
+      system.expiry.runExpiryCycle();
+      system.expiry.runExpiryCycle();
 
-      const stats = system.getTimeboundExpiryStats();
+      const stats = system.expiry.getStats();
       expect(stats.cyclesCompleted).toBe(2);
       expect(stats.totalContractsExpired).toBe(1); // Only 1 contract to expire
     });
@@ -175,7 +175,7 @@ describe('Timebound Auto-Expiry', () => {
       contract = system.submitForReview(contract.contract_id, 'alice');
       contract = system.activateContract(contract.contract_id, 'alice');
 
-      system.runTimeboundExpiryCycle();
+      system.expiry.runExpiryCycle();
 
       const expired = system.getContract(contract.contract_id);
       expect(expired?.state).toBe(ContractState.EXPIRED);
@@ -194,7 +194,7 @@ describe('Timebound Auto-Expiry', () => {
       contract = system.submitForReview(contract.contract_id, 'alice');
       contract = system.activateContract(contract.contract_id, 'alice');
 
-      system.runTimeboundExpiryCycle();
+      system.expiry.runExpiryCycle();
 
       const stillActive = system.getContract(contract.contract_id);
       expect(stillActive?.state).toBe(ContractState.ACTIVE);
@@ -215,7 +215,7 @@ describe('Timebound Auto-Expiry', () => {
       contract = system.submitForReview(contract.contract_id, 'alice');
       contract = system.activateContract(contract.contract_id, 'alice');
 
-      const result = system.checkTimeboundExpiry(contract.contract_id);
+      const result = system.expiry.checkContract(contract.contract_id);
 
       expect(result?.expired).toBe(true);
       expect(result?.retention_until).toEqual(pastDate);
@@ -226,7 +226,7 @@ describe('Timebound Auto-Expiry', () => {
     });
 
     test('should return null for non-existent contract', () => {
-      const result = system.checkTimeboundExpiry('non-existent');
+      const result = system.expiry.checkContract('non-existent');
       expect(result).toBeNull();
     });
 
@@ -239,7 +239,7 @@ describe('Timebound Auto-Expiry', () => {
       contract = system.submitForReview(contract.contract_id, 'alice');
       contract = system.activateContract(contract.contract_id, 'alice');
 
-      const result = system.checkTimeboundExpiry(contract.contract_id);
+      const result = system.expiry.checkContract(contract.contract_id);
 
       expect(result?.expired).toBe(false);
       expect(result?.error).toContain('not timebound');
@@ -260,7 +260,7 @@ describe('Timebound Auto-Expiry', () => {
       contract = system.submitForReview(contract.contract_id, 'alice');
       contract = system.activateContract(contract.contract_id, 'alice');
 
-      const result = system.forceTimeboundExpiry(contract.contract_id);
+      const result = system.expiry.forceExpire(contract.contract_id);
 
       expect(result.expired).toBe(true);
 
@@ -269,7 +269,7 @@ describe('Timebound Auto-Expiry', () => {
     });
 
     test('should handle non-existent contract', () => {
-      const result = system.forceTimeboundExpiry('non-existent');
+      const result = system.expiry.forceExpire('non-existent');
 
       expect(result.expired).toBe(false);
       expect(result.error).toContain('not found');
@@ -289,10 +289,10 @@ describe('Timebound Auto-Expiry', () => {
       contract = system.activateContract(contract.contract_id, 'alice');
 
       // Expire once
-      system.forceTimeboundExpiry(contract.contract_id);
+      system.expiry.forceExpire(contract.contract_id);
 
       // Try to expire again
-      const result = system.forceTimeboundExpiry(contract.contract_id);
+      const result = system.expiry.forceExpire(contract.contract_id);
 
       expect(result.expired).toBe(false);
       expect(result.error).toContain('not active');
@@ -316,12 +316,12 @@ describe('Timebound Auto-Expiry', () => {
       let notified = false;
       let receivedContractId: string | null = null;
 
-      system.onTimeboundExpiry((c, _result) => {
+      system.expiry.onExpiry((c, _result) => {
         notified = true;
         receivedContractId = c.contract_id;
       });
 
-      system.runTimeboundExpiryCycle();
+      system.expiry.runExpiryCycle();
 
       expect(notified).toBe(true);
       expect(receivedContractId).toBe(contract.contract_id);
@@ -331,12 +331,12 @@ describe('Timebound Auto-Expiry', () => {
       let notified = false;
       let receivedCycleId: string | null = null;
 
-      system.onExpiryCycleComplete((result) => {
+      system.expiry.onCycleComplete((result) => {
         notified = true;
         receivedCycleId = result.cycle_id;
       });
 
-      system.runTimeboundExpiryCycle();
+      system.expiry.runExpiryCycle();
 
       expect(notified).toBe(true);
       expect(receivedCycleId).toBeDefined();
@@ -345,58 +345,58 @@ describe('Timebound Auto-Expiry', () => {
     test('should allow unsubscribing from events', () => {
       let callCount = 0;
 
-      const unsubscribe = system.onExpiryCycleComplete(() => {
+      const unsubscribe = system.expiry.onCycleComplete(() => {
         callCount++;
       });
 
-      system.runTimeboundExpiryCycle();
+      system.expiry.runExpiryCycle();
       expect(callCount).toBe(1);
 
       unsubscribe();
-      system.runTimeboundExpiryCycle();
+      system.expiry.runExpiryCycle();
       expect(callCount).toBe(1); // Should not have incremented
     });
   });
 
   describe('Automatic Expiry Checking', () => {
     test('should start and stop automatic checking', () => {
-      expect(system.isTimeboundExpiryRunning()).toBe(false);
+      expect(system.expiry.isRunning()).toBe(false);
 
-      system.startTimeboundExpiryChecks();
-      expect(system.isTimeboundExpiryRunning()).toBe(true);
+      system.expiry.start();
+      expect(system.expiry.isRunning()).toBe(true);
 
-      system.stopTimeboundExpiryChecks();
-      expect(system.isTimeboundExpiryRunning()).toBe(false);
+      system.expiry.stop();
+      expect(system.expiry.isRunning()).toBe(false);
     });
 
     test('should not start multiple times', () => {
-      system.startTimeboundExpiryChecks();
-      system.startTimeboundExpiryChecks();
+      system.expiry.start();
+      system.expiry.start();
 
       // Should only have one interval running
-      expect(system.isTimeboundExpiryRunning()).toBe(true);
+      expect(system.expiry.isRunning()).toBe(true);
 
-      system.stopTimeboundExpiryChecks();
-      expect(system.isTimeboundExpiryRunning()).toBe(false);
+      system.expiry.stop();
+      expect(system.expiry.isRunning()).toBe(false);
     });
 
     test('should get and set check interval', () => {
-      const defaultInterval = system.getTimeboundExpiryInterval();
+      const defaultInterval = system.expiry.getCheckInterval();
       expect(defaultInterval).toBe(60000); // Default is 1 minute
 
-      system.setTimeboundExpiryInterval(30000);
-      expect(system.getTimeboundExpiryInterval()).toBe(30000);
+      system.expiry.setCheckInterval(30000);
+      expect(system.expiry.getCheckInterval()).toBe(30000);
     });
 
     test('should restart with new interval if running', () => {
-      system.startTimeboundExpiryChecks();
-      expect(system.isTimeboundExpiryRunning()).toBe(true);
+      system.expiry.start();
+      expect(system.expiry.isRunning()).toBe(true);
 
-      system.setTimeboundExpiryInterval(30000);
+      system.expiry.setCheckInterval(30000);
 
       // Should still be running with new interval
-      expect(system.isTimeboundExpiryRunning()).toBe(true);
-      expect(system.getTimeboundExpiryInterval()).toBe(30000);
+      expect(system.expiry.isRunning()).toBe(true);
+      expect(system.expiry.getCheckInterval()).toBe(30000);
     });
 
     test('should run initial check when starting', (done) => {
@@ -412,13 +412,13 @@ describe('Timebound Auto-Expiry', () => {
       contract = system.submitForReview(contract.contract_id, 'alice');
       contract = system.activateContract(contract.contract_id, 'alice');
 
-      system.onExpiryCycleComplete((result) => {
+      system.expiry.onCycleComplete((result) => {
         expect(result.contracts_expired).toBe(1);
-        system.stopTimeboundExpiryChecks();
+        system.expiry.stop();
         done();
       });
 
-      system.startTimeboundExpiryChecks();
+      system.expiry.start();
     });
   });
 
@@ -439,33 +439,33 @@ describe('Timebound Auto-Expiry', () => {
         system.activateContract(contract.contract_id, 'alice');
       }
 
-      system.runTimeboundExpiryCycle();
+      system.expiry.runExpiryCycle();
 
-      const stats = system.getTimeboundExpiryStats();
+      const stats = system.expiry.getStats();
       expect(stats.cyclesCompleted).toBe(1);
       expect(stats.totalContractsExpired).toBe(2);
       expect(stats.lastCheckAt).toBeInstanceOf(Date);
     });
 
     test('should reset statistics', () => {
-      system.runTimeboundExpiryCycle();
-      system.runTimeboundExpiryCycle();
+      system.expiry.runExpiryCycle();
+      system.expiry.runExpiryCycle();
 
-      let stats = system.getTimeboundExpiryStats();
+      let stats = system.expiry.getStats();
       expect(stats.cyclesCompleted).toBe(2);
 
-      system.resetTimeboundExpiryStats();
+      system.expiry.resetStats();
 
-      stats = system.getTimeboundExpiryStats();
+      stats = system.expiry.getStats();
       expect(stats.cyclesCompleted).toBe(0);
       expect(stats.totalContractsExpired).toBe(0);
     });
 
     test('should calculate next check time when running', () => {
-      system.setTimeboundExpiryInterval(60000);
-      system.startTimeboundExpiryChecks();
+      system.expiry.setCheckInterval(60000);
+      system.expiry.start();
 
-      const stats = system.getTimeboundExpiryStats();
+      const stats = system.expiry.getStats();
       expect(stats.isRunning).toBe(true);
       expect(stats.lastCheckAt).toBeInstanceOf(Date);
       expect(stats.nextCheckAt).toBeInstanceOf(Date);
@@ -509,7 +509,7 @@ describe('Timebound Auto-Expiry', () => {
       sessionContract = system.submitForReview(sessionContract.contract_id, 'alice');
       sessionContract = system.activateContract(sessionContract.contract_id, 'alice');
 
-      const result = system.runTimeboundExpiryCycle();
+      const result = system.expiry.runExpiryCycle();
 
       expect(result.contracts_expired).toBe(1);
       expect(result.results[0].contract_id).toBe(timeboundContract.contract_id);
@@ -535,7 +535,7 @@ describe('Timebound Auto-Expiry', () => {
       contract = system.submitForReview(contract.contract_id, 'alice');
       contract = system.activateContract(contract.contract_id, 'alice');
 
-      system.runTimeboundExpiryCycle();
+      system.expiry.runExpiryCycle();
 
       const auditLog = system.getAuditLog();
       const contractEvents = auditLog.filter(e => e.contract_id === contract.contract_id);
