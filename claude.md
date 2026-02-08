@@ -40,10 +40,7 @@ src/
 ├── expiry/              # Auto-expiry manager
 ├── emergency-override/  # Human supremacy controls
 ├── user-management/     # Multi-user support
-├── agent-os-integration/# Agent-OS ecosystem bridges
 ├── errors/              # Centralized error handling
-├── siem-integration/    # Security event reporting
-├── daemon-connector/    # Boundary Daemon communication
 ├── system.ts            # Main orchestration class
 └── index.ts             # Public API exports
 tests/                   # Test suites for all modules

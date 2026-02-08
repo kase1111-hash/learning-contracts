@@ -12,7 +12,7 @@
 **🟢 Issue #1 - CRITICAL: Insecure Hash Function** ✅ **FIXED**
 - **Commit:** `6c62364` - "Fix CRITICAL security vulnerability: Replace insecure hash with SHA-256"
 - **Changes:** Replaced djb2-like hash with SHA-256 in both files
-- **Files:** `src/vault-integration/adapter.ts`, `src/agent-os-integration/memory-adapter.ts`
+- **Files:** `src/vault-integration/adapter.ts`
 - **Added:** Production guard to prevent MockMemoryVaultAdapter in production environments
 - **Status:** All 340 tests passing ✓
 
@@ -99,7 +99,6 @@ The Learning Contracts repository implements an **architectural pattern of deleg
 
 **Location:**
 - `src/vault-integration/adapter.ts:546-554`
-- `src/agent-os-integration/memory-adapter.ts:399-406`
 
 **Issue:**
 The mock implementations use a simple integer overflow hash (djb2-like), not a cryptographic hash:
@@ -415,7 +414,6 @@ Higher levels enforce stronger controls - good security layering.
 
 **Files to update:**
 - `src/vault-integration/adapter.ts:546`
-- `src/agent-os-integration/memory-adapter.ts:399`
 
 ```typescript
 import { createHash } from 'crypto';
@@ -548,7 +546,6 @@ The encryption design alignment:
 - `src/vault-integration/types.ts` - Encryption profiles, types
 - `src/vault-integration/adapter.ts` - Mock vault adapter with hash function
 - `src/vault-integration/enforced-vault.ts` - Contract enforcement layer
-- `src/agent-os-integration/memory-adapter.ts` - Agent-OS integration with hash function
 - `src/storage/file-adapter.ts` - File storage (plaintext)
 
 ### Security-Related:
