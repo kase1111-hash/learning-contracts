@@ -216,10 +216,10 @@ export class FileStorageAdapter implements StorageAdapter {
     await this.saveToFile();
   }
 
-  async get(contractId: string): Promise<LearningContract | null> {
+  get(contractId: string): Promise<LearningContract | null> {
     this.ensureInitialized();
     const contract = this.contracts.get(contractId);
-    return contract ? { ...contract } : null;
+    return Promise.resolve(contract ? { ...contract } : null);
   }
 
   async delete(contractId: string): Promise<boolean> {
@@ -231,19 +231,19 @@ export class FileStorageAdapter implements StorageAdapter {
     return deleted;
   }
 
-  async exists(contractId: string): Promise<boolean> {
+  exists(contractId: string): Promise<boolean> {
     this.ensureInitialized();
-    return this.contracts.has(contractId);
+    return Promise.resolve(this.contracts.has(contractId));
   }
 
-  async getAll(): Promise<LearningContract[]> {
+  getAll(): Promise<LearningContract[]> {
     this.ensureInitialized();
-    return Array.from(this.contracts.values()).map((c) => ({ ...c }));
+    return Promise.resolve(Array.from(this.contracts.values()).map((c) => ({ ...c })));
   }
 
-  async count(): Promise<number> {
+  count(): Promise<number> {
     this.ensureInitialized();
-    return this.contracts.size;
+    return Promise.resolve(this.contracts.size);
   }
 
   async clear(): Promise<void> {
@@ -277,7 +277,7 @@ export class FileStorageAdapter implements StorageAdapter {
 
       // Check if file is encrypted
       if (rawData.encrypted) {
-        await this.loadEncryptedFile(content);
+        this.loadEncryptedFile(content);
         return;
       }
 
@@ -323,12 +323,12 @@ export class FileStorageAdapter implements StorageAdapter {
   /**
    * Loads and decrypts an encrypted storage file
    */
-  private async loadEncryptedFile(content: string): Promise<void> {
+  private loadEncryptedFile(content: string): void {
     if (!this.encryptionConfig?.enabled) {
       throw new Error('File is encrypted but encryption is not configured');
     }
 
-    const encryptedData: EncryptedStorageFileFormat = JSON.parse(content);
+    const encryptedData = JSON.parse(content) as EncryptedStorageFileFormat;
 
     // Use the salt from the file for key derivation
     this.encryptionSalt = encryptedData.salt;
@@ -341,7 +341,7 @@ export class FileStorageAdapter implements StorageAdapter {
       encryptedData.ciphertext
     );
 
-    const data: StorageFileFormat = JSON.parse(decryptedContent);
+    const data = JSON.parse(decryptedContent) as StorageFileFormat;
 
     // Verify integrity checksum if present
     if (data.checksum) {

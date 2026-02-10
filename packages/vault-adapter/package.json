@@ -13,7 +13,10 @@
     "test": "jest"
   },
   "peerDependencies": {
-    "learning-contracts": "^0.1.0"
+    "learning-contracts": ">=0.1.0-alpha"
+  },
+  "devDependencies": {
+    "learning-contracts": "file:../.."
   },
   "dependencies": {
     "uuid": "^13.0.0"

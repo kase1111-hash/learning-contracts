@@ -373,8 +373,9 @@ describe('AuditLogger', () => {
       expect(events[0].details.memory_ids).toEqual(memoryIds);
       expect(events[0].details.derived_memory_ids).toEqual(derivedIds);
       expect(events[0].details.total_affected).toBe(2);
-      expect(events[0].details.owner_confirmation.token).toBe('token-abc');
-      expect(events[0].details.owner_confirmation.timestamp).toEqual(
+      const ownerConfirmation = events[0].details.owner_confirmation as { token: string; timestamp: Date };
+      expect(ownerConfirmation.token).toBe('token-abc');
+      expect(ownerConfirmation.timestamp).toEqual(
         new Date('2026-02-01T12:00:00Z')
       );
     });

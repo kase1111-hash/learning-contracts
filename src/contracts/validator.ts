@@ -9,6 +9,7 @@ import {
   ContractType,
   ContractState,
   AbstractionLevel,
+  RetentionDuration,
   ValidationResult,
   BoundaryMode,
 } from '../types';
@@ -183,7 +184,7 @@ export class ContractValidator {
 
     // Timebound retention requires retention_until
     if (
-      contract.memory_permissions.retention === 'timebound' &&
+      contract.memory_permissions.retention === RetentionDuration.TIMEBOUND &&
       !contract.memory_permissions.retention_until
     ) {
       errors.push('Timebound retention requires retention_until timestamp');

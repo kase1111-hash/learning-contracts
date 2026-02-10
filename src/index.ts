@@ -86,7 +86,20 @@ export type {
 } from './plain-language';
 
 // ==========================================
-// 4. ERRORS
+// 4. INTEGRATION — Memory store bridge, enforcement middleware
+// ==========================================
+
+export {
+  ContractGovernedStore, InMemoryStore,
+  createEnforcementMiddleware,
+} from './integration';
+export type {
+  MemoryStore, MemoryInput, StoredMemory, RecallQuery, GovernedResult,
+  EnforcementMiddleware, OperationContext, StoreContext, AbstractionContext,
+} from './integration';
+
+// ==========================================
+// 5. ERRORS
 // ==========================================
 
 export {
