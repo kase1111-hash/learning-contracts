@@ -1,131 +1,156 @@
 # PROJECT EVALUATION REPORT
 
-**Primary Classification:** Over-Engineered Concept Vehicle
-**Secondary Tags:** Premature Abstraction, Ecosystem Dependency, Infrastructure Without Consumers
+> Evaluated: 2026-02-10 | Post-refocus codebase (all REFOCUS_PLAN phases completed)
+> Evaluator: Claude Opus 4.6 via Concept-Execution-Evaluation framework
+
+**Primary Classification:** Underdeveloped
+**Secondary Tags:** Speculative Infrastructure, Ecosystem Dependency
 
 ---
 
-## CONCEPT ASSESSMENT
+### CONCEPT ASSESSMENT
 
-**Problem:** How do you govern what an AI system is allowed to learn from user interactions?
+**Problem:** How do you govern what an AI system is allowed to learn from user interactions — with explicit, revocable consent?
 
-**User:** Developers building AI agents who need consent/governance frameworks for memory and learning.
+**User:** Developers building AI agents/assistants who need a governance layer for memory and learning. The target is someone building a system where an AI remembers things about users and needs contractual guardrails around that memory.
 
-**Competition:** No direct competitors for this exact niche. Broader AI governance space has tools like Guardrails AI, NeMo Guardrails, and LangChain permission systems, but nothing focused specifically on learning consent contracts.
+**Competition:** No direct competitor does exactly this. Guardrails AI, NeMo Guardrails, and LangChain permission systems handle prompt-level guardrails and output validation. None address *learning consent* — the right to define what an AI may memorize, generalize, and recall. This library occupies an uncontested niche.
 
-**Value Prop:** "Nothing is learned by default" - a fail-closed consent system where every byte of AI learning requires an explicit, revocable contract.
+**Value Prop:** "Nothing is learned by default" — a fail-closed consent system where every byte of AI learning requires an explicit, revocable contract.
 
-**Verdict: The concept is sound but premature.** AI learning governance is a real, growing problem. The contract-based mental model (Observation, Episodic, Procedural, Strategic, Prohibited) is well-designed and maps cleanly to real AI behaviors. However, this library governs learning for AI systems that don't exist yet. It defines adapters for Memory Vault, Boundary Daemon, Agent-OS, and Boundary-SIEM - none of which are available. The library is building comprehensive rules enforcement for a stadium that hasn't been built.
+**Verdict: Sound concept, waiting for a world to exist in.**
 
----
+The five-tier contract taxonomy (Observation, Episodic, Procedural, Strategic, Prohibited) is genuinely well-thought-out. It maps cleanly to real cognitive operations. The fail-closed design (no contract = no learning, ambiguous scope = deny) is the correct default for a governance primitive. The mental model — contracts that expire, freeze memory, tombstone on revocation, require owner presence for recall — is coherent and well-defined.
 
-## EXECUTION ASSESSMENT
-
-### Architecture
-
-The architecture is thoughtful on paper. Four mandatory enforcement hooks (memory creation, abstraction, recall, export) with fail-closed defaults is the right approach. The contract lifecycle state machine (Draft -> Review -> Active -> Expired/Revoked/Amended) is clean. The separation into 19 modules with clear responsibilities shows planning.
-
-But 19 modules for a 0.1.0-alpha is excessive. The system orchestrator (`src/system.ts`, 1,599 lines) has become a god class that instantiates and wraps every subsystem, forwarding calls with thin wrappers. Lines 177-260 show 12 private member instantiations in a single constructor. This is a library that wants to be a framework.
-
-### Code Quality
-
-TypeScript strict mode is on. ESLint and Prettier are configured. The code within individual files reads well - clear naming, good JSDoc comments, proper error handling patterns. The enforcement engine (`src/enforcement/engine.ts`) is the cleanest module: clear responsibility, linear logic, proper audit logging at every decision point.
-
-### Tech Choices
-
-One production dependency (`uuid` v13). Good restraint there. But `uuid` v13 uses ESM exports, and the Jest config (`jest.config.cjs`) uses `ts-jest` with CommonJS output. **This means 11 of 12 test suites fail** with `SyntaxError: Unexpected token 'export'` from `uuid/dist-node/index.js:1`. The `transformIgnorePatterns` is not configured to handle this. Only `security-utils.test.ts` passes because it doesn't import `uuid`.
-
-The `jest.config.cjs:16` comment claims "Current coverage: statements 70.25%, branches 48.69%". **Actual coverage when tests run: 0.66% statements, 0.38% branches.** This comment is stale or was never accurate in the current configuration.
-
-### Stability
-
-**The project does not pass its own test suite.** Running `npm test` produces 11 failed suites, 1 passed, 20 tests passing (all from the one suite that works). This is the single most critical issue. A governance library that can't verify its own correctness undermines its entire premise.
-
-**Verdict: Severely over-engineered for its maturity level.** The ambition is a full AI governance SDK. The reality is a 0.1.0-alpha with broken tests, mock-only integrations, and no consumers. There's a 50:1 ratio of infrastructure to working functionality.
+The fundamental problem: this library governs learning for AI systems that don't yet exist as consumers. It integrates with Memory Vault, Boundary Daemon, and Agent-OS — all part of an ecosystem that has no external users. The concept is real, but the demand is theoretical. Until an actual AI agent uses this library to govern its own memory, the value proposition remains unproven.
 
 ---
 
-## SCOPE ANALYSIS
+### EXECUTION ASSESSMENT
 
-**Core Feature:** Contract-based enforcement of AI learning permissions (create contracts, enforce at four hooks, audit everything, revoke and forget).
+**Build status:** Passes. TypeScript compiles cleanly with `--noEmit`.
+**Tests:** 508 passing across 13 suites. Zero failures.
+**Lint:** 35 errors, 13 warnings (see details below).
+
+#### Architecture
+
+The codebase has gone through a significant refactor (documented in `REFOCUS_PLAN.md`). The results are visible:
+
+- `src/system.ts` is now 699 lines (down from a reported 1,599). It's a clean orchestrator that exposes subsystems as public readonly properties (`system.sessions`, `system.expiry`, `system.emergencyOverride`, etc.) rather than wrapping them with thin forwarding methods. The constructor at `src/system.ts:172-239` instantiates 10 subsystems with proper dependency injection via callbacks.
+
+- The public API (`src/index.ts`, 102 lines) is organized into four clear sections: Core, Extensions, Plain Language, and Errors. No mock classes in the main export. Integration adapters are correctly extracted to `packages/vault-adapter/` and `packages/boundary-adapter/`.
+
+- The enforcement engine (`src/enforcement/engine.ts`) remains the strongest module. Linear logic, four clearly separated hooks, audit logging at every decision point, fail-closed defaults. Every `deny()` path logs before returning. The `checkScope()` method at line 325 properly denies when all scope arrays are empty — genuine fail-closed behavior.
+
+The module count is reasonable for what the library does: 14 source modules in `src/`, down from the previous 19+.
+
+#### Code Quality
+
+- TypeScript strict mode is on. Clean `--noEmit` typecheck.
+- ESLint has **35 errors** remaining. The majority are `@typescript-eslint/no-unsafe-argument` and `@typescript-eslint/no-unsafe-enum-comparison` in `src/system.ts` (lines 279-312, 503-510, 586-599). Several `createXContract()` helper methods use `any` for scope and options parameters instead of proper types. This is sloppy for a governance library that claims type safety.
+- The `deepPurge` method at `src/system.ts:503` accepts `ownerConfirmation: any` — the most security-sensitive operation in the library has an untyped parameter.
+- One `console.error` in `src/storage/repository.ts:103` leaks into test output during `persistent-storage.test.ts`. Not harmful but noisy.
+
+#### Tech Choices
+
+One production dependency: `uuid` ^13.0.0. Appropriate restraint for a library. Dev dependencies are standard (Jest, ts-jest, ESLint, Prettier, TypeScript). No bloat.
+
+The workspace packages (`packages/vault-adapter/`, `packages/boundary-adapter/`) declare a peer dependency on `learning-contracts@^0.1.0`, which doesn't exist on npm. This means `npm ci` fails out of the box. `npm install --legacy-peer-deps` works, but a fresh clone will hit this. The monorepo setup is incomplete.
+
+#### Stability
+
+508 tests pass. This is a significant improvement from the previous state (where 11 of 12 suites crashed). Coverage thresholds are set conservatively (61% branches, 71% functions, 73% lines) and enforced.
+
+**Verdict: Execution now matches a credible alpha.** The refactor addressed the worst problems (god class, orphaned modules, broken tests). What remains is polish: fix the lint errors, type the `any` parameters, fix the workspace peer dependency resolution. The code-to-ambition ratio has improved from absurd to reasonable.
+
+---
+
+### SCOPE ANALYSIS
+
+**Core Feature:** Contract-based enforcement of AI learning permissions — create contracts with explicit scope, enforce at four hooks (memory creation, abstraction, recall, export), audit everything, revoke and forget.
 
 **Supporting:**
-- Contract lifecycle management (Draft/Review/Active/Expired/Revoked)
-- Audit logging for compliance
-- Memory forgetting on contract revocation
-- Session-scoped and time-bound contracts
+- Contract lifecycle state machine (Draft → Review → Active → Expired/Revoked/Amended) — `src/contracts/lifecycle.ts`
+- Audit logging with irreversible event log — `src/audit/logger.ts`
+- Memory forgetting with freeze/tombstone/deep-purge operations — `src/memory/forgetting.ts`
+- In-memory and file-based storage adapters — `src/storage/`
 
 **Nice-to-Have:**
-- Plain language contract builder (conversational interface)
-- Multi-user permission management
-- Rate limiting on contract creation
-- Emergency override / lockdown mode
+- Plain-language contract builder with conversational flow — `src/plain-language/builder.ts` (751 lines). A differentiator if the target user is non-technical, but the current implementation is keyword-matching (`input.includes(keyword)` at `src/plain-language/parser.ts:188`), not NLP. The name `PlainLanguageParser` overpromises.
+- Session-scoped contracts with auto-cleanup — `src/session/manager.ts`
+- Timebound auto-expiry — `src/expiry/manager.ts`
+- Emergency override ("pause all learning") — `src/emergency-override/manager.ts`
+- Multi-user permissions with OWNER/DELEGATE/READER levels — `src/user-management/`
+- Rate limiting on contract creation — `src/system.ts:73-147`
 
 **Distractions:**
-- SIEM integration (`src/siem-integration/reporter.ts`, 695 lines) - CEF format, UDP syslog transport, batch queuing for a system (Boundary-SIEM) that doesn't exist
-- Daemon connector (`src/daemon-connector/connector.ts`, 656 lines) - Unix socket + HTTP client for Boundary Daemon that doesn't exist
-- Python interop (`src/agent-os-integration/python-interop.ts`) - generates placeholder Python code with `pass` statements (`generatePythonClientCode()` returns a class where every method is `pass`)
-- File-based persistent storage adapter (`src/storage/file-adapter.ts`, 462 lines) with SHA-256 integrity checking for a library that stores contracts in memory
+- `src/errors/types.ts` (412 lines) defines 50+ error codes, MITRE ATT&CK technique tagging, and CEF format for SIEM ingestion. The `CentralErrorHandler` in `src/errors/handler.ts` implements buffered SIEM reporting, lockdown triggers, and retry strategies. This is enterprise security infrastructure for a library with zero deployments. The error system is ~810 lines — nearly as large as the enforcement engine it supports.
+- 7 pre-built contract templates (`src/plain-language/templates.ts`) for "Coding Best Practices", "Gaming & Streaming", "Personal Journal", etc. These assume usage patterns that haven't been validated by actual users.
+- **~81,000 lines of markdown documentation** across 14+ files. The documentation-to-source ratio is approximately 8:1. Files like `KEYWORDS.md` (10,772 bytes), `ENCRYPTION_SECURITY_REVIEW.md` (17,215 bytes), and `AUDIT_REPORT.md` (8,047 bytes) add weight without adding clarity for a potential adopter.
 
 **Wrong Product:**
-- Agent-OS integration module (7 files, ~900 lines) - this is an SDK for Agent-OS, not for learning contracts. It belongs in an `agent-os-sdk` package
-- Boundary integration module (`src/boundary-integration/`, ~1,210 lines) - adapter layer for a separate product. Should be a plugin package
-- Vault integration module (`src/vault-integration/`, ~1,215 lines) - same. Should be `@learning-contracts/vault-adapter`
+- `packages/vault-adapter/` and `packages/boundary-adapter/` — correctly extracted to separate packages, but they integrate with systems (Memory Vault, Boundary Daemon) that have no public releases. These packages can't be used by anyone. They should exist as stubs/interfaces, not implementations.
 
-**Scope Verdict: Multiple Products.** The core learning contracts system (~4,000 lines covering contracts, enforcement, audit, storage, memory) is buried under ~14,000 lines of integration code for systems that don't exist yet. Three separate integration SDKs have been folded into what should be a focused governance library.
+**Scope Verdict: Focused but front-loaded.** The core is now identifiable and coherent. The worst offenders (Agent-OS SDK, SIEM reporter, daemon connector) have been removed. What remains is a library that has built all of the supporting infrastructure (error handling, multi-user permissions, session management, plain-language interface) *before* validating that anyone wants the core. The ratio of "nice-to-have features" to "battle-tested core" is still too high for an alpha.
 
 ---
 
-## TECHNICAL ISSUES
+### TECHNICAL ISSUES
 
-### Critical
+#### High
 
-1. **Broken test suite.** `uuid` v13 ESM exports are incompatible with the current `ts-jest`/CommonJS configuration. 11 of 12 test suites crash before running a single test. Fix: add `transformIgnorePatterns: ['/node_modules/(?!uuid)']` to `jest.config.cjs`, or downgrade to `uuid` v9.
+1. **35 ESLint errors in shipped code.** The `createStrategicContract`, `createEpisodicContract`, `createProceduralContract`, and `createObservationContract` methods at `src/system.ts:279-313` use `any` for scope and options parameters. For a governance library that exists to enforce type-safe contracts, untyped public API methods are a credibility problem. The `deepPurge` method (`src/system.ts:503`) accepts `ownerConfirmation: any` for the most privileged operation in the system.
 
-2. **Fabricated coverage numbers.** The comment in `jest.config.cjs:16` claims 70.25% statement coverage. Actual measured coverage is 0.66%. The coverage thresholds (68% statements, 45% branches) would prevent CI from passing, yet CI config exists. Either these numbers were from a different era or tests ran differently at some point.
+2. **Broken monorepo dependency resolution.** `packages/vault-adapter/` and `packages/boundary-adapter/` declare `learning-contracts@^0.1.0` as a peer dependency. This package isn't published to npm. Running `npm ci` (the standard CI install command) fails with `E404 Not Found`. A fresh clone requires `npm install --legacy-peer-deps` or `--ignore-scripts` to install.
 
-### High
+3. **Unsafe enum comparisons.** `src/system.ts:586` and `src/system.ts:599` compare values without shared enum types. The `getMaxAbstraction` method at line 678 compares `contractType` (a `string`) against contract type values using string matching instead of enum comparison — inconsistent with the typed enum pattern used everywhere else.
 
-3. **All integration adapters are mock-only.** `MemoryVaultAdapter`, `BoundaryDaemonAdapter`, `AgentOSMemoryClient`, `AgentOSBoundaryClient` - every external integration interface has only a `Mock*` implementation. These mocks are properly guarded against production use (throw on `NODE_ENV=production`), but it means the integration code is untestable against real systems.
+#### Medium
 
-4. **Mock classes exported in public API.** `src/index.ts` exports `MockMemoryVaultAdapter`, `MockBoundaryDaemonAdapter`, `MockAgentOSMemoryClient`, etc. as part of the library's public surface. Testing utilities should be in a separate export path (`learning-contracts/testing`).
+4. **Plain-language parser is naive keyword matching.** Every detection method in `src/plain-language/parser.ts` uses `input.includes(keyword)` against hardcoded lists. "I want to learn JavaScript" would match domain "javascript" because `includes('javascript')` triggers — but "I want to learn Java" would also match "javascript" because "java" is a substring. No word boundary detection.
 
-### Medium
+5. **Error system is oversized for its use.** The error types (`src/errors/types.ts`, 412 lines) + handler (`src/errors/handler.ts`, 417 lines) = 829 lines. This system defines MITRE ATT&CK techniques, CEF SIEM format, lockdown triggers, and buffered batch reporting. None of these are wired into the core system — `src/system.ts` throws plain `Error` objects (`throw new Error('Contract not found')` at lines 323, 335, 349, etc.), not the structured error types. The error system exists but isn't used by the code that produces errors.
 
-5. **Plain-language "parser" is string matching.** `src/plain-language/parser.ts` uses `input.includes(keyword)` against hardcoded keyword lists. It's called `PlainLanguageParser` which implies NLP capability it doesn't have. The name overpromises.
+6. **Excessive documentation.** ~81,000 lines of markdown for ~10,000 lines of source. Multiple review/audit documents (`AUDIT_REPORT.md`, `ENCRYPTION_SECURITY_REVIEW.md`, `EVALUATION_REPORT.md`, `REFOCUS_PLAN.md`) document internal process rather than helping adopters understand or use the library. The `README.md` is comprehensive but would benefit from a shorter "here's what this does and why you'd use it" section before diving into API reference.
 
-6. **No integration tests.** All 12 test suites use mock implementations. No tests verify actual socket communication, HTTP transport, file I/O with the file adapter, or end-to-end contract flows.
+#### Low
+
+7. **File adapter race condition in tests.** `persistent-storage.test.ts` produces a `console.error` about an ENOENT during concurrent writes (`src/storage/repository.ts:103`). The file adapter's atomic rename pattern (`file-adapter.ts:427`) fails when the temp directory is cleaned between rename steps. Not a production issue (in-memory adapter is default), but indicates the file adapter hasn't been battle-tested.
+
+8. **Rate limiter not configurable per contract type.** `src/system.ts:73-147` implements a token-bucket rate limiter for contract creation, but it applies uniformly. A user creating a PROHIBITED contract (safety-critical) is rate-limited the same as someone creating an OBSERVATION contract (low-risk). Rate limiting is disabled by default anyway.
 
 ---
 
-## RECOMMENDATIONS
+### RECOMMENDATIONS
 
 **CUT:**
-- `src/agent-os-integration/` (7 files, ~900 lines) - integration SDK for a nonexistent system. Extract to separate package if/when Agent-OS ships
-- `src/siem-integration/` (reporter.ts, types.ts, ~770 lines) - SIEM reporting for a nonexistent SIEM. Premature
-- `src/daemon-connector/` (connector.ts, types.ts, ~750 lines) - daemon client for a nonexistent daemon
-- `src/agent-os-integration/python-interop.ts` - generates stub Python code with `pass` statements. Delete immediately
-- All `Mock*` class exports from `src/index.ts` - move to `src/testing/index.ts`
+- `src/errors/handler.ts` — the `CentralErrorHandler` with SIEM buffering, lockdown triggers, and retry strategies. None of this is connected to the actual system. Replace with simple error logging until there's a real SIEM to report to. Keep the error types/classes for structured errors.
+- `AUDIT_REPORT.md`, `ENCRYPTION_SECURITY_REVIEW.md`, `KEYWORDS.md` — internal process documents that don't help adopters. Archive to a `docs/internal/` directory or remove.
+- Pre-built templates in `src/plain-language/templates.ts` — speculative UX for users that don't exist. Keep the template system, remove the hardcoded templates until real usage patterns emerge.
 
 **DEFER:**
-- `src/vault-integration/` - extract to `@learning-contracts/vault-adapter` when Memory Vault exists
-- `src/boundary-integration/` - extract to `@learning-contracts/boundary-adapter` when Boundary Daemon exists
-- `src/plain-language/` - the conversational builder is a nice UX but not essential for the core governance primitive. Ship the core, add the friendly interface later
-- Multi-user permission management - premature for a library with zero users
-- File-based persistent storage with SHA-256 integrity - the in-memory adapter is sufficient for alpha
+- Multi-user permission management (`src/user-management/`) — premature for a library with zero users. The permission model is well-designed but untested by reality.
+- Conversational contract builder (`src/plain-language/builder.ts`) — 751 lines of conversation flow management. Extract to a separate package or defer until the core has adopters.
+- Emergency override system (`src/emergency-override/`) — a "pause all learning" kill switch is important in theory but adds complexity to a system that hasn't been deployed.
+- `packages/vault-adapter/` and `packages/boundary-adapter/` — can't be used until their target systems exist. Keep as architectural placeholders but don't invest further.
 
 **DOUBLE DOWN:**
-- Fix the test suite (uuid ESM compatibility) - this is a 5-line config fix that restores all 12 test suites
-- The core contract + enforcement + audit loop (`src/contracts/`, `src/enforcement/`, `src/audit/`) - this is the actual product. Harden it, get real coverage to 90%+
-- A single, clean example that demonstrates the value proposition end-to-end without requiring Vault/Boundary/Agent-OS
-- Documentation that explains the contract model to potential users instead of documenting integration with systems that don't exist
+- **Fix the 35 lint errors.** Type the `any` parameters in `src/system.ts`. A governance library cannot ship with untyped security-critical methods.
+- **Wire the error system into the core.** Replace `throw new Error('Contract not found')` throughout `src/system.ts` with `throw new ContractError(...)`. The structured errors exist — use them.
+- **Fix monorepo peer dependency.** Either use a `file:` reference for the workspace peer dependency or configure npm workspaces to resolve it locally.
+- **Write a "Getting Started" guide under 100 lines** that shows the core value loop: create contract → enforce memory creation → check recall → revoke → verify memory is tombstoned. The current README is comprehensive but overwhelming for a first-time reader.
+- **Validate with one real consumer.** Integrate this with one actual AI agent that has memory (even a toy example). The entire concept is untested against reality.
 
 ---
 
-**FINAL VERDICT: Refocus.**
+**FINAL VERDICT: Continue — with discipline.**
 
-The concept is strong. An explicit, revocable consent framework for AI learning is genuinely needed and the contract taxonomy is well-designed. But the project has built outward instead of downward. It has 19 modules when it needs 5. It integrates with 4 external systems that don't exist. It has 18,000 lines of source when 4,000 would deliver the core value.
+The project has improved substantially since the refocus. The god class is tamed. The orphaned modules are deleted. Tests pass. The concept remains strong and the core (contracts + enforcement + audit) is coherent. But the library is still building horizontally (more features, more subsystems) instead of vertically (one working integration with a real AI system).
 
-Strip it to: contracts + enforcement + audit + storage + types. Get the tests passing. Get real coverage above 80% on the core. Ship a focused 0.1.0 that does one thing well. Build the integration ecosystem when there's an ecosystem to integrate with.
+The next milestone should not be more code. It should be **one working demonstration** of an AI agent using learning contracts to govern its memory. Until that exists, every additional feature is speculative infrastructure.
 
-**Next Step:** Fix `jest.config.cjs` to handle `uuid` v13 ESM exports (`transformIgnorePatterns`), then run the full test suite and address every failure. A governance library that can't pass its own tests has zero credibility.
+**Next Steps:**
+1. Fix the 35 lint errors — type safety is non-negotiable for a governance library
+2. Wire structured errors into `system.ts` — use the error system you built
+3. Fix `npm ci` — a library that can't install from a clean clone is DOA
+4. Build one real integration example with an AI agent that has memory
