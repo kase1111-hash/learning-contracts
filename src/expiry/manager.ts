@@ -6,7 +6,7 @@
  */
 
 import { v4 as uuidv4 } from 'uuid';
-import { LearningContract, ContractState } from '../types';
+import { LearningContract, ContractState, RetentionDuration } from '../types';
 import {
   TimeboundExpiryManagerConfig,
   ExpiryCheckResult,
@@ -306,7 +306,7 @@ export class TimeboundExpiryManager {
     const retention = contract.memory_permissions.retention;
     const retentionUntil = contract.memory_permissions.retention_until;
 
-    if (retention !== 'timebound' || !retentionUntil) {
+    if (retention !== RetentionDuration.TIMEBOUND || !retentionUntil) {
       return {
         contract_id: contractId,
         expired: false,

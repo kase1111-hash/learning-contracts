@@ -16,6 +16,7 @@ import {
   ContractType,
   BoundaryMode,
   AbstractionLevel,
+  RetentionDuration,
 } from '../src';
 
 describe('Persistent Storage', () => {
@@ -449,7 +450,7 @@ function createTestContract(id: string): any {
     memory_permissions: {
       may_store: true,
       classification_cap: 3,
-      retention: 'timebound',
+      retention: RetentionDuration.TIMEBOUND,
     },
     generalization_rules: {
       allowed: false,

@@ -19,17 +19,21 @@
 
 import {
   LearningContract,
+  LearningScope,
   AbstractionLevel,
   BoundaryMode,
+  ContractType,
+  RetentionDuration,
   EnforcementContext,
   EnforcementResult,
 } from './types';
+import { ContractError, ErrorCode } from './errors';
 import { ContractLifecycleManager, ContractDraft } from './contracts/lifecycle';
 import { ContractFactory } from './contracts/factory';
 import { EnforcementEngine } from './enforcement/engine';
 import { AuditLogger } from './audit/logger';
 import { ContractRepository } from './storage/repository';
-import { MemoryForgetting, MemoryReference } from './memory/forgetting';
+import { MemoryForgetting, MemoryReference, ForgettingResult } from './memory/forgetting';
 import {
   ConversationalContractBuilder,
   PlainLanguageSummarizer,
@@ -192,7 +196,7 @@ export class LearningContractsSystem {
       contractExpirer: (contractId: string, actor: string) => {
         const contract = this.getContract(contractId);
         if (!contract) {
-          throw new Error('Contract not found');
+          throw new ContractError('Contract not found', ErrorCode.CONTRACT_NOT_FOUND, { contract_id: contractId });
         }
         const expired = this.lifecycleManager.expire(contract, actor);
         this.repository.save(expired);
@@ -201,7 +205,7 @@ export class LearningContractsSystem {
       memoryFreezer: (contractId: string, memories: MemoryReference[]) => {
         const contract = this.getContract(contractId);
         if (!contract) {
-          throw new Error('Contract not found');
+          throw new ContractError('Contract not found', ErrorCode.CONTRACT_NOT_FOUND, { contract_id: contractId });
         }
         return this.memoryForgetting.freezeMemories(contract, memories);
       },
@@ -215,7 +219,7 @@ export class LearningContractsSystem {
       contractExpirer: (contractId: string, actor: string) => {
         const contract = this.getContract(contractId);
         if (!contract) {
-          throw new Error('Contract not found');
+          throw new ContractError('Contract not found', ErrorCode.CONTRACT_NOT_FOUND, { contract_id: contractId });
         }
         const expired = this.lifecycleManager.expire(contract, actor);
         this.repository.save(expired);
@@ -224,7 +228,7 @@ export class LearningContractsSystem {
       memoryFreezer: (contractId: string, memories: MemoryReference[]) => {
         const contract = this.getContract(contractId);
         if (!contract) {
-          throw new Error('Contract not found');
+          throw new ContractError('Contract not found', ErrorCode.CONTRACT_NOT_FOUND, { contract_id: contractId });
         }
         return this.memoryForgetting.freezeMemories(contract, memories);
       },
@@ -259,9 +263,11 @@ export class LearningContractsSystem {
     // Check rate limit before creating contract
     const rateLimitResult = this.rateLimiter.tryConsume(draft.created_by);
     if (!rateLimitResult.allowed) {
-      throw new Error(
+      throw new ContractError(
         `Rate limit exceeded for user '${draft.created_by}'. ` +
-        `Please wait ${Math.ceil((rateLimitResult.retryAfterMs ?? 0) / 1000)} seconds before creating more contracts.`
+        `Please wait ${Math.ceil((rateLimitResult.retryAfterMs ?? 0) / 1000)} seconds before creating more contracts.`,
+        ErrorCode.SYSTEM_RESOURCE_EXHAUSTED,
+        { user_id: draft.created_by, operation: 'createContract' }
       );
     }
 
@@ -276,12 +282,21 @@ export class LearningContractsSystem {
     return contract;
   }
 
-  createObservationContract(createdBy: string, scope?: any) {
+  createObservationContract(createdBy: string, scope?: Partial<LearningScope>): LearningContract {
     const draft = ContractFactory.createObservationContract(createdBy, scope);
     return this.createContract(draft);
   }
 
-  createEpisodicContract(createdBy: string, scope?: any, options?: any) {
+  createEpisodicContract(
+    createdBy: string,
+    scope?: Partial<LearningScope>,
+    options?: {
+      classificationCap?: number;
+      retention?: RetentionDuration;
+      retentionUntil?: Date;
+      requiresOwner?: boolean;
+    }
+  ): LearningContract {
     const draft = ContractFactory.createEpisodicContract(
       createdBy,
       scope,
@@ -290,7 +305,15 @@ export class LearningContractsSystem {
     return this.createContract(draft);
   }
 
-  createProceduralContract(createdBy: string, scope?: any, options?: any) {
+  createProceduralContract(
+    createdBy: string,
+    scope?: Partial<LearningScope>,
+    options?: {
+      classificationCap?: number;
+      retention?: RetentionDuration;
+      generalizationConditions?: string[];
+    }
+  ): LearningContract {
     const draft = ContractFactory.createProceduralContract(
       createdBy,
       scope,
@@ -299,7 +322,14 @@ export class LearningContractsSystem {
     return this.createContract(draft);
   }
 
-  createStrategicContract(createdBy: string, scope?: any, options?: any) {
+  createStrategicContract(
+    createdBy: string,
+    scope?: Partial<LearningScope>,
+    options?: {
+      classificationCap?: number;
+      generalizationConditions?: string[];
+    }
+  ): LearningContract {
     const draft = ContractFactory.createStrategicContract(
       createdBy,
       scope,
@@ -308,7 +338,7 @@ export class LearningContractsSystem {
     return this.createContract(draft);
   }
 
-  createProhibitedContract(createdBy: string, scope?: any) {
+  createProhibitedContract(createdBy: string, scope?: Partial<LearningScope>): LearningContract {
     const draft = ContractFactory.createProhibitedContract(createdBy, scope);
     return this.createContract(draft);
   }
@@ -320,7 +350,7 @@ export class LearningContractsSystem {
   submitForReview(contractId: string, actor: string): LearningContract {
     const contract = this.getContract(contractId);
     if (!contract) {
-      throw new Error('Contract not found');
+      throw new ContractError('Contract not found', ErrorCode.CONTRACT_NOT_FOUND, { contract_id: contractId });
     }
 
     const updated = this.lifecycleManager.submitForReview(contract, actor);
@@ -331,7 +361,7 @@ export class LearningContractsSystem {
   activateContract(contractId: string, actor: string): LearningContract {
     const contract = this.getContract(contractId);
     if (!contract) {
-      throw new Error('Contract not found');
+      throw new ContractError('Contract not found', ErrorCode.CONTRACT_NOT_FOUND, { contract_id: contractId });
     }
 
     const updated = this.lifecycleManager.activate(contract, actor);
@@ -346,7 +376,7 @@ export class LearningContractsSystem {
   ): LearningContract {
     const contract = this.getContract(contractId);
     if (!contract) {
-      throw new Error('Contract not found');
+      throw new ContractError('Contract not found', ErrorCode.CONTRACT_NOT_FOUND, { contract_id: contractId });
     }
 
     const updated = this.lifecycleManager.revoke(contract, actor, reason);
@@ -362,7 +392,7 @@ export class LearningContractsSystem {
   ): { original: LearningContract; newDraft: LearningContract } {
     const contract = this.getContract(contractId);
     if (!contract) {
-      throw new Error('Contract not found');
+      throw new ContractError('Contract not found', ErrorCode.CONTRACT_NOT_FOUND, { contract_id: contractId });
     }
 
     const result = this.lifecycleManager.amend(contract, actor, changes, reason);
@@ -387,7 +417,7 @@ export class LearningContractsSystem {
   ): EnforcementResult {
     const contract = this.getContract(contractId);
     if (!contract) {
-      throw new Error('Contract not found');
+      throw new ContractError('Contract not found', ErrorCode.CONTRACT_NOT_FOUND, { contract_id: contractId });
     }
 
     const enforcementContext: EnforcementContext = {
@@ -414,7 +444,7 @@ export class LearningContractsSystem {
   ): EnforcementResult {
     const contract = this.getContract(contractId);
     if (!contract) {
-      throw new Error('Contract not found');
+      throw new ContractError('Contract not found', ErrorCode.CONTRACT_NOT_FOUND, { contract_id: contractId });
     }
 
     const enforcementContext: EnforcementContext = {
@@ -442,7 +472,7 @@ export class LearningContractsSystem {
   ): EnforcementResult {
     const contract = this.getContract(contractId);
     if (!contract) {
-      throw new Error('Contract not found');
+      throw new ContractError('Contract not found', ErrorCode.CONTRACT_NOT_FOUND, { contract_id: contractId });
     }
 
     const enforcementContext: EnforcementContext = {
@@ -457,7 +487,7 @@ export class LearningContractsSystem {
   checkExport(contractId: string, boundaryMode: BoundaryMode): EnforcementResult {
     const contract = this.getContract(contractId);
     if (!contract) {
-      throw new Error('Contract not found');
+      throw new ContractError('Contract not found', ErrorCode.CONTRACT_NOT_FOUND, { contract_id: contractId });
     }
 
     const enforcementContext: EnforcementContext = {
@@ -479,7 +509,7 @@ export class LearningContractsSystem {
   ) {
     const contract = this.getContract(contractId);
     if (!contract) {
-      throw new Error('Contract not found');
+      throw new ContractError('Contract not found', ErrorCode.CONTRACT_NOT_FOUND, { contract_id: contractId });
     }
 
     return this.memoryForgetting.freezeMemories(contract, memories);
@@ -491,7 +521,7 @@ export class LearningContractsSystem {
   ) {
     const contract = this.getContract(contractId);
     if (!contract) {
-      throw new Error('Contract not found');
+      throw new ContractError('Contract not found', ErrorCode.CONTRACT_NOT_FOUND, { contract_id: contractId });
     }
 
     return this.memoryForgetting.tombstoneMemories(contract, memories);
@@ -500,11 +530,15 @@ export class LearningContractsSystem {
   deepPurge(
     contractId: string,
     memories: MemoryReference[],
-    ownerConfirmation: any
-  ) {
+    ownerConfirmation: {
+      owner: string;
+      confirmation_token: string;
+      timestamp: Date;
+    }
+  ): ForgettingResult {
     const contract = this.getContract(contractId);
     if (!contract) {
-      throw new Error('Contract not found');
+      throw new ContractError('Contract not found', ErrorCode.CONTRACT_NOT_FOUND, { contract_id: contractId });
     }
 
     return this.memoryForgetting.deepPurge(contract, memories, ownerConfirmation);
@@ -583,7 +617,7 @@ export class LearningContractsSystem {
         transferable: false, // Never allow transfer by default
       },
       memory_permissions: {
-        may_store: draft.contractType !== 'observation' && draft.contractType !== 'prohibited',
+        may_store: draft.contractType !== ContractType.OBSERVATION && draft.contractType !== ContractType.PROHIBITED,
         classification_cap: draft.classificationCap,
         retention: draft.retention,
         retention_until: draft.retentionUntil,
@@ -596,7 +630,7 @@ export class LearningContractsSystem {
         requires_owner: draft.requiresOwner,
         boundary_mode_min: draft.boundaryModeMin,
       },
-      revocable: draft.contractType !== 'prohibited',
+      revocable: draft.contractType !== ContractType.PROHIBITED,
     };
 
     return this.createContract(contractDraft);
@@ -676,7 +710,7 @@ export class LearningContractsSystem {
   // ==========================================
 
   private getMaxAbstraction(
-    contractType: string,
+    contractType: ContractType,
     allowGeneralization: boolean
   ): AbstractionLevel {
     if (!allowGeneralization) {
@@ -684,11 +718,11 @@ export class LearningContractsSystem {
     }
 
     switch (contractType) {
-      case 'strategic':
+      case ContractType.STRATEGIC:
         return AbstractionLevel.STRATEGY;
-      case 'procedural':
+      case ContractType.PROCEDURAL:
         return AbstractionLevel.HEURISTIC;
-      case 'episodic':
+      case ContractType.EPISODIC:
         return AbstractionLevel.PATTERN;
       default:
         return AbstractionLevel.RAW;

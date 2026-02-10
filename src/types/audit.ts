@@ -52,7 +52,7 @@ export interface AuditEvent {
   reason?: string;
   /** Additional event details */
   details: {
-    [key: string]: any;
+    [key: string]: unknown;
   };
 }
 

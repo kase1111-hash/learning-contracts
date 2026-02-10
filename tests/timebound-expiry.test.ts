@@ -5,6 +5,7 @@
 import {
   LearningContractsSystem,
   ContractState,
+  RetentionDuration,
 } from '../src';
 
 describe('Timebound Auto-Expiry', () => {
@@ -28,7 +29,7 @@ describe('Timebound Auto-Expiry', () => {
       let contract = system.createEpisodicContract('alice', {
         domains: ['coding'],
       }, {
-        retention: 'timebound',
+        retention: RetentionDuration.TIMEBOUND,
         retentionUntil: pastDate,
       });
       contract = system.submitForReview(contract.contract_id, 'alice');
@@ -50,7 +51,7 @@ describe('Timebound Auto-Expiry', () => {
       let contract = system.createEpisodicContract('alice', {
         domains: ['coding'],
       }, {
-        retention: 'timebound',
+        retention: RetentionDuration.TIMEBOUND,
         retentionUntil: futureDate,
       });
       contract = system.submitForReview(contract.contract_id, 'alice');
@@ -68,7 +69,7 @@ describe('Timebound Auto-Expiry', () => {
       let contract = system.createEpisodicContract('alice', {
         domains: ['coding'],
       }, {
-        retention: 'permanent',
+        retention: RetentionDuration.PERMANENT,
       });
       contract = system.submitForReview(contract.contract_id, 'alice');
       contract = system.activateContract(contract.contract_id, 'alice');
@@ -86,7 +87,7 @@ describe('Timebound Auto-Expiry', () => {
       let contract = system.createEpisodicContract('alice', {
         domains: ['coding'],
       }, {
-        retention: 'timebound',
+        retention: RetentionDuration.TIMEBOUND,
         retentionUntil: pastDate,
       });
       contract = system.submitForReview(contract.contract_id, 'alice');
@@ -112,7 +113,7 @@ describe('Timebound Auto-Expiry', () => {
         let contract = system.createEpisodicContract('alice', {
           domains: [`domain-${i}`],
         }, {
-          retention: 'timebound',
+          retention: RetentionDuration.TIMEBOUND,
           retentionUntil: pastDate,
         });
         contract = system.submitForReview(contract.contract_id, 'alice');
@@ -145,7 +146,7 @@ describe('Timebound Auto-Expiry', () => {
       let contract = system.createEpisodicContract('alice', {
         domains: ['coding'],
       }, {
-        retention: 'timebound',
+        retention: RetentionDuration.TIMEBOUND,
         retentionUntil: pastDate,
       });
       contract = system.submitForReview(contract.contract_id, 'alice');
@@ -169,7 +170,7 @@ describe('Timebound Auto-Expiry', () => {
       let contract = system.createEpisodicContract('alice', {
         domains: ['coding'],
       }, {
-        retention: 'timebound',
+        retention: RetentionDuration.TIMEBOUND,
         retentionUntil: pastDate,
       });
       contract = system.submitForReview(contract.contract_id, 'alice');
@@ -188,7 +189,7 @@ describe('Timebound Auto-Expiry', () => {
       let contract = system.createEpisodicContract('alice', {
         domains: ['coding'],
       }, {
-        retention: 'timebound',
+        retention: RetentionDuration.TIMEBOUND,
         retentionUntil: futureDate,
       });
       contract = system.submitForReview(contract.contract_id, 'alice');
@@ -209,7 +210,7 @@ describe('Timebound Auto-Expiry', () => {
       let contract = system.createEpisodicContract('alice', {
         domains: ['coding'],
       }, {
-        retention: 'timebound',
+        retention: RetentionDuration.TIMEBOUND,
         retentionUntil: pastDate,
       });
       contract = system.submitForReview(contract.contract_id, 'alice');
@@ -234,7 +235,7 @@ describe('Timebound Auto-Expiry', () => {
       let contract = system.createEpisodicContract('alice', {
         domains: ['coding'],
       }, {
-        retention: 'permanent',
+        retention: RetentionDuration.PERMANENT,
       });
       contract = system.submitForReview(contract.contract_id, 'alice');
       contract = system.activateContract(contract.contract_id, 'alice');
@@ -254,7 +255,7 @@ describe('Timebound Auto-Expiry', () => {
       let contract = system.createEpisodicContract('alice', {
         domains: ['coding'],
       }, {
-        retention: 'timebound',
+        retention: RetentionDuration.TIMEBOUND,
         retentionUntil: futureDate,
       });
       contract = system.submitForReview(contract.contract_id, 'alice');
@@ -282,7 +283,7 @@ describe('Timebound Auto-Expiry', () => {
       let contract = system.createEpisodicContract('alice', {
         domains: ['coding'],
       }, {
-        retention: 'timebound',
+        retention: RetentionDuration.TIMEBOUND,
         retentionUntil: pastDate,
       });
       contract = system.submitForReview(contract.contract_id, 'alice');
@@ -307,7 +308,7 @@ describe('Timebound Auto-Expiry', () => {
       let contract = system.createEpisodicContract('alice', {
         domains: ['coding'],
       }, {
-        retention: 'timebound',
+        retention: RetentionDuration.TIMEBOUND,
         retentionUntil: pastDate,
       });
       contract = system.submitForReview(contract.contract_id, 'alice');
@@ -406,7 +407,7 @@ describe('Timebound Auto-Expiry', () => {
       let contract = system.createEpisodicContract('alice', {
         domains: ['coding'],
       }, {
-        retention: 'timebound',
+        retention: RetentionDuration.TIMEBOUND,
         retentionUntil: pastDate,
       });
       contract = system.submitForReview(contract.contract_id, 'alice');
@@ -432,7 +433,7 @@ describe('Timebound Auto-Expiry', () => {
         let contract = system.createEpisodicContract('alice', {
           domains: [`domain-${i}`],
         }, {
-          retention: 'timebound',
+          retention: RetentionDuration.TIMEBOUND,
           retentionUntil: pastDate,
         });
         contract = system.submitForReview(contract.contract_id, 'alice');
@@ -485,7 +486,7 @@ describe('Timebound Auto-Expiry', () => {
       let timeboundContract = system.createEpisodicContract('alice', {
         domains: ['timebound-domain'],
       }, {
-        retention: 'timebound',
+        retention: RetentionDuration.TIMEBOUND,
         retentionUntil: pastDate,
       });
       timeboundContract = system.submitForReview(timeboundContract.contract_id, 'alice');
@@ -495,7 +496,7 @@ describe('Timebound Auto-Expiry', () => {
       let permanentContract = system.createEpisodicContract('alice', {
         domains: ['permanent-domain'],
       }, {
-        retention: 'permanent',
+        retention: RetentionDuration.PERMANENT,
       });
       permanentContract = system.submitForReview(permanentContract.contract_id, 'alice');
       permanentContract = system.activateContract(permanentContract.contract_id, 'alice');
@@ -504,7 +505,7 @@ describe('Timebound Auto-Expiry', () => {
       let sessionContract = system.createEpisodicContract('alice', {
         domains: ['session-domain'],
       }, {
-        retention: 'session',
+        retention: RetentionDuration.SESSION,
       });
       sessionContract = system.submitForReview(sessionContract.contract_id, 'alice');
       sessionContract = system.activateContract(sessionContract.contract_id, 'alice');
@@ -529,7 +530,7 @@ describe('Timebound Auto-Expiry', () => {
       let contract = system.createEpisodicContract('alice', {
         domains: ['coding'],
       }, {
-        retention: 'timebound',
+        retention: RetentionDuration.TIMEBOUND,
         retentionUntil: pastDate,
       });
       contract = system.submitForReview(contract.contract_id, 'alice');

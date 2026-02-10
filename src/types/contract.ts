@@ -144,7 +144,7 @@ export interface LearningContract {
   metadata?: {
     amended_from?: string;
     amendment_reason?: string;
-    [key: string]: any;
+    [key: string]: unknown;
   };
 }
 

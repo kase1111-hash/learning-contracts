@@ -43,7 +43,7 @@ export class AuditLogger {
     actor: string,
     previousState: ContractState,
     newState: ContractState,
-    details: Record<string, any> = {}
+    details: Record<string, unknown> = {}
   ): void {
     const eventTypeMap: Record<ContractState, AuditEventType> = {
       [ContractState.DRAFT]: AuditEventType.CONTRACT_CREATED,
@@ -187,7 +187,7 @@ export class AuditLogger {
     contractId: string,
     memoryIds: string[],
     derivedIds: string[],
-    ownerConfirmation: any
+    ownerConfirmation: { owner: string; confirmation_token: string; timestamp: Date }
   ): void {
     this.log({
       event_type: AuditEventType.MEMORY_TOMBSTONED,

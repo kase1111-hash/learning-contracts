@@ -9,6 +9,7 @@ import {
   LearningContract,
   ContractState,
   ContractType,
+  RetentionDuration,
 } from '../types';
 import { StorageAdapter } from './adapter';
 import { MemoryStorageAdapter } from './memory-adapter';
@@ -316,7 +317,7 @@ export class ContractRepository {
     return this.getAll().filter(
       (c) =>
         c.state === ContractState.ACTIVE &&
-        c.memory_permissions.retention === 'timebound' &&
+        c.memory_permissions.retention === RetentionDuration.TIMEBOUND &&
         c.memory_permissions.retention_until &&
         c.memory_permissions.retention_until < now
     );
