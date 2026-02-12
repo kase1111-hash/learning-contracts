@@ -1,108 +1,170 @@
-User Manual: Setting Up Automatic Learning Contracts (Plain-Language Edition)
-Introduction
-Learning Contracts give you full control over what your AI co-worker can learn from your interactions. By default, nothing is learned unless you explicitly allow it through a contract. These contracts are written in clear, everyday language—no technical jargon required.
-The system uses a powerful language model (LLM) behind the scenes to translate your plain-language instructions into precise, enforceable rules. You never need to write or see JSON; it's handled automatically in the background.
-This manual shows you how to create contracts that run automatically end-to-end. Once activated, the contract quietly enforces itself during every relevant interaction—no pop-ups or per-session approvals needed (unless you specifically want them).
-We'll walk through two real-world examples:
+# User Manual: Setting Up Learning Contracts (Plain-Language Edition)
 
-Coding – Automatically learning reusable coding tips and best practices.
-Streaming Video Gameplay – Automatically capturing and recalling specific gameplay moments from your streams.
+## Introduction
 
-Getting Started
-Access the Learning Contracts interface through:
+Learning Contracts give you full control over what your AI co-worker can learn from your interactions. By default, nothing is learned unless you explicitly allow it through a contract. These contracts are written in clear, everyday language — no technical jargon required.
 
-The web dashboard (recommended for beginners)
-Voice command ("Hey Assistant, let's make a learning contract")
-Or typed command: create learning contract
+The system includes a conversational builder that translates plain-language descriptions into precise, enforceable rules. You describe what you want in your own words, and the builder handles the technical details.
 
-The system will guide you conversationally using plain language.
-Example 1: Automatic Contract for Coding
-Goal: Allow the assistant to automatically learn and reuse helpful coding patterns (like "prefer list comprehensions in Python") while you're working on projects, without needing to approve each time.
-Step 1: Start Drafting in Plain Language
-Say or type:
-textcreate learning contract
-The assistant responds:
-Great! Let's make a new Learning Contract. What should this contract be about?
-You reply:
-Coding and programming. I want you to learn reusable tips and best practices from my Python coding sessions.
-Assistant:
-Got it — this will be a "Procedural Learning" contract (for learning reusable techniques).Which tools or environments does this apply to? (e.g., Python, VS Code, Git, specific projects)
-You:
-Python programming in VS Code or Git. Only for my personal coding projects — not work stuff or anything with sensitive data.
-Assistant:
-Perfect. How long should learned tips be kept?
-You:
-Permanently, until I revoke the contract.
-Assistant:
-Should the assistant be allowed to quietly apply these tips in future coding sessions without asking you each time?
-You:
-Yes, as long as it's in the same kind of project.
-Assistant:
-One more thing: Should these learned tips ever be shared outside this system or used with other users?
-You:
-No, never.
-Assistant:
-Here's what I understand in plain language:Coding Learning Contract
-You allow the assistant to observe your Python coding in personal projects (using tools like VS Code or Git). It may quietly learn and store reusable coding tips and best practices. These tips can be automatically applied in future similar sessions. They are kept permanently and never shared outside this system. No personal or sensitive data will be included. You can revoke this at any time.Does this sound right? (Yes / No / Change something)
-You:
-Yes
-Step 2: Review and Activate
-Assistant:
-Contract drafted and reviewed. Ready to activate now?
-Once activated, it will automatically apply during all matching coding sessions.
-You:
-Yes, activate it.
-Assistant:
-Contract activated!
-You'll see it listed under "Active Contracts" in your dashboard.
-You can always say "show my learning contracts" or "revoke coding contract" to manage it.
-Done. From now on, whenever you're coding in Python on personal projects, the assistant will automatically learn helpful patterns and apply them in future sessions—no further input needed.
-Example 2: Automatic Contract for Streaming Video Gameplay
-Goal: Automatically save specific gameplay moments or strategies from your live streams (e.g., a clever Fortnite build or clutch play) for later recall, without generalization across unrelated games.
-Step 1: Start Drafting
-You:
-textcreate learning contract
-Assistant:
-What should this contract be about?
-You:
-Streaming video gameplay. I want to save specific moments or strategies from my live game streams.
-Assistant:
-This sounds like an "Episodic Learning" contract — good for capturing individual events without combining them into broader rules.Which games or platforms?
-You:
-Fortnite streams on Twitch using OBS Studio.
-Assistant:
-How long should these gameplay memories be kept?
-You:
-About 30 days — then automatically freeze them.
-Assistant:
-Should the assistant combine lessons across different streams or games to create general strategies?
-You:
-No, keep each episode separate. No big-picture generalizations.
-Assistant:
-Should it ask your permission every time it wants to recall a past gameplay moment?
-You:
-Yes, I'd like to approve recall each time.
-Assistant:
-Summary in plain language:Gameplay Streaming Contract
-You allow the assistant to capture and store specific moments from your Fortnite streams on Twitch (using OBS). Each moment is saved separately — no combining into general strategies. Memories are kept for 30 days, then automatically frozen. Recall requires your approval each time. Nothing is ever shared outside this system. You can revoke anytime.Look good?
-You:
-Yes
-Step 2: Activate
-You:
-Activate it.
-Assistant:
-Contract activated! It will now automatically capture qualifying gameplay moments during streams.
-Memories will auto-expire after 30 days. Say "show gameplay memories" to review them when ready.
-Done. The contract now runs fully automatically: capturing episodes during streams, enforcing no generalization, auto-freezing after 30 days, and requiring your approval for recall.
-Managing Your Contracts
-At any time, say:
+This manual shows you how to create contracts using the conversational builder. Once activated, a contract enforces itself during every relevant interaction — no per-session approvals needed (unless you specifically want them).
 
-show my learning contracts → See all active and past contracts in plain language
-revoke coding contract → Immediately stops learning and quarantines memories
-revoke gameplay contract → Same for gameplay
-pause all learning → Emergency override (human supremacy)
+We'll walk through two examples:
 
-All actions are logged transparently, but only you can see the audit trail.
-Final Note
-You’re in full control. The assistant proposes contracts based on your words, but nothing happens without your final "Yes." Learning only occurs where you explicitly allow it — never by surprise.
-Enjoy building trusted, automatic learning — safely and on your terms.
+- **Coding** — Automatically learning reusable coding tips and best practices.
+- **Streaming Video Gameplay** — Automatically capturing and recalling specific gameplay moments from your streams.
+
+## Getting Started
+
+The conversational builder is available through the `ConversationalContractBuilder` class, which is exposed as `system.conversations` on the main `LearningContractsSystem` instance. Applications that integrate Learning Contracts can present this as a chat interface, a form, or any other UI.
+
+```typescript
+import { LearningContractsSystem } from 'learning-contracts';
+
+const system = new LearningContractsSystem();
+
+// Start a conversation
+const response = system.conversations.startConversation('alice');
+console.log(response.message);
+// "Let's create a Learning Contract. What would you like the assistant to learn about?"
+```
+
+You can also use one of the 7 built-in templates (e.g., `coding-best-practices`, `gaming-streaming`) to skip the conversational flow and create a contract directly.
+
+## Example 1: Contract for Coding
+
+**Goal:** Allow the assistant to learn and reuse helpful coding patterns (like "prefer list comprehensions in Python") while you work on personal projects.
+
+### Step 1: Start the Conversation
+
+```typescript
+const response = system.conversations.startConversation('alice');
+```
+
+> **Builder:** Let's create a Learning Contract. What would you like the assistant to learn about? You can describe it in your own words, or I can show you some templates.
+
+### Step 2: Describe What You Want
+
+```typescript
+const result = system.conversations.processInput(
+  response.conversationId!,
+  'Coding and programming. I want you to learn reusable tips and best practices from my Python coding sessions.'
+);
+```
+
+> **Builder:** Got it — this will be a "Procedural Learning" contract (for learning reusable techniques). Which tools or environments does this apply to?
+
+### Step 3: Answer the Follow-up Questions
+
+The builder will ask a series of questions to define the contract's scope, retention, and rules:
+
+- **Tools/environments:** "Python programming in VS Code or Git. Only for my personal coding projects."
+- **Retention period:** "Permanently, until I revoke the contract."
+- **Auto-apply in future sessions?** "Yes, as long as it's in the same kind of project."
+- **Sharing outside the system?** "No, never."
+
+### Step 4: Review and Activate
+
+When the conversation is complete, the builder provides a plain-language summary and a draft:
+
+> **Summary:** You allow the assistant to observe your Python coding in personal projects (using tools like VS Code or Git). It may learn and store reusable coding tips and best practices. These tips can be applied in future similar sessions. They are kept permanently and never shared outside this system. You can revoke this at any time.
+
+```typescript
+if (result.isComplete && result.draft) {
+  // Create the contract from the conversational draft
+  let contract = system.createContractFromPlainLanguage(result.draft);
+
+  // Activate it (Draft -> Review -> Active)
+  contract = system.submitForReview(contract.contract_id, 'alice');
+  contract = system.activateContract(contract.contract_id, 'alice');
+}
+```
+
+From this point, the enforcement engine checks all learning operations against this contract's rules.
+
+## Example 2: Contract for Streaming Video Gameplay
+
+**Goal:** Save specific gameplay moments from live streams for later recall, without generalization across unrelated games.
+
+### Step 1: Start and Describe
+
+```typescript
+const response = system.conversations.startConversation('bob');
+const result = system.conversations.processInput(
+  response.conversationId!,
+  'Streaming video gameplay. I want to save specific moments or strategies from my live game streams.'
+);
+```
+
+> **Builder:** This sounds like an "Episodic Learning" contract — good for capturing individual events without combining them into broader rules. Which games or platforms?
+
+### Step 2: Define the Details
+
+- **Games/platforms:** "Fortnite streams on Twitch using OBS Studio."
+- **Retention:** "About 30 days — then automatically freeze them."
+- **Combine across streams?** "No, keep each episode separate. No big-picture generalizations."
+- **Require approval for recall?** "Yes, I'd like to approve recall each time."
+
+### Step 3: Review and Activate
+
+> **Summary:** You allow the assistant to capture and store specific moments from your Fortnite streams on Twitch (using OBS). Each moment is saved separately — no combining into general strategies. Memories are kept for 30 days, then automatically frozen. Recall requires your approval each time. Nothing is ever shared outside this system. You can revoke anytime.
+
+```typescript
+if (result.isComplete && result.draft) {
+  let contract = system.createContractFromPlainLanguage(result.draft);
+  contract = system.submitForReview(contract.contract_id, 'bob');
+  contract = system.activateContract(contract.contract_id, 'bob');
+}
+```
+
+The contract now enforces its rules: capturing episodes during streams, preventing generalization, auto-freezing after 30 days, and requiring approval for recall.
+
+## Using Templates
+
+Instead of the conversational flow, you can use a built-in template:
+
+```typescript
+const response = system.conversations.startConversation('alice');
+system.conversations.useTemplate(response.conversationId!, 'coding-best-practices');
+```
+
+Available templates: `coding-best-practices`, `gaming-streaming`, `personal-journal`, `work-projects`, `prohibited-domains`, `study-sessions`, `strategic-planning`.
+
+## Managing Contracts
+
+### View Contracts
+
+```typescript
+// Get all contracts
+const contracts = system.getAllContracts();
+
+// Get only active contracts
+const active = system.getActiveContracts();
+
+// Get a plain-language summary of any contract
+const summary = system.getContractSummary(contractId, { format: 'prose' });
+```
+
+### Revoke a Contract
+
+```typescript
+system.revokeContract(contractId, 'alice', 'No longer needed');
+```
+
+### Emergency Override (Pause All Learning)
+
+```typescript
+system.triggerEmergencyOverride('alice', 'Security concern');
+```
+
+### Audit Trail
+
+All actions are logged in the immutable audit trail:
+
+```typescript
+const auditLog = system.getAuditLog();
+const violations = system.getViolations();
+```
+
+## Final Note
+
+You're in full control. The conversational builder proposes contracts based on your words, but nothing happens without explicit activation. Learning only occurs where you allow it — never by surprise.

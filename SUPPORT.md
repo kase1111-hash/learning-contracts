@@ -8,8 +8,8 @@ Before seeking support, please check the following resources:
 
 - **[README.md](README.md)** - Quick start guide, API reference, and usage examples
 - **[User-Manual.md](User-Manual.md)** - End-user guide for contract creation
-- **[specs.md](specs.md)** - Detailed technical specifications
-- **[system-arch.md](system-arch.md)** - System architecture overview
+- **[specs.md](docs/internal/specs.md)** - Detailed technical specifications
+- **[system-arch.md](docs/internal/system-arch.md)** - System architecture overview
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** - Development setup and guidelines
 
 ## Getting Help
