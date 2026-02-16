@@ -62,7 +62,7 @@
     "prettier": "^3.8.1",
     "ts-jest": "^29.1.0",
     "typescript": "^5.0.0",
-    "typescript-eslint": "^8.54.0"
+    "typescript-eslint": "^8.56.0"
   },
   "dependencies": {
     "uuid": "^13.0.0"
