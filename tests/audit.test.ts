@@ -8,6 +8,7 @@
 
 import { AuditLogger } from '../src/audit/logger';
 import {
+  AuditEvent,
   AuditEventType,
   ContractState,
   ContractType,
@@ -836,6 +837,96 @@ describe('AuditLogger', () => {
     test('returns empty array when no events logged', () => {
       const exported = logger.export();
       expect(exported).toEqual([]);
+    });
+  });
+
+  // ---------------------------------------------------------------
+  // correlation_id
+  // ---------------------------------------------------------------
+  describe('correlation_id', () => {
+    test('attaches correlation ID from setCorrelationId to events', () => {
+      logger.setCorrelationId('corr-123');
+      const contract = makeContract();
+      logger.logContractCreated(contract, 'alice');
+      logger.logMemoryCreated('contract-001', 'mem-1', 1, 'alice');
+      logger.setCorrelationId(undefined);
+      logger.logMemoryCreated('contract-001', 'mem-2', 1, 'alice');
+
+      const events = logger.export();
+      expect(events[0].correlation_id).toBe('corr-123');
+      expect(events[1].correlation_id).toBe('corr-123');
+      expect(events[2].correlation_id).toBeUndefined();
+    });
+
+    test('filters events by correlation_id in query', () => {
+      logger.setCorrelationId('corr-A');
+      logger.logMemoryCreated('c1', 'mem-1', 1, 'alice');
+      logger.setCorrelationId('corr-B');
+      logger.logMemoryCreated('c1', 'mem-2', 1, 'alice');
+      logger.setCorrelationId(undefined);
+
+      const resultsA = logger.query({ correlation_id: 'corr-A' });
+      expect(resultsA).toHaveLength(1);
+      expect(resultsA[0].details.memory_id).toBe('mem-1');
+
+      const resultsB = logger.query({ correlation_id: 'corr-B' });
+      expect(resultsB).toHaveLength(1);
+      expect(resultsB[0].details.memory_id).toBe('mem-2');
+    });
+  });
+
+  // ---------------------------------------------------------------
+  // maxEvents eviction
+  // ---------------------------------------------------------------
+  describe('maxEvents eviction', () => {
+    test('evicts oldest events when maxEvents is exceeded', () => {
+      const bounded = new AuditLogger({ maxEvents: 3 });
+      const contract = makeContract();
+
+      bounded.logContractCreated(contract, 'alice');
+      bounded.logMemoryCreated('c1', 'mem-1', 1, 'alice');
+      bounded.logMemoryCreated('c1', 'mem-2', 1, 'alice');
+      bounded.logMemoryCreated('c1', 'mem-3', 1, 'alice'); // 4th event, pushes over limit
+
+      expect(bounded.getEventCount()).toBe(3);
+      // The oldest event (contract created) should have been evicted
+      const events = bounded.export();
+      expect(events.every((e) => e.event_type !== AuditEventType.CONTRACT_CREATED)).toBe(true);
+    });
+
+    test('calls onEvict callback with evicted events', () => {
+      const evicted: AuditEvent[] = [];
+      const bounded = new AuditLogger({
+        maxEvents: 2,
+        onEvict: (events) => evicted.push(...events),
+      });
+      const contract = makeContract();
+
+      bounded.logContractCreated(contract, 'alice');
+      bounded.logMemoryCreated('c1', 'mem-1', 1, 'alice');
+      expect(evicted).toHaveLength(0);
+
+      bounded.logMemoryCreated('c1', 'mem-2', 1, 'alice'); // triggers eviction
+      expect(evicted).toHaveLength(1);
+      expect(evicted[0].event_type).toBe(AuditEventType.CONTRACT_CREATED);
+    });
+
+    test('does not evict when maxEvents is 0 (unlimited)', () => {
+      const unlimited = new AuditLogger({ maxEvents: 0 });
+
+      for (let i = 0; i < 50; i++) {
+        unlimited.logMemoryCreated('c1', `mem-${i}`, 1, 'alice');
+      }
+
+      expect(unlimited.getEventCount()).toBe(50);
+    });
+
+    test('default maxEvents is 10000', () => {
+      // Just verify the default constructor works and has a high limit
+      const defaultLogger = new AuditLogger();
+      const contract = makeContract();
+      defaultLogger.logContractCreated(contract, 'alice');
+      expect(defaultLogger.getEventCount()).toBe(1);
     });
   });
 

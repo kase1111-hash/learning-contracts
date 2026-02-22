@@ -33,6 +33,8 @@ function generateId(): string {
  * Manages user connections with one-instance-per-user enforcement
  */
 export class UserManager {
+  // TODO: Users Map has no size limit. Consider max connected users
+  // or periodic cleanup of long-disconnected entries.
   private users: Map<string, User> = new Map();
   private connections: Map<string, UserConnection> = new Map();
   private config: Required<Omit<UserManagerConfig, 'auditLogger'>> & {

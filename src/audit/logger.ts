@@ -15,9 +15,43 @@ import {
   EnforcementContext,
   EnforcementResult,
 } from '../types';
+import type { AuditPersistenceAdapter } from './persistence';
+
+/**
+ * Configuration for the AuditLogger.
+ */
+export interface AuditLoggerConfig {
+  /** Maximum number of events to retain in memory. 0 = unlimited. Default: 10000. */
+  maxEvents?: number;
+  /** Callback invoked when events are evicted due to maxEvents limit. */
+  onEvict?: (evictedEvents: AuditEvent[]) => void;
+  /** Optional persistence adapter for durable audit storage. */
+  persistence?: AuditPersistenceAdapter;
+}
 
 export class AuditLogger {
+  // TODO: Audit events are stored in-memory only. For production use with
+  // long-running processes, configure a persistence adapter to prevent data loss
+  // on restart. See AuditLoggerConfig.persistence.
   private events: AuditEvent[] = [];
+  private readonly maxEvents: number;
+  private readonly onEvict?: (evictedEvents: AuditEvent[]) => void;
+  private readonly persistence?: AuditPersistenceAdapter;
+  private currentCorrelationId?: string;
+
+  constructor(config: AuditLoggerConfig = {}) {
+    this.maxEvents = config.maxEvents ?? 10000;
+    this.persistence = config.persistence;
+    this.onEvict = config.onEvict;
+  }
+
+  /**
+   * Sets a correlation ID that will be attached to all subsequent events.
+   * Pass undefined to clear the correlation context.
+   */
+  setCorrelationId(correlationId: string | undefined): void {
+    this.currentCorrelationId = correlationId;
+  }
 
   /**
    * Logs contract creation
@@ -334,10 +368,27 @@ export class AuditLogger {
     const event: AuditEvent = {
       event_id: uuidv4(),
       timestamp: new Date(),
+      correlation_id: eventData.correlation_id ?? this.currentCorrelationId,
       ...eventData,
     };
 
     this.events.push(event);
+
+    // Persist event if adapter is configured (fire-and-forget)
+    if (this.persistence) {
+      void this.persistence.persist([event]).catch((err) => {
+        console.error('Audit persistence failed:', err);
+      });
+    }
+
+    // Evict oldest events if over limit
+    if (this.maxEvents > 0 && this.events.length > this.maxEvents) {
+      const excess = this.events.length - this.maxEvents;
+      const evicted = this.events.splice(0, excess);
+      if (this.onEvict) {
+        this.onEvict(evicted);
+      }
+    }
   }
 
   /**
@@ -356,6 +407,10 @@ export class AuditLogger {
 
     if (options.actor) {
       results = results.filter((e) => e.actor === options.actor);
+    }
+
+    if (options.correlation_id) {
+      results = results.filter((e) => e.correlation_id === options.correlation_id);
     }
 
     if (options.start_time) {

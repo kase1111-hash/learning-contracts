@@ -7,6 +7,7 @@
 
 import { v4 as uuidv4 } from 'uuid';
 import { LearningContract, ContractState, RetentionDuration } from '../types';
+import { ContractError } from '../errors';
 import {
   TimeboundExpiryManagerConfig,
   ExpiryCheckResult,
@@ -111,7 +112,10 @@ export class TimeboundExpiryManager {
             errors.push(result.error);
           }
         } catch (error) {
-          const errorMessage = `Failed to expire contract ${contract.contract_id}: ${
+          const prefix = error instanceof ContractError
+            ? `Contract error (${error.code})`
+            : 'System error';
+          const errorMessage = `${prefix}: Failed to expire contract ${contract.contract_id}: ${
             error instanceof Error ? error.message : String(error)
           }`;
           errors.push(errorMessage);
@@ -125,8 +129,9 @@ export class TimeboundExpiryManager {
         }
       }
     } catch (error) {
+      const prefix = error instanceof ContractError ? 'Contract error' : 'System error';
       errors.push(
-        `Expiry cycle failed: ${error instanceof Error ? error.message : String(error)}`
+        `Expiry cycle failed (${prefix}): ${error instanceof Error ? error.message : String(error)}`
       );
     }
 
@@ -183,7 +188,11 @@ export class TimeboundExpiryManager {
       this.config.contractExpirer(contract.contract_id, this.config.actor);
       result.expired = true;
     } catch (error) {
-      result.error = `Failed to expire: ${error instanceof Error ? error.message : String(error)}`;
+      if (error instanceof ContractError) {
+        result.error = `Failed to expire (contract error ${error.code}): ${error.message}`;
+      } else {
+        result.error = `Failed to expire (system error): ${error instanceof Error ? error.message : String(error)}`;
+      }
       return result;
     }
 
@@ -197,9 +206,13 @@ export class TimeboundExpiryManager {
         }
       } catch (error) {
         // Don't fail the expiry if memory freezing fails
-        result.error = `Contract expired but memory freeze failed: ${
-          error instanceof Error ? error.message : String(error)
-        }`;
+        if (error instanceof ContractError) {
+          result.error = `Contract expired but memory freeze failed (contract error): ${error.message}`;
+        } else {
+          result.error = `Contract expired but memory freeze failed (system error): ${
+            error instanceof Error ? error.message : String(error)
+          }`;
+        }
       }
     }
 

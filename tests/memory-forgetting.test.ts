@@ -14,6 +14,20 @@ describe('Memory Forgetting', () => {
   let lifecycleManager: ContractLifecycleManager;
   let forgetting: MemoryForgetting;
 
+  const originalPurgeSecret = process.env.PURGE_TOKEN_SECRET;
+
+  beforeAll(() => {
+    process.env.PURGE_TOKEN_SECRET = 'test-purge-token-secret-for-unit-tests';
+  });
+
+  afterAll(() => {
+    if (originalPurgeSecret !== undefined) {
+      process.env.PURGE_TOKEN_SECRET = originalPurgeSecret;
+    } else {
+      delete process.env.PURGE_TOKEN_SECRET;
+    }
+  });
+
   beforeEach(() => {
     auditLogger = new AuditLogger();
     lifecycleManager = new ContractLifecycleManager(auditLogger);
@@ -76,6 +90,18 @@ describe('Memory Forgetting', () => {
       const token1 = generatePurgeToken('contract-1', 'owner');
       const token2 = generatePurgeToken('contract-1', 'owner');
       expect(token1).not.toBe(token2);
+    });
+
+    it('should throw when PURGE_TOKEN_SECRET is not set', () => {
+      const saved = process.env.PURGE_TOKEN_SECRET;
+      delete process.env.PURGE_TOKEN_SECRET;
+      try {
+        expect(() => generatePurgeToken('contract-1', 'owner')).toThrow(
+          'PURGE_TOKEN_SECRET environment variable is required'
+        );
+      } finally {
+        process.env.PURGE_TOKEN_SECRET = saved;
+      }
     });
   });
 

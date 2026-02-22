@@ -31,6 +31,8 @@ export interface ContractRepositoryConfig {
 }
 
 export class ContractRepository {
+  // TODO: No size limit on contract repository. Consider adding max capacity
+  // with LRU eviction for long-running deployments.
   private contracts: Map<string, LearningContract> = new Map();
   private adapter: StorageAdapter;
   private initialized = false;

@@ -42,6 +42,8 @@ export interface AuditEvent {
   contract_id: string;
   /** Actor who triggered the event */
   actor: string;
+  /** Correlation ID for linking related events across a single operation */
+  correlation_id?: string;
   /** Previous state (for transitions) */
   previous_state?: ContractState;
   /** New state (for transitions) */
@@ -63,6 +65,7 @@ export interface AuditQueryOptions {
   contract_id?: string;
   event_type?: AuditEventType;
   actor?: string;
+  correlation_id?: string;
   start_time?: Date;
   end_time?: Date;
   allowed?: boolean;

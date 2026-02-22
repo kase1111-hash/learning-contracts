@@ -355,8 +355,11 @@ export class EnforcementEngine {
       }
     }
 
-    // If all scope arrays are empty and we have context/domain/tool specified,
-    // deny (fail-closed)
+    // WHY fail-closed: When all scope arrays are empty and the caller specifies a
+    // domain/context/tool, we deny rather than allow. A governance library must
+    // default to denial when contract scope is ambiguous. This prevents accidental
+    // data retention when a contract is misconfigured with empty scope arrays.
+    // Callers who want permissive behavior should explicitly populate scope arrays.
     if (
       (context.domain || context.context || context.tool) &&
       scope.domains.length === 0 &&
