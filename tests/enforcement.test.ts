@@ -578,61 +578,50 @@ describe('EnforcementEngine', () => {
       overrideManager.triggerOverride('admin', 'Security incident detected');
     });
 
-    test('should block checkMemoryCreation when emergency override is active', () => {
-      const draft = ContractFactory.createEpisodicContract('owner', {
-        domains: ['coding'],
-      });
-      const contract = activateContract(draft);
-
-      const ctx = makeContext(contract, { domain: 'coding' });
-      const result = engine.checkMemoryCreation(ctx, 1);
-
-      expect(result.allowed).toBe(false);
-      expect(result.reason).toContain('Emergency override active');
-      expect(result.reason).toContain('Security incident detected');
-    });
-
-    test('should block checkAbstraction when emergency override is active', () => {
-      const draft = ContractFactory.createProceduralContract('owner', {
-        domains: ['coding'],
-      });
-      const contract = activateContract(draft);
-
-      const ctx = makeContext(contract, { domain: 'coding' });
-      const result = engine.checkAbstraction(ctx, AbstractionLevel.PATTERN);
-
-      expect(result.allowed).toBe(false);
-      expect(result.reason).toContain('Emergency override active');
-    });
-
-    test('should block checkRecall when emergency override is active', () => {
-      const draft = ContractFactory.createEpisodicContract('owner', {
-        domains: ['coding'],
-      });
-      const contract = activateContract(draft);
-
-      const ctx = makeContext(contract, {
-        domain: 'coding',
-        requester: 'owner',
-      });
-      const result = engine.checkRecall(ctx);
-
-      expect(result.allowed).toBe(false);
-      expect(result.reason).toContain('Emergency override active');
-    });
-
-    test('should block checkExport when emergency override is active', () => {
-      const draft = ContractFactory.createProceduralContract('owner', {
-        domains: ['coding'],
-      });
-      draft.scope.transferable = true;
-      const contract = activateContract(draft);
-
-      const ctx = makeContext(contract, { domain: 'coding' });
-      const result = engine.checkExport(ctx);
-
-      expect(result.allowed).toBe(false);
-      expect(result.reason).toContain('Emergency override active');
-    });
+    test.each([
+      [
+        'checkMemoryCreation',
+        'episodic' as const,
+        false,
+        (ctx: EnforcementContext) => engine.checkMemoryCreation(ctx, 1),
+      ],
+      [
+        'checkAbstraction',
+        'procedural' as const,
+        false,
+        (ctx: EnforcementContext) => engine.checkAbstraction(ctx, AbstractionLevel.PATTERN),
+      ],
+      [
+        'checkRecall',
+        'episodic' as const,
+        true,
+        (ctx: EnforcementContext) => engine.checkRecall(ctx),
+      ],
+      [
+        'checkExport',
+        'procedural' as const,
+        false,
+        (ctx: EnforcementContext) => engine.checkExport(ctx),
+      ],
+    ])(
+      'should block %s when emergency override is active',
+      (hookName, contractType, needsRequester, hookFn) => {
+        const factory = contractType === 'episodic'
+          ? ContractFactory.createEpisodicContract
+          : ContractFactory.createProceduralContract;
+        const draft = factory('owner', { domains: ['coding'] });
+        if (hookName === 'checkExport') {
+          draft.scope.transferable = true;
+        }
+        const contract = activateContract(draft);
+        const ctx = makeContext(contract, {
+          domain: 'coding',
+          ...(needsRequester ? { requester: 'owner' } : {}),
+        });
+        const result = hookFn(ctx);
+        expect(result.allowed).toBe(false);
+        expect(result.reason).toContain('Emergency override active');
+      }
+    );
   });
 });

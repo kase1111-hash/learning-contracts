@@ -75,6 +75,8 @@ export class CentralErrorHandler {
   private stats: ErrorStats;
   private flushTimer?: ReturnType<typeof setInterval>;
   private globalHandlers: ErrorHandler[] = [];
+  // TODO: SIEM reporter and lockdown callback require external wiring.
+  // Consider adding auto-console SIEM output for development environments.
   private siemReporter?: (events: ErrorEvent[]) => Promise<void>;
   private lockdownCallback?: (reason: string) => Promise<void>;
   private isLockdownTriggered = false;

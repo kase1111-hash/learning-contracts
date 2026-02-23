@@ -334,6 +334,20 @@ describe('LearningContractsSystem', () => {
     });
   });
 
+  describe('Rate Limiting', () => {
+    test('should have rate limiting enabled by default', () => {
+      const status = system.getRateLimitStatus('test-user');
+      expect(status.remaining).toBe(1000);
+    });
+
+    test('should allow disabling rate limiting', () => {
+      system.configureRateLimit({ enabled: false });
+      const status = system.getRateLimitStatus('test-user');
+      expect(status.remaining).toBe(1000);
+      expect(status.resetMs).toBe(0);
+    });
+  });
+
   describe('Audit', () => {
     test('should log all contract transitions', () => {
       let contract = system.createEpisodicContract('alice', {

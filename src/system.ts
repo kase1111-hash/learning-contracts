@@ -17,6 +17,7 @@
  * Orchestration methods that coordinate multiple subsystems remain on this class.
  */
 
+import { v4 as uuidv4 } from 'uuid';
 import {
   LearningContract,
   LearningScope,
@@ -65,21 +66,34 @@ export interface RateLimitConfig {
   enabled: boolean;
 }
 
+// WHY: Rate limiting is enabled by default because a governance library should
+// fail-safe. A consumer can disable with configureRateLimit({ enabled: false }).
+// 1000/minute is generous enough for any legitimate use case while preventing
+// runaway automated contract creation from exhausting memory.
 const DEFAULT_RATE_LIMIT: RateLimitConfig = {
-  maxContractsPerWindow: 100,
+  maxContractsPerWindow: 1000,
   windowMs: 60000, // 1 minute
-  enabled: false, // Disabled by default for backward compatibility
+  enabled: true,
 };
 
-/**
- * Token bucket rate limiter for contract creation
- */
+// WHY token bucket over sliding window: Token bucket is simpler to implement
+// correctly, has O(1) memory per user, and naturally allows short bursts while
+// maintaining the average rate. Sliding window would provide smoother rate
+// limiting but requires storing per-request timestamps (O(n) memory per user).
 class RateLimiter {
   private buckets: Map<string, { tokens: number; lastRefill: number }> = new Map();
   private config: RateLimitConfig;
+  private cleanupTimer?: ReturnType<typeof setInterval>;
 
   constructor(config: RateLimitConfig) {
     this.config = config;
+    // Periodically clean up stale buckets to prevent unbounded Map growth
+    if (config.enabled) {
+      this.cleanupTimer = setInterval(
+        () => this.cleanupStaleBuckets(),
+        config.windowMs * 5
+      );
+    }
   }
 
   /**
@@ -147,6 +161,30 @@ class RateLimiter {
    */
   clearAll(): void {
     this.buckets.clear();
+  }
+
+  /**
+   * Removes bucket entries for users who haven't made requests
+   * within the last 2 window periods. Prevents unbounded Map growth.
+   */
+  private cleanupStaleBuckets(): void {
+    const now = Date.now();
+    const staleThreshold = this.config.windowMs * 2;
+    for (const [userId, bucket] of this.buckets) {
+      if (now - bucket.lastRefill > staleThreshold) {
+        this.buckets.delete(userId);
+      }
+    }
+  }
+
+  /**
+   * Stops the cleanup timer for clean shutdown.
+   */
+  destroy(): void {
+    if (this.cleanupTimer) {
+      clearInterval(this.cleanupTimer);
+      this.cleanupTimer = undefined;
+    }
   }
 }
 
@@ -247,6 +285,7 @@ export class LearningContractsSystem {
   // ==========================================
 
   configureRateLimit(config: Partial<RateLimitConfig>): void {
+    this.rateLimiter.destroy();
     const mergedConfig = { ...DEFAULT_RATE_LIMIT, ...config };
     this.rateLimiter = new RateLimiter(mergedConfig);
   }
@@ -271,15 +310,21 @@ export class LearningContractsSystem {
       );
     }
 
-    const contract = this.lifecycleManager.createDraft(draft);
-    this.repository.save(contract);
-    // Set owner permission for the contract creator (using internal token for security)
-    this.permissions.setOwner(
-      contract.contract_id,
-      contract.created_by,
-      this.permissions.getInternalToken()
-    );
-    return contract;
+    const correlationId = uuidv4();
+    this.auditLogger.setCorrelationId(correlationId);
+    try {
+      const contract = this.lifecycleManager.createDraft(draft);
+      this.repository.save(contract);
+      // Set owner permission for the contract creator (using internal token for security)
+      this.permissions.setOwner(
+        contract.contract_id,
+        contract.created_by,
+        this.permissions.getInternalToken()
+      );
+      return contract;
+    } finally {
+      this.auditLogger.setCorrelationId(undefined);
+    }
   }
 
   createObservationContract(createdBy: string, scope?: Partial<LearningScope>): LearningContract {
@@ -379,9 +424,15 @@ export class LearningContractsSystem {
       throw new ContractError('Contract not found', ErrorCode.CONTRACT_NOT_FOUND, { contract_id: contractId });
     }
 
-    const updated = this.lifecycleManager.revoke(contract, actor, reason);
-    this.repository.save(updated);
-    return updated;
+    const correlationId = uuidv4();
+    this.auditLogger.setCorrelationId(correlationId);
+    try {
+      const updated = this.lifecycleManager.revoke(contract, actor, reason);
+      this.repository.save(updated);
+      return updated;
+    } finally {
+      this.auditLogger.setCorrelationId(undefined);
+    }
   }
 
   amendContract(
@@ -395,10 +446,16 @@ export class LearningContractsSystem {
       throw new ContractError('Contract not found', ErrorCode.CONTRACT_NOT_FOUND, { contract_id: contractId });
     }
 
-    const result = this.lifecycleManager.amend(contract, actor, changes, reason);
-    this.repository.save(result.original);
-    this.repository.save(result.newDraft);
-    return result;
+    const correlationId = uuidv4();
+    this.auditLogger.setCorrelationId(correlationId);
+    try {
+      const result = this.lifecycleManager.amend(contract, actor, changes, reason);
+      this.repository.save(result.original);
+      this.repository.save(result.newDraft);
+      return result;
+    } finally {
+      this.auditLogger.setCorrelationId(undefined);
+    }
   }
 
   // ==========================================
@@ -541,7 +598,13 @@ export class LearningContractsSystem {
       throw new ContractError('Contract not found', ErrorCode.CONTRACT_NOT_FOUND, { contract_id: contractId });
     }
 
-    return this.memoryForgetting.deepPurge(contract, memories, ownerConfirmation);
+    const correlationId = uuidv4();
+    this.auditLogger.setCorrelationId(correlationId);
+    try {
+      return this.memoryForgetting.deepPurge(contract, memories, ownerConfirmation);
+    } finally {
+      this.auditLogger.setCorrelationId(undefined);
+    }
   }
 
   // ==========================================
@@ -663,12 +726,18 @@ export class LearningContractsSystem {
     triggeredBy: string,
     reason: string
   ): OverrideTriggerResult {
-    const activeContracts = this.repository.query({ active_only: true });
-    return this.emergencyOverride.triggerOverride(
-      triggeredBy,
-      reason,
-      activeContracts.length
-    );
+    const correlationId = uuidv4();
+    this.auditLogger.setCorrelationId(correlationId);
+    try {
+      const activeContracts = this.repository.query({ active_only: true });
+      return this.emergencyOverride.triggerOverride(
+        triggeredBy,
+        reason,
+        activeContracts.length
+      );
+    } finally {
+      this.auditLogger.setCorrelationId(undefined);
+    }
   }
 
   // ==========================================

@@ -57,6 +57,8 @@ export interface SessionManagerConfig {
  * Tracks active sessions and cleans up session-scoped contracts when sessions end.
  */
 export class SessionManager {
+  // TODO: Sessions Map grows unbounded. Add TTL-based cleanup for stale sessions
+  // or integrate with cleanupOldSessions() on a periodic timer.
   private sessions: Map<string, Session> = new Map();
   private contractToSession: Map<string, string> = new Map();
   private endListeners: SessionEndListener[] = [];

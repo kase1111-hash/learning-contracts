@@ -198,6 +198,8 @@ const result = system.checkExport(contractId, BoundaryMode.NORMAL);
 
 Revocation does NOT delete audit traces.
 
+> **Important:** `freezeMemories()`, `tombstoneMemories()`, and `deepPurge()` return forgetting *intent*, not forgetting *execution*. They compute which memory IDs should be affected and log audit events, but they do NOT mutate any actual memory store. Consumers must use the returned `ForgettingResult.affected_memories` and `affected_derived` arrays to perform actual deletion or freezing in their backend. For automatic enforcement, use the `ContractGovernedStore` from `src/integration/memory-store.ts`.
+
 ```typescript
 // Revoke contract
 const revoked = system.revokeContract(contractId, 'user', 'Privacy concerns');

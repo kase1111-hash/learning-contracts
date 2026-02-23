@@ -9,11 +9,22 @@ import { createHmac, randomBytes, timingSafeEqual } from 'crypto';
 import { LearningContract, ContractState } from '../types';
 import { AuditLogger } from '../audit/logger';
 
-/**
- * Secret key for token signing (in production, this should be from secure config)
- */
-const TOKEN_SECRET = process.env.PURGE_TOKEN_SECRET ?? 'learning-contracts-purge-token-secret';
 const TOKEN_VALIDITY_MS = 300000; // 5 minutes
+
+/**
+ * Retrieves the purge token secret from environment, throwing if not configured.
+ * There is no hardcoded fallback — callers must set PURGE_TOKEN_SECRET.
+ */
+function getTokenSecret(): string {
+  const secret = process.env.PURGE_TOKEN_SECRET;
+  if (!secret) {
+    throw new Error(
+      'PURGE_TOKEN_SECRET environment variable is required for purge operations. ' +
+      'Set it to a cryptographically random string (minimum 32 characters).'
+    );
+  }
+  return secret;
+}
 
 /**
  * Memory status after contract revocation/expiration
@@ -38,7 +49,11 @@ export interface MemoryReference {
 }
 
 /**
- * Forgetting result
+ * Result of a forgetting operation.
+ *
+ * NOTE: This represents the INTENT to forget, not confirmation that memories
+ * have been deleted. Consumers must use affected_memories and affected_derived
+ * to perform actual deletion or freezing in their memory backend.
  */
 export interface ForgettingResult {
   affected_memories: string[];
@@ -55,7 +70,7 @@ export function generatePurgeToken(contractId: string, owner: string): string {
   const nonce = randomBytes(16).toString('hex');
   const timestamp = Date.now().toString();
   const data = `${contractId}:${owner}:${nonce}:${timestamp}`;
-  const signature = createHmac('sha256', TOKEN_SECRET).update(data).digest('hex');
+  const signature = createHmac('sha256', getTokenSecret()).update(data).digest('hex');
   return `${nonce}.${timestamp}.${signature}`;
 }
 
@@ -87,9 +102,12 @@ function validatePurgeToken(
     return { valid: false, error: 'Confirmation timestamp precedes token creation' };
   }
 
-  // Verify signature using constant-time comparison
+  // WHY timingSafeEqual: Prevents timing side-channel attacks where an attacker
+  // could determine how many bytes of the signature matched by measuring response
+  // time. Critical for purge token validation because token forgery could enable
+  // unauthorized memory deletion.
   const data = `${contractId}:${owner}:${nonce}:${tokenTimestamp}`;
-  const expectedSignature = createHmac('sha256', TOKEN_SECRET).update(data).digest('hex');
+  const expectedSignature = createHmac('sha256', getTokenSecret()).update(data).digest('hex');
 
   const providedBuffer = Buffer.from(providedSignature, 'hex');
   const expectedBuffer = Buffer.from(expectedSignature, 'hex');
@@ -105,12 +123,30 @@ function validatePurgeToken(
   return { valid: true };
 }
 
+// FIXME: freezeMemories/tombstoneMemories/deepPurge return intent only.
+// They do not mutate any actual memory store. Consumers must implement
+// actual deletion based on the returned ForgettingResult.
+/**
+ * Memory Forgetting and Revocation
+ *
+ * IMPORTANT: This class computes forgetting INTENT, not forgetting EXECUTION.
+ * Methods like freezeMemories(), tombstoneMemories(), and deepPurge() return
+ * ForgettingResult objects listing which memory IDs should be affected, but they
+ * do NOT mutate any actual memory store. Consumers MUST use the returned
+ * affected_memories and affected_derived arrays to perform actual deletion or
+ * freezing in their memory backend.
+ *
+ * For automatic enforcement that includes actual memory deletion, use the
+ * ContractGovernedStore from src/integration/memory-store.ts, which implements
+ * the MemoryStore interface and calls forget() on the backing store.
+ */
 export class MemoryForgetting {
   constructor(private auditLogger: AuditLogger) {}
 
   /**
-   * Freezes memories when contract expires
-   * Memory preserved but marked inaccessible
+   * Computes which memories should be frozen when a contract expires.
+   * Returns the list of affected memory IDs but does NOT mutate any store.
+   * The caller must implement actual freezing based on the returned ForgettingResult.
    */
   freezeMemories(
     contract: LearningContract,
@@ -135,8 +171,9 @@ export class MemoryForgetting {
   }
 
   /**
-   * Tombstones memories when contract is revoked
-   * Memory marked inaccessible, derived memories quarantined
+   * Computes which memories should be tombstoned when a contract is revoked.
+   * Returns the list of affected memory IDs (including derived) but does NOT
+   * mutate any store. The caller must implement actual tombstoning.
    */
   tombstoneMemories(
     contract: LearningContract,
@@ -175,9 +212,10 @@ export class MemoryForgetting {
   }
 
   /**
-   * Deep purge - permanently removes memories
-   * Requires owner ceremony (explicit confirmation)
-   * Audit traces are still preserved
+   * Computes which memories should be permanently purged.
+   * Requires owner ceremony (explicit confirmation token).
+   * Returns the list of affected memory IDs but does NOT mutate any store.
+   * The caller must implement actual deletion. Audit traces are always preserved.
    */
   deepPurge(
     contract: LearningContract,

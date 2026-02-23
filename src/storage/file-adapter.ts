@@ -89,9 +89,20 @@ interface EncryptedStorageFileFormat {
   ciphertext: string; // Base64-encoded encrypted data
 }
 
+// WHY AES-256-GCM with 96-bit IV: GCM is an authenticated encryption mode that
+// provides both confidentiality and integrity in a single operation. 96-bit IVs
+// are the recommended size for GCM (NIST SP 800-38D). Random IVs are safe here
+// because each file write generates a fresh IV and we never reuse keys with the
+// same IV (probabilistic collision after 2^48 encryptions with random 96-bit IVs).
 const ENCRYPTION_ALGORITHM = 'aes-256-gcm';
 const KEY_LENGTH = 32; // 256 bits
 const IV_LENGTH = 12;  // 96 bits for GCM
+
+// WHY 100,000 iterations: NIST SP 800-132 recommends a minimum of 10,000 for
+// PBKDF2-HMAC-SHA256. We use 100k as a balance between brute-force resistance
+// and key derivation latency (~200ms on modern hardware). Argon2id would be
+// more resistant to GPU/ASIC attacks but adds a native dependency (libsodium),
+// which conflicts with our zero-native-dependency goal.
 const DEFAULT_ITERATIONS = 100000;
 
 export class FileStorageAdapter implements StorageAdapter {
