@@ -108,15 +108,18 @@ learning-contracts/
 │   ├── storage/            # Persistent storage adapters
 │   ├── memory/             # Forgetting operations
 │   ├── plain-language/     # NLP interface
-│   ├── vault-integration/  # Memory Vault integration
-│   ├── boundary-integration/ # Boundary Daemon integration
+│   ├── integration/        # Memory store bridge and enforcement middleware
 │   ├── session/            # Session management
 │   ├── expiry/             # Timebound expiry
 │   ├── emergency-override/ # Emergency controls
 │   ├── user-management/    # Multi-user support
+│   ├── errors/             # Centralized error handling
 │   ├── types/              # TypeScript type definitions
 │   ├── system.ts           # Main system orchestrator
 │   └── index.ts            # Public exports
+├── packages/               # Integration adapters (monorepo)
+│   ├── vault-adapter/      # Memory Vault integration
+│   └── boundary-adapter/   # Boundary Daemon integration
 ├── tests/                  # Test suites
 ├── examples/               # Usage examples
 └── dist/                   # Compiled output

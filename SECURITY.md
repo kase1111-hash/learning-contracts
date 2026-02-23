@@ -105,4 +105,4 @@ We take security seriously. If you discover a security vulnerability, please fol
 |------|------|--------|-------|
 | 2025-12-29 | Internal Review | A (Excellent) | All critical/high issues resolved |
 
-See [ENCRYPTION_SECURITY_REVIEW.md](ENCRYPTION_SECURITY_REVIEW.md) for the full security audit report.
+See [ENCRYPTION_SECURITY_REVIEW.md](docs/internal/ENCRYPTION_SECURITY_REVIEW.md) for the full security audit report.

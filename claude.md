@@ -34,8 +34,7 @@ src/
 ├── storage/             # Repository & adapters (memory, file)
 ├── memory/              # Forgetting operations (tombstone, freeze, purge)
 ├── plain-language/      # Natural language parser, builder, templates
-├── vault-integration/   # Memory Vault bridge
-├── boundary-integration/# Boundary Daemon bridge
+├── integration/         # Memory store bridge & enforcement middleware
 ├── session/             # Session tracking & cleanup
 ├── expiry/              # Auto-expiry manager
 ├── emergency-override/  # Human supremacy controls
@@ -101,7 +100,7 @@ chore(scope): description
 ## Testing
 
 - Test files: `**/*.test.ts` or `**/*.spec.ts`
-- Coverage thresholds: 68% statements, 68% lines, 65% functions, 45% branches
+- Coverage thresholds: 72% statements, 73% lines, 71% functions, 61% branches
 - Tests use mocks cleared between runs
 - Timeout: 10 seconds per test
 

@@ -112,7 +112,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Documentation
 - specs.md now serves as the authoritative specification document
 - README.md focused on developer-facing API documentation
-- User-Manuel.md remains for end-user plain-language guidance
+- User-Manual.md remains for end-user plain-language guidance
 - system-arch.md provides ecosystem context
 
 ## [1.0.0] - 2025-12-18
