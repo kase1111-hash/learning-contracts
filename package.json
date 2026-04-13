@@ -57,7 +57,7 @@
     "@types/node": "^25.5.0",
     "@types/uuid": "^11.0.0",
     "eslint": "^10.0.3",
-    "globals": "^17.4.0",
+    "globals": "^17.5.0",
     "jest": "^30.3.0",
     "prettier": "^3.8.1",
     "ts-jest": "^29.1.0",
