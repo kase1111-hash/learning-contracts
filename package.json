@@ -60,7 +60,7 @@
     "globals": "^17.4.0",
     "jest": "^30.3.0",
     "prettier": "^3.8.1",
-    "ts-jest": "^29.1.0",
+    "ts-jest": "^29.4.11",
     "typescript": "^5.0.0",
     "typescript-eslint": "^8.57.1"
   },
