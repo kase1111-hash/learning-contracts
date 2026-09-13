@@ -5,7 +5,7 @@
  * and irreversible in audit history.
  */
 
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 import {
   AuditEvent,
   AuditEventType,
@@ -346,7 +346,7 @@ export class AuditLogger {
    */
   private log(eventData: Omit<AuditEvent, 'event_id' | 'timestamp'>): void {
     const event: AuditEvent = {
-      event_id: uuidv4(),
+      event_id: randomUUID(),
       timestamp: new Date(),
       correlation_id: eventData.correlation_id ?? this.currentCorrelationId,
       ...eventData,

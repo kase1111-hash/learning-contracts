@@ -7,7 +7,7 @@
 export * from './types';
 export { PlainLanguageParser } from './parser';
 export { PlainLanguageSummarizer } from './summarizer';
-export { ConversationalContractBuilder, BuilderResponse } from './builder';
+export { ConversationalContractBuilder, type BuilderResponse } from './builder';
 export {
   CONTRACT_TEMPLATES,
   getTemplateById,

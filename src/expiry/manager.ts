@@ -5,7 +5,7 @@
  * when their retention_until timestamp has passed.
  */
 
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 import { LearningContract, ContractState, RetentionDuration } from '../types';
 import { ContractError } from '../errors';
 import {
@@ -89,7 +89,7 @@ export class TimeboundExpiryManager {
    * Can be called manually even when automatic checking is not running
    */
   runExpiryCycle(): ExpiryCycleResult {
-    const cycleId = uuidv4();
+    const cycleId = randomUUID();
     const startedAt = new Date();
     const results: ExpiryCheckResult[] = [];
     const errors: string[] = [];

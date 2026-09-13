@@ -9,7 +9,7 @@
  * - Real-time boundary mode monitoring
  */
 
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 import {
   DaemonBoundaryMode,
   RecallGateRequest,
@@ -214,7 +214,7 @@ export class BoundaryEnforcedSystem {
     const result = await this.adapter.checkRecall(request);
 
     this.logAudit({
-      event_id: uuidv4(),
+      event_id: randomUUID(),
       event_type: 'recall_gate',
       timestamp: new Date(),
       actor: request.requester ?? 'system',
@@ -237,7 +237,7 @@ export class BoundaryEnforcedSystem {
     const result = await this.adapter.checkTool(request);
 
     this.logAudit({
-      event_id: uuidv4(),
+      event_id: randomUUID(),
       event_type: 'tool_gate',
       timestamp: new Date(),
       actor: 'system',
@@ -378,7 +378,7 @@ export class BoundaryEnforcedSystem {
     this.currentMode = newMode;
 
     this.logAudit({
-      event_id: uuidv4(),
+      event_id: randomUUID(),
       event_type: 'mode_change',
       timestamp: new Date(),
       actor: 'boundary-daemon',
@@ -406,7 +406,7 @@ export class BoundaryEnforcedSystem {
    */
   private handleTripwire: TripwireListener = (event: TripwireEvent) => {
     this.logAudit({
-      event_id: uuidv4(),
+      event_id: randomUUID(),
       event_type: 'tripwire',
       timestamp: new Date(),
       actor: 'boundary-daemon',
@@ -492,7 +492,7 @@ export class BoundaryEnforcedSystem {
     newMode: DaemonBoundaryMode
   ): ContractSuspensionEvent {
     const event: ContractSuspensionEvent = {
-      event_id: uuidv4(),
+      event_id: randomUUID(),
       contract_id: contract.contract_id,
       reason,
       previous_mode: previousMode,
@@ -542,7 +542,7 @@ export class BoundaryEnforcedSystem {
    */
   private doResumeContract(suspended: SuspendedContract, reason: string): ContractResumeEvent {
     const event: ContractResumeEvent = {
-      event_id: uuidv4(),
+      event_id: randomUUID(),
       contract_id: suspended.contract_id,
       reason,
       current_mode: this.currentMode,

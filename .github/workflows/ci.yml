@@ -41,6 +41,11 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Smoke-test the CommonJS build
+        # Guards against ESM-only dependencies: `require('./dist')` must work on
+        # every supported Node version, including ones without require(esm).
+        run: node -e "const { LearningContractsSystem } = require('./dist'); new LearningContractsSystem().destroy(); console.log('dist loads')"
+
       - name: Build workspace packages
         run: npm run build --workspaces --if-present
 
@@ -49,9 +54,9 @@ jobs:
 
       - name: Upload coverage to Codecov
         if: matrix.node-version == '20.x'
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7
         with:
-          file: ./coverage/lcov.info
+          files: ./coverage/lcov.info
           fail_ci_if_error: false
 
   publish-dry-run:

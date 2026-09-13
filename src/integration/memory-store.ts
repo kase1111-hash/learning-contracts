@@ -6,7 +6,7 @@
  * then wrap it in ContractGovernedStore for automatic enforcement.
  */
 
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 import { LearningContract, BoundaryMode, EnforcementResult } from '../types';
 import { LearningContractsSystem } from '../system';
 
@@ -203,7 +203,7 @@ export class ContractGovernedStore {
     }
 
     const memory: StoredMemory = {
-      memory_id: uuidv4(),
+      memory_id: randomUUID(),
       contract_id: contractId,
       content: input.content,
       classification: input.classification,

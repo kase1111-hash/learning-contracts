@@ -23,7 +23,6 @@ module.exports = {
       statements: 72,
     },
   },
-  transformIgnorePatterns: ['/node_modules/(?!uuid)'],
   testTimeout: 10000,
   verbose: true,
   clearMocks: true,

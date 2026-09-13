@@ -17,7 +17,7 @@
  * Orchestration methods that coordinate multiple subsystems remain on this class.
  */
 
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 import {
   LearningContract,
   LearningScope,
@@ -324,7 +324,7 @@ export class LearningContractsSystem {
       );
     }
 
-    const correlationId = uuidv4();
+    const correlationId = randomUUID();
     this.auditLogger.setCorrelationId(correlationId);
     try {
       const contract = this.lifecycleManager.createDraft(draft);
@@ -428,7 +428,7 @@ export class LearningContractsSystem {
       });
     }
 
-    const correlationId = uuidv4();
+    const correlationId = randomUUID();
     this.auditLogger.setCorrelationId(correlationId);
     try {
       const updated = this.lifecycleManager.revoke(contract, actor, reason);
@@ -452,7 +452,7 @@ export class LearningContractsSystem {
       });
     }
 
-    const correlationId = uuidv4();
+    const correlationId = randomUUID();
     this.auditLogger.setCorrelationId(correlationId);
     try {
       const result = this.lifecycleManager.amend(contract, actor, changes, reason);
@@ -606,7 +606,7 @@ export class LearningContractsSystem {
       });
     }
 
-    const correlationId = uuidv4();
+    const correlationId = randomUUID();
     this.auditLogger.setCorrelationId(correlationId);
     try {
       return this.memoryForgetting.deepPurge(contract, memories, ownerConfirmation);
@@ -728,7 +728,7 @@ export class LearningContractsSystem {
   // ==========================================
 
   triggerEmergencyOverride(triggeredBy: string, reason: string): OverrideTriggerResult {
-    const correlationId = uuidv4();
+    const correlationId = randomUUID();
     this.auditLogger.setCorrelationId(correlationId);
     try {
       const activeContracts = this.repository.query({ active_only: true });
