@@ -162,11 +162,7 @@ export class AuditLogger {
   /**
    * Logs memory recall
    */
-  logMemoryRecalled(
-    contractId: string,
-    memoryId: string,
-    actor: string
-  ): void {
+  logMemoryRecalled(contractId: string, memoryId: string, actor: string): void {
     this.log({
       event_type: AuditEventType.MEMORY_RECALLED,
       contract_id: contractId,
@@ -196,11 +192,7 @@ export class AuditLogger {
   /**
    * Logs memory tombstoned (contract revoked)
    */
-  logMemoryTombstoned(
-    contractId: string,
-    memoryIds: string[],
-    derivedIds: string[]
-  ): void {
+  logMemoryTombstoned(contractId: string, memoryIds: string[], derivedIds: string[]): void {
     this.log({
       event_type: AuditEventType.MEMORY_TOMBSTONED,
       contract_id: contractId,
@@ -265,11 +257,7 @@ export class AuditLogger {
   /**
    * Logs generalization attempt
    */
-  logGeneralizationAttempt(
-    contractId: string,
-    allowed: boolean,
-    reason?: string
-  ): void {
+  logGeneralizationAttempt(contractId: string, allowed: boolean, reason?: string): void {
     this.log({
       event_type: AuditEventType.GENERALIZATION_ATTEMPTED,
       contract_id: contractId,
@@ -283,11 +271,7 @@ export class AuditLogger {
   /**
    * Logs export attempt
    */
-  logExportAttempt(
-    contractId: string,
-    allowed: boolean,
-    reason?: string
-  ): void {
+  logExportAttempt(contractId: string, allowed: boolean, reason?: string): void {
     this.log({
       event_type: AuditEventType.EXPORT_ATTEMPTED,
       contract_id: contractId,
@@ -321,11 +305,7 @@ export class AuditLogger {
   /**
    * Logs session start
    */
-  logSessionStarted(
-    sessionId: string,
-    userId: string,
-    metadata?: Record<string, unknown>
-  ): void {
+  logSessionStarted(sessionId: string, userId: string, metadata?: Record<string, unknown>): void {
     this.log({
       event_type: AuditEventType.SESSION_STARTED,
       contract_id: 'session',

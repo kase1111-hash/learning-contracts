@@ -151,7 +151,8 @@ export function deserializeContract(data: SerializedContract): LearningContract 
     memory_permissions: {
       may_store: data.memory_permissions.may_store,
       classification_cap: data.memory_permissions.classification_cap,
-      retention: data.memory_permissions.retention as LearningContract['memory_permissions']['retention'],
+      retention: data.memory_permissions
+        .retention as LearningContract['memory_permissions']['retention'],
       retention_until: data.memory_permissions.retention_until
         ? new Date(data.memory_permissions.retention_until)
         : undefined,
@@ -162,7 +163,8 @@ export function deserializeContract(data: SerializedContract): LearningContract 
     },
     recall_rules: {
       requires_owner: data.recall_rules.requires_owner,
-      boundary_mode_min: data.recall_rules.boundary_mode_min as LearningContract['recall_rules']['boundary_mode_min'],
+      boundary_mode_min: data.recall_rules
+        .boundary_mode_min as LearningContract['recall_rules']['boundary_mode_min'],
     },
     expiration: data.expiration ? new Date(data.expiration) : null,
     revocable: data.revocable,

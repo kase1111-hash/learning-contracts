@@ -6,12 +6,7 @@
  */
 
 import { ContractType, RetentionDuration } from '../types';
-import {
-  ParsedIntent,
-  ParseResult,
-  ContractTemplate,
-  ConversationQuestion,
-} from './types';
+import { ParsedIntent, ParseResult, ContractTemplate, ConversationQuestion } from './types';
 import { CONTRACT_TEMPLATES } from './templates';
 
 /**
@@ -36,24 +31,65 @@ const DOMAIN_KEYWORDS: Record<string, string[]> = {
  */
 const CONTRACT_TYPE_INDICATORS: Record<ContractType, string[]> = {
   [ContractType.OBSERVATION]: [
-    'observe', 'watch', 'monitor', 'track', 'no storage', 'don\'t store',
-    'do not store', 'just observe', 'only observe', 'without storing',
+    'observe',
+    'watch',
+    'monitor',
+    'track',
+    'no storage',
+    "don't store",
+    'do not store',
+    'just observe',
+    'only observe',
+    'without storing',
   ],
   [ContractType.EPISODIC]: [
-    'specific', 'episode', 'moment', 'event', 'individual', 'particular',
-    'this session', 'single', 'one-time', 'capture', 'save moment',
+    'specific',
+    'episode',
+    'moment',
+    'event',
+    'individual',
+    'particular',
+    'this session',
+    'single',
+    'one-time',
+    'capture',
+    'save moment',
   ],
   [ContractType.PROCEDURAL]: [
-    'pattern', 'heuristic', 'tip', 'best practice', 'technique', 'method',
-    'reusable', 'apply', 'learn from', 'remember how', 'procedure',
+    'pattern',
+    'heuristic',
+    'tip',
+    'best practice',
+    'technique',
+    'method',
+    'reusable',
+    'apply',
+    'learn from',
+    'remember how',
+    'procedure',
   ],
   [ContractType.STRATEGIC]: [
-    'strategy', 'strategic', 'long-term', 'longterm', 'high-level',
-    'big picture', 'overall', 'comprehensive',
+    'strategy',
+    'strategic',
+    'long-term',
+    'longterm',
+    'high-level',
+    'big picture',
+    'overall',
+    'comprehensive',
   ],
   [ContractType.PROHIBITED]: [
-    'never', 'prohibit', 'forbidden', 'forbid', 'don\'t learn', 'do not learn',
-    'block', 'prevent', 'exclude', 'off-limits', 'no learning',
+    'never',
+    'prohibit',
+    'forbidden',
+    'forbid',
+    "don't learn",
+    'do not learn',
+    'block',
+    'prevent',
+    'exclude',
+    'off-limits',
+    'no learning',
   ],
 };
 
@@ -62,16 +98,35 @@ const CONTRACT_TYPE_INDICATORS: Record<ContractType, string[]> = {
  */
 const RETENTION_INDICATORS: Record<RetentionDuration, string[]> = {
   [RetentionDuration.SESSION]: [
-    'session', 'this session', 'session only', 'temporary', 'temp',
-    'just now', 'for now', 'current session',
+    'session',
+    'this session',
+    'session only',
+    'temporary',
+    'temp',
+    'just now',
+    'for now',
+    'current session',
   ],
   [RetentionDuration.TIMEBOUND]: [
-    'days', 'weeks', 'months', 'until', 'expire', 'expiry', 'time limit',
-    'for a while', 'limited time',
+    'days',
+    'weeks',
+    'months',
+    'until',
+    'expire',
+    'expiry',
+    'time limit',
+    'for a while',
+    'limited time',
   ],
   [RetentionDuration.PERMANENT]: [
-    'permanent', 'forever', 'always', 'indefinitely', 'until revoked',
-    'keep forever', 'never expire', 'long term',
+    'permanent',
+    'forever',
+    'always',
+    'indefinitely',
+    'until revoked',
+    'keep forever',
+    'never expire',
+    'long term',
   ],
 };
 
@@ -80,14 +135,14 @@ const RETENTION_INDICATORS: Record<RetentionDuration, string[]> = {
  */
 const TOOL_KEYWORDS: Record<string, string[]> = {
   'vs-code': ['vscode', 'vs code', 'visual studio code'],
-  'editor': ['editor', 'ide', 'text editor'],
-  'terminal': ['terminal', 'command line', 'cli', 'shell', 'bash'],
-  'browser': ['browser', 'chrome', 'firefox', 'web browser'],
-  'git': ['git', 'github', 'gitlab', 'version control'],
-  'debugger': ['debug', 'debugger', 'debugging'],
-  'obs': ['obs', 'obs studio', 'streaming software'],
-  'twitch': ['twitch', 'twitch.tv'],
-  'discord': ['discord'],
+  editor: ['editor', 'ide', 'text editor'],
+  terminal: ['terminal', 'command line', 'cli', 'shell', 'bash'],
+  browser: ['browser', 'chrome', 'firefox', 'web browser'],
+  git: ['git', 'github', 'gitlab', 'version control'],
+  debugger: ['debug', 'debugger', 'debugging'],
+  obs: ['obs', 'obs studio', 'streaming software'],
+  twitch: ['twitch', 'twitch.tv'],
+  discord: ['discord'],
 };
 
 /**
@@ -96,8 +151,8 @@ const TOOL_KEYWORDS: Record<string, string[]> = {
 const CONTEXT_KEYWORDS: Record<string, string[]> = {
   'personal-projects': ['personal project', 'side project', 'hobby project', 'my project'],
   'work-projects': ['work project', 'job project', 'professional project', 'client project'],
-  'streaming': ['stream', 'streaming', 'live stream', 'broadcast'],
-  'debugging': ['debug', 'debugging', 'bug fix', 'troubleshoot'],
+  streaming: ['stream', 'streaming', 'live stream', 'broadcast'],
+  debugging: ['debug', 'debugging', 'bug fix', 'troubleshoot'],
   'code-review': ['code review', 'reviewing code', 'pr review'],
 };
 
@@ -147,12 +202,18 @@ export class PlainLanguageParser {
     const classificationCap = this.detectClassificationCap(normalizedInput);
     const requireRecallApproval = this.detectRecallApproval(normalizedInput);
     const ambiguities = this.detectAmbiguities(
-      contractType, domains, retention, allowGeneralization
+      contractType,
+      domains,
+      retention,
+      allowGeneralization
     );
 
     // Calculate confidence based on how much we could extract
     const confidence = this.calculateConfidence(
-      contractType, domains, retention, ambiguities.length
+      contractType,
+      domains,
+      retention,
+      ambiguities.length
     );
 
     return {
@@ -196,8 +257,9 @@ export class PlainLanguageParser {
       return null;
     }
 
-    const topType = Object.entries(scores)
-      .find(([_, score]) => score === maxScore)?.[0] as ContractType;
+    const topType = Object.entries(scores).find(
+      ([_, score]) => score === maxScore
+    )?.[0] as ContractType;
 
     return topType || null;
   }
@@ -316,8 +378,12 @@ export class PlainLanguageParser {
 
     // Check for explicit indicators
     const noGeneralization = [
-      'no generalization', 'don\'t generalize', 'do not generalize',
-      'keep separate', 'individual', 'specific only',
+      'no generalization',
+      "don't generalize",
+      'do not generalize',
+      'keep separate',
+      'individual',
+      'specific only',
     ];
 
     for (const phrase of noGeneralization) {
@@ -327,8 +393,13 @@ export class PlainLanguageParser {
     }
 
     const yesGeneralization = [
-      'generalize', 'apply', 'reuse', 'learn pattern', 'learn tip',
-      'best practice', 'technique',
+      'generalize',
+      'apply',
+      'reuse',
+      'learn pattern',
+      'learn tip',
+      'best practice',
+      'technique',
     ];
 
     for (const phrase of yesGeneralization) {
@@ -372,8 +443,13 @@ export class PlainLanguageParser {
    */
   private detectRecallApproval(input: string): boolean | null {
     const requireApproval = [
-      'ask me', 'ask first', 'approval', 'approve', 'confirm',
-      'permission', 'my permission',
+      'ask me',
+      'ask first',
+      'approval',
+      'approve',
+      'confirm',
+      'permission',
+      'my permission',
     ];
 
     for (const phrase of requireApproval) {
@@ -383,8 +459,12 @@ export class PlainLanguageParser {
     }
 
     const autoApply = [
-      'automatically', 'auto', 'without asking', 'quietly',
-      'silently', 'in the background',
+      'automatically',
+      'auto',
+      'without asking',
+      'quietly',
+      'silently',
+      'in the background',
     ];
 
     for (const phrase of autoApply) {
@@ -437,9 +517,15 @@ export class PlainLanguageParser {
   ): number {
     let score = 0.5; // Base score
 
-    if (contractType) {score += 0.2;}
-    if (domains.length > 0) {score += 0.15;}
-    if (retention) {score += 0.1;}
+    if (contractType) {
+      score += 0.2;
+    }
+    if (domains.length > 0) {
+      score += 0.15;
+    }
+    if (retention) {
+      score += 0.1;
+    }
 
     // Reduce for ambiguities
     score -= ambiguityCount * 0.1;
@@ -487,7 +573,7 @@ export class PlainLanguageParser {
           {
             value: ContractType.OBSERVATION,
             label: 'Observation Only',
-            description: 'Watch and understand, but don\'t store any memories',
+            description: "Watch and understand, but don't store any memories",
           },
           {
             value: ContractType.EPISODIC,
@@ -559,7 +645,8 @@ export class PlainLanguageParser {
         answerType: 'confirm',
         defaultValue: false,
         required: true,
-        helpText: 'If yes, learned tips can be automatically applied. If no, each memory stays separate.',
+        helpText:
+          'If yes, learned tips can be automatically applied. If no, each memory stays separate.',
       });
     }
 
@@ -579,23 +666,23 @@ export class PlainLanguageParser {
       switch (answer.questionId) {
         case 'contract_type':
           refined.contractType = answer.value as ContractType;
-          refined.ambiguities = refined.ambiguities.filter(a => a !== 'contract_type');
+          refined.ambiguities = refined.ambiguities.filter((a) => a !== 'contract_type');
           break;
         case 'domains':
           if (Array.isArray(answer.value)) {
             refined.domains = answer.value as string[];
           } else if (typeof answer.value === 'string') {
-            refined.domains = (answer.value).split(',').map(d => d.trim());
+            refined.domains = answer.value.split(',').map((d) => d.trim());
           }
-          refined.ambiguities = refined.ambiguities.filter(a => a !== 'domains');
+          refined.ambiguities = refined.ambiguities.filter((a) => a !== 'domains');
           break;
         case 'retention':
           refined.retention = answer.value as RetentionDuration;
-          refined.ambiguities = refined.ambiguities.filter(a => a !== 'retention');
+          refined.ambiguities = refined.ambiguities.filter((a) => a !== 'retention');
           break;
         case 'generalization':
           refined.allowGeneralization = answer.value as boolean;
-          refined.ambiguities = refined.ambiguities.filter(a => a !== 'generalization');
+          refined.ambiguities = refined.ambiguities.filter((a) => a !== 'generalization');
           break;
         case 'retention_days':
           refined.retentionDays = answer.value as number;

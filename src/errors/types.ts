@@ -337,7 +337,12 @@ export class EnforcementError extends LearningContractsError {
     code: ErrorCode,
     severity: ErrorSeverity = ErrorSeverity.HIGH,
     context?: Partial<ErrorContext>,
-    options?: { recoverable?: boolean; remediation?: string; mitre_technique?: string; cause?: Error }
+    options?: {
+      recoverable?: boolean;
+      remediation?: string;
+      mitre_technique?: string;
+      cause?: Error;
+    }
   ) {
     super(message, code, ErrorCategory.ENFORCEMENT, severity, context, options);
     this.name = 'EnforcementError';
@@ -349,7 +354,12 @@ export class SecurityError extends LearningContractsError {
     message: string,
     code: ErrorCode,
     context?: Partial<ErrorContext>,
-    options?: { recoverable?: boolean; remediation?: string; mitre_technique?: string; cause?: Error }
+    options?: {
+      recoverable?: boolean;
+      remediation?: string;
+      mitre_technique?: string;
+      cause?: Error;
+    }
   ) {
     super(message, code, ErrorCategory.SECURITY, ErrorSeverity.CRITICAL, context, {
       recoverable: false,
@@ -403,7 +413,12 @@ export class AuthError extends LearningContractsError {
     message: string,
     code: ErrorCode,
     context?: Partial<ErrorContext>,
-    options?: { recoverable?: boolean; remediation?: string; mitre_technique?: string; cause?: Error }
+    options?: {
+      recoverable?: boolean;
+      remediation?: string;
+      mitre_technique?: string;
+      cause?: Error;
+    }
   ) {
     super(message, code, ErrorCategory.AUTH, ErrorSeverity.HIGH, context, options);
     this.name = 'AuthError';

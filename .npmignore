@@ -4,11 +4,12 @@ tests/
 examples/
 
 # Config files
-.eslintrc.json
+eslint.config.mjs
 .prettierrc.json
 .editorconfig
-jest.config.js
+jest.config.cjs
 tsconfig.json
+packages/
 
 # Development files
 .github/
@@ -19,10 +20,12 @@ coverage/
 CHANGELOG.md
 CONTRIBUTING.md
 SECURITY.md
-ENCRYPTION_SECURITY_REVIEW.md
+SUPPORT.md
 User-Manual.md
-specs.md
-system-arch.md
+docs/
+*.md
+!README.md
+*.bat
 
 # Lock files
 package-lock.json

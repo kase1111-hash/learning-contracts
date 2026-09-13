@@ -75,11 +75,7 @@ export class PlainLanguageSummarizer {
    * Generate a plain-language summary of a contract
    */
   summarize(contract: LearningContract, options: SummaryOptions = {}): string {
-    const {
-      includeTechnical = false,
-      format = 'prose',
-      includeWarnings = true,
-    } = options;
+    const { includeTechnical = false, format = 'prose', includeWarnings = true } = options;
 
     if (format === 'bullets') {
       return this.generateBulletSummary(contract, includeTechnical, includeWarnings);
@@ -155,8 +151,12 @@ export class PlainLanguageSummarizer {
     if (contract.contract_type === ContractType.PROHIBITED) {
       bullets.push('**Learning:** Completely forbidden');
     } else {
-      bullets.push(`**Memory Storage:** ${contract.memory_permissions.may_store ? 'Allowed' : 'Not allowed'}`);
-      bullets.push(`**Generalization:** ${contract.generalization_rules.allowed ? 'Allowed' : 'Not allowed'}`);
+      bullets.push(
+        `**Memory Storage:** ${contract.memory_permissions.may_store ? 'Allowed' : 'Not allowed'}`
+      );
+      bullets.push(
+        `**Generalization:** ${contract.generalization_rules.allowed ? 'Allowed' : 'Not allowed'}`
+      );
     }
 
     // Scope
@@ -174,14 +174,22 @@ export class PlainLanguageSummarizer {
     bullets.push(`**Retention:** ${this.formatRetention(contract)}`);
 
     // Recall
-    bullets.push(`**Recall requires:** ${contract.recall_rules.requires_owner ? 'Your approval' : 'No approval needed'}`);
-    bullets.push(`**Trust level needed:** ${BOUNDARY_MODE_DESCRIPTIONS[contract.recall_rules.boundary_mode_min]}`);
+    bullets.push(
+      `**Recall requires:** ${contract.recall_rules.requires_owner ? 'Your approval' : 'No approval needed'}`
+    );
+    bullets.push(
+      `**Trust level needed:** ${BOUNDARY_MODE_DESCRIPTIONS[contract.recall_rules.boundary_mode_min]}`
+    );
 
     // Transferability
-    bullets.push(`**Can be shared:** ${contract.scope.transferable ? 'Yes' : 'No (stays on this system)'}`);
+    bullets.push(
+      `**Can be shared:** ${contract.scope.transferable ? 'Yes' : 'No (stays on this system)'}`
+    );
 
     // Revocability
-    bullets.push(`**Can be revoked:** ${contract.revocable ? 'Yes, anytime' : 'No (can only expire)'}`);
+    bullets.push(
+      `**Can be revoked:** ${contract.revocable ? 'Yes, anytime' : 'No (can only expire)'}`
+    );
 
     // Technical
     if (includeTechnical) {
@@ -197,11 +205,11 @@ export class PlainLanguageSummarizer {
       if (warningList.length > 0) {
         bullets.push('');
         bullets.push('**Warnings:**');
-        warningList.forEach(w => bullets.push(`  - ${w}`));
+        warningList.forEach((w) => bullets.push(`  - ${w}`));
       }
     }
 
-    return bullets.map(b => `• ${b}`).join('\n');
+    return bullets.map((b) => `• ${b}`).join('\n');
   }
 
   /**
@@ -338,7 +346,9 @@ export class PlainLanguageSummarizer {
    */
   private generateWarnings(contract: LearningContract): string {
     const warnings = this.getWarningList(contract);
-    if (warnings.length === 0) {return '';}
+    if (warnings.length === 0) {
+      return '';
+    }
 
     return 'Note: ' + warnings.join('. ') + '.';
   }
@@ -361,7 +371,10 @@ export class PlainLanguageSummarizer {
       warnings.push('This contract cannot be revoked');
     }
 
-    if (contract.generalization_rules.allowed && contract.generalization_rules.conditions.length === 0) {
+    if (
+      contract.generalization_rules.allowed &&
+      contract.generalization_rules.conditions.length === 0
+    ) {
       warnings.push('Generalization is allowed without specific conditions');
     }
 
@@ -407,9 +420,15 @@ export class PlainLanguageSummarizer {
    * Format a list of items
    */
   private formatList(items: string[]): string {
-    if (items.length === 0) {return '';}
-    if (items.length === 1) {return items[0];}
-    if (items.length === 2) {return `${items[0]} and ${items[1]}`;}
+    if (items.length === 0) {
+      return '';
+    }
+    if (items.length === 1) {
+      return items[0];
+    }
+    if (items.length === 2) {
+      return `${items[0]} and ${items[1]}`;
+    }
     return items.slice(0, -1).join(', ') + ', and ' + items[items.length - 1];
   }
 
@@ -471,9 +490,10 @@ export class PlainLanguageSummarizer {
    */
   shortSummary(contract: LearningContract): string {
     const type = CONTRACT_TYPE_NAMES[contract.contract_type];
-    const domains = contract.scope.domains.length > 0
-      ? contract.scope.domains.slice(0, 2).join(', ')
-      : 'all domains';
+    const domains =
+      contract.scope.domains.length > 0
+        ? contract.scope.domains.slice(0, 2).join(', ')
+        : 'all domains';
 
     return `${type} for ${domains} (${STATE_NAMES[contract.state]})`;
   }

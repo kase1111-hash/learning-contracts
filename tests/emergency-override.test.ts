@@ -2,11 +2,7 @@
  * Emergency Override System Tests
  */
 
-import {
-  LearningContractsSystem,
-  BoundaryMode,
-  AbstractionLevel,
-} from '../src';
+import { LearningContractsSystem, BoundaryMode, AbstractionLevel } from '../src';
 
 describe('Emergency Override System', () => {
   let system: LearningContractsSystem;
@@ -17,10 +13,7 @@ describe('Emergency Override System', () => {
 
   describe('Triggering Emergency Override', () => {
     test('should successfully trigger emergency override', () => {
-      const result = system.triggerEmergencyOverride(
-        'admin',
-        'Security incident detected'
-      );
+      const result = system.triggerEmergencyOverride('admin', 'Security incident detected');
 
       expect(result.success).toBe(true);
       expect(result.event_id).toBeDefined();
@@ -50,10 +43,7 @@ describe('Emergency Override System', () => {
       contract2 = system.submitForReview(contract2.contract_id, 'bob');
       contract2 = system.activateContract(contract2.contract_id, 'bob');
 
-      const result = system.triggerEmergencyOverride(
-        'admin',
-        'Security incident'
-      );
+      const result = system.triggerEmergencyOverride('admin', 'Security incident');
 
       expect(result.success).toBe(true);
       expect(result.active_contracts_blocked).toBe(2);
@@ -169,12 +159,9 @@ describe('Emergency Override System', () => {
 
       // After override disabled - should succeed again
       system.emergencyOverride.disableOverride('admin');
-      const afterResult = system.checkMemoryCreation(
-        contract.contract_id,
-        BoundaryMode.NORMAL,
-        1,
-        { domain: 'coding' }
-      );
+      const afterResult = system.checkMemoryCreation(contract.contract_id, BoundaryMode.NORMAL, 1, {
+        domain: 'coding',
+      });
       expect(afterResult.allowed).toBe(true);
     });
 
@@ -318,7 +305,9 @@ describe('Emergency Override System', () => {
 
       const audit = system.getAuditLog();
       const triggerEvent = audit.find(
-        (e: any) => e.event_type === 'custom' && e.details?.custom_event_name === 'emergency_override_triggered'
+        (e: any) =>
+          e.event_type === 'custom' &&
+          e.details?.custom_event_name === 'emergency_override_triggered'
       );
 
       expect(triggerEvent).toBeDefined();
@@ -330,7 +319,9 @@ describe('Emergency Override System', () => {
 
       const audit = system.getAuditLog();
       const disableEvent = audit.find(
-        (e: any) => e.event_type === 'custom' && e.details?.custom_event_name === 'emergency_override_disabled'
+        (e: any) =>
+          e.event_type === 'custom' &&
+          e.details?.custom_event_name === 'emergency_override_disabled'
       );
 
       expect(disableEvent).toBeDefined();
@@ -351,7 +342,9 @@ describe('Emergency Override System', () => {
 
       const audit = system.getAuditLog();
       const blockedEvent = audit.find(
-        (e: any) => e.event_type === 'custom' && e.details?.custom_event_name === 'emergency_override_blocked_operation'
+        (e: any) =>
+          e.event_type === 'custom' &&
+          e.details?.custom_event_name === 'emergency_override_blocked_operation'
       );
 
       expect(blockedEvent).toBeDefined();
@@ -376,18 +369,12 @@ describe('Emergency Override System', () => {
       system.triggerEmergencyOverride('admin', 'Block all');
 
       // Both contracts should be blocked
-      const result1 = system.checkMemoryCreation(
-        contract1.contract_id,
-        BoundaryMode.NORMAL,
-        1,
-        { domain: 'coding' }
-      );
-      const result2 = system.checkMemoryCreation(
-        contract2.contract_id,
-        BoundaryMode.NORMAL,
-        1,
-        { domain: 'design' }
-      );
+      const result1 = system.checkMemoryCreation(contract1.contract_id, BoundaryMode.NORMAL, 1, {
+        domain: 'coding',
+      });
+      const result2 = system.checkMemoryCreation(contract2.contract_id, BoundaryMode.NORMAL, 1, {
+        domain: 'design',
+      });
 
       expect(result1.allowed).toBe(false);
       expect(result2.allowed).toBe(false);
@@ -418,12 +405,9 @@ describe('Emergency Override System', () => {
 
       // Multiple operations should all be blocked
       for (let i = 0; i < 10; i++) {
-        const result = system.checkMemoryCreation(
-          contract.contract_id,
-          BoundaryMode.NORMAL,
-          1,
-          { domain: 'coding' }
-        );
+        const result = system.checkMemoryCreation(contract.contract_id, BoundaryMode.NORMAL, 1, {
+          domain: 'coding',
+        });
         expect(result.allowed).toBe(false);
       }
 

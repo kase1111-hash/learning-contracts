@@ -2,9 +2,7 @@
  * Boundary Daemon Integration Tests
  */
 
-import {
-  LearningContractsSystem,
-} from 'learning-contracts';
+import { LearningContractsSystem } from 'learning-contracts';
 
 import {
   MockBoundaryDaemonAdapter,

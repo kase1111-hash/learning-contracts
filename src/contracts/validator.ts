@@ -98,9 +98,7 @@ export class ContractValidator {
           contract.scope.max_abstraction !== AbstractionLevel.HEURISTIC &&
           contract.scope.max_abstraction !== AbstractionLevel.PATTERN
         ) {
-          warnings.push(
-            'Procedural contracts should limit abstraction to pattern or heuristic'
-          );
+          warnings.push('Procedural contracts should limit abstraction to pattern or heuristic');
         }
         break;
 
@@ -160,9 +158,7 @@ export class ContractValidator {
       contract.scope.contexts.length === 0 &&
       contract.scope.tools.length === 0
     ) {
-      warnings.push(
-        'All scope dimensions are empty - contract will deny all operations'
-      );
+      warnings.push('All scope dimensions are empty - contract will deny all operations');
     }
   }
 
@@ -225,30 +221,21 @@ export class ContractValidator {
     _warnings: string[]
   ): void {
     if (!Object.values(BoundaryMode).includes(contract.recall_rules.boundary_mode_min)) {
-      errors.push(
-        `Invalid boundary mode: ${contract.recall_rules.boundary_mode_min}`
-      );
+      errors.push(`Invalid boundary mode: ${contract.recall_rules.boundary_mode_min}`);
     }
   }
 
   /**
    * Validates state transition
    */
-  static validateTransition(
-    from: ContractState,
-    to: ContractState
-  ): ValidationResult {
+  static validateTransition(from: ContractState, to: ContractState): ValidationResult {
     const errors: string[] = [];
     const warnings: string[] = [];
 
     const validTransitions: Record<ContractState, ContractState[]> = {
       [ContractState.DRAFT]: [ContractState.REVIEW],
       [ContractState.REVIEW]: [ContractState.ACTIVE, ContractState.DRAFT],
-      [ContractState.ACTIVE]: [
-        ContractState.EXPIRED,
-        ContractState.REVOKED,
-        ContractState.AMENDED,
-      ],
+      [ContractState.ACTIVE]: [ContractState.EXPIRED, ContractState.REVOKED, ContractState.AMENDED],
       [ContractState.EXPIRED]: [],
       [ContractState.REVOKED]: [],
       [ContractState.AMENDED]: [ContractState.REVIEW],

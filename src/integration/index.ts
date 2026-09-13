@@ -5,10 +5,7 @@
  * Import from 'learning-contracts/integration' or from the main package.
  */
 
-export {
-  ContractGovernedStore,
-  InMemoryStore,
-} from './memory-store';
+export { ContractGovernedStore, InMemoryStore } from './memory-store';
 export type {
   MemoryStore,
   MemoryInput,
@@ -17,9 +14,7 @@ export type {
   GovernedResult,
 } from './memory-store';
 
-export {
-  createEnforcementMiddleware,
-} from './middleware';
+export { createEnforcementMiddleware } from './middleware';
 export type {
   EnforcementMiddleware,
   OperationContext,

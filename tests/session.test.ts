@@ -2,12 +2,7 @@
  * Session Management Tests
  */
 
-import {
-  LearningContractsSystem,
-  ContractState,
-  RetentionDuration,
-  SessionStatus,
-} from '../src';
+import { LearningContractsSystem, ContractState, RetentionDuration, SessionStatus } from '../src';
 
 describe('Session Management', () => {
   let system: LearningContractsSystem;
@@ -67,7 +62,7 @@ describe('Session Management', () => {
 
       const aliceSessions = system.sessions.getUserSessions('alice');
       expect(aliceSessions).toHaveLength(2);
-      expect(aliceSessions.every(s => s.user_id === 'alice')).toBe(true);
+      expect(aliceSessions.every((s) => s.user_id === 'alice')).toBe(true);
     });
 
     test('should end a session', () => {
@@ -103,11 +98,15 @@ describe('Session Management', () => {
       const session = system.sessions.startSession('alice');
 
       // Create a session-scoped contract
-      let contract = system.createEpisodicContract('alice', {
-        domains: ['coding'],
-      }, {
-        retention: RetentionDuration.SESSION,
-      });
+      let contract = system.createEpisodicContract(
+        'alice',
+        {
+          domains: ['coding'],
+        },
+        {
+          retention: RetentionDuration.SESSION,
+        }
+      );
       contract = system.submitForReview(contract.contract_id, 'alice');
       contract = system.activateContract(contract.contract_id, 'alice');
 
@@ -128,11 +127,15 @@ describe('Session Management', () => {
       const session = system.sessions.startSession('alice');
 
       // Create a permanent contract
-      let contract = system.createEpisodicContract('alice', {
-        domains: ['coding'],
-      }, {
-        retention: RetentionDuration.PERMANENT,
-      });
+      let contract = system.createEpisodicContract(
+        'alice',
+        {
+          domains: ['coding'],
+        },
+        {
+          retention: RetentionDuration.PERMANENT,
+        }
+      );
       contract = system.submitForReview(contract.contract_id, 'alice');
       contract = system.activateContract(contract.contract_id, 'alice');
 
@@ -146,18 +149,19 @@ describe('Session Management', () => {
     });
 
     test('should not associate contract with non-existent session', () => {
-      let contract = system.createEpisodicContract('alice', {
-        domains: ['coding'],
-      }, {
-        retention: RetentionDuration.SESSION,
-      });
+      let contract = system.createEpisodicContract(
+        'alice',
+        {
+          domains: ['coding'],
+        },
+        {
+          retention: RetentionDuration.SESSION,
+        }
+      );
       contract = system.submitForReview(contract.contract_id, 'alice');
       contract = system.activateContract(contract.contract_id, 'alice');
 
-      const associated = system.sessions.associateContract(
-        'non-existent',
-        contract.contract_id
-      );
+      const associated = system.sessions.associateContract('non-existent', contract.contract_id);
 
       expect(associated).toBe(false);
     });
@@ -166,11 +170,15 @@ describe('Session Management', () => {
       const session = system.sessions.startSession('alice');
       system.sessions.endSession(session.session_id);
 
-      let contract = system.createEpisodicContract('alice', {
-        domains: ['coding'],
-      }, {
-        retention: RetentionDuration.SESSION,
-      });
+      let contract = system.createEpisodicContract(
+        'alice',
+        {
+          domains: ['coding'],
+        },
+        {
+          retention: RetentionDuration.SESSION,
+        }
+      );
       contract = system.submitForReview(contract.contract_id, 'alice');
       contract = system.activateContract(contract.contract_id, 'alice');
 
@@ -188,11 +196,15 @@ describe('Session Management', () => {
       const session = system.sessions.startSession('alice');
 
       // Create and associate a session-scoped contract
-      let contract = system.createEpisodicContract('alice', {
-        domains: ['coding'],
-      }, {
-        retention: RetentionDuration.SESSION,
-      });
+      let contract = system.createEpisodicContract(
+        'alice',
+        {
+          domains: ['coding'],
+        },
+        {
+          retention: RetentionDuration.SESSION,
+        }
+      );
       contract = system.submitForReview(contract.contract_id, 'alice');
       contract = system.activateContract(contract.contract_id, 'alice');
 
@@ -214,11 +226,15 @@ describe('Session Management', () => {
       // Create multiple session-scoped contracts
       const contracts = [];
       for (let i = 0; i < 3; i++) {
-        let contract = system.createEpisodicContract('alice', {
-          domains: [`domain-${i}`],
-        }, {
-          retention: RetentionDuration.SESSION,
-        });
+        let contract = system.createEpisodicContract(
+          'alice',
+          {
+            domains: [`domain-${i}`],
+          },
+          {
+            retention: RetentionDuration.SESSION,
+          }
+        );
         contract = system.submitForReview(contract.contract_id, 'alice');
         contract = system.activateContract(contract.contract_id, 'alice');
         system.sessions.associateContract(session.session_id, contract.contract_id);
@@ -241,20 +257,28 @@ describe('Session Management', () => {
       const session = system.sessions.startSession('alice');
 
       // Create a permanent contract (not associated with session)
-      let permanentContract = system.createEpisodicContract('alice', {
-        domains: ['permanent-domain'],
-      }, {
-        retention: RetentionDuration.PERMANENT,
-      });
+      let permanentContract = system.createEpisodicContract(
+        'alice',
+        {
+          domains: ['permanent-domain'],
+        },
+        {
+          retention: RetentionDuration.PERMANENT,
+        }
+      );
       permanentContract = system.submitForReview(permanentContract.contract_id, 'alice');
       permanentContract = system.activateContract(permanentContract.contract_id, 'alice');
 
       // Create a session-scoped contract
-      let sessionContract = system.createEpisodicContract('alice', {
-        domains: ['session-domain'],
-      }, {
-        retention: RetentionDuration.SESSION,
-      });
+      let sessionContract = system.createEpisodicContract(
+        'alice',
+        {
+          domains: ['session-domain'],
+        },
+        {
+          retention: RetentionDuration.SESSION,
+        }
+      );
       sessionContract = system.submitForReview(sessionContract.contract_id, 'alice');
       sessionContract = system.activateContract(sessionContract.contract_id, 'alice');
       system.sessions.associateContract(session.session_id, sessionContract.contract_id);
@@ -328,15 +352,23 @@ describe('Session Management', () => {
     test('should track contracts in sessions', () => {
       const session = system.sessions.startSession('alice');
 
-      let contract1 = system.createEpisodicContract('alice', {
-        domains: ['domain1'],
-      }, { retention: RetentionDuration.SESSION });
+      let contract1 = system.createEpisodicContract(
+        'alice',
+        {
+          domains: ['domain1'],
+        },
+        { retention: RetentionDuration.SESSION }
+      );
       contract1 = system.submitForReview(contract1.contract_id, 'alice');
       contract1 = system.activateContract(contract1.contract_id, 'alice');
 
-      let contract2 = system.createEpisodicContract('alice', {
-        domains: ['domain2'],
-      }, { retention: RetentionDuration.SESSION });
+      let contract2 = system.createEpisodicContract(
+        'alice',
+        {
+          domains: ['domain2'],
+        },
+        { retention: RetentionDuration.SESSION }
+      );
       contract2 = system.submitForReview(contract2.contract_id, 'alice');
       contract2 = system.activateContract(contract2.contract_id, 'alice');
 
@@ -385,16 +417,24 @@ describe('Session Management', () => {
       system.sessions.startSession('bob'); // Should not be affected
 
       // Associate contracts with alice's sessions
-      let contract1 = system.createEpisodicContract('alice', {
-        domains: ['domain1'],
-      }, { retention: RetentionDuration.SESSION });
+      let contract1 = system.createEpisodicContract(
+        'alice',
+        {
+          domains: ['domain1'],
+        },
+        { retention: RetentionDuration.SESSION }
+      );
       contract1 = system.submitForReview(contract1.contract_id, 'alice');
       contract1 = system.activateContract(contract1.contract_id, 'alice');
       system.sessions.associateContract(session1.session_id, contract1.contract_id);
 
-      let contract2 = system.createEpisodicContract('alice', {
-        domains: ['domain2'],
-      }, { retention: RetentionDuration.SESSION });
+      let contract2 = system.createEpisodicContract(
+        'alice',
+        {
+          domains: ['domain2'],
+        },
+        { retention: RetentionDuration.SESSION }
+      );
       contract2 = system.submitForReview(contract2.contract_id, 'alice');
       contract2 = system.activateContract(contract2.contract_id, 'alice');
       system.sessions.associateContract(session2.session_id, contract2.contract_id);
@@ -418,9 +458,13 @@ describe('Session Management', () => {
     test('should log session events to audit log', () => {
       const session = system.sessions.startSession('alice');
 
-      let contract = system.createEpisodicContract('alice', {
-        domains: ['coding'],
-      }, { retention: RetentionDuration.SESSION });
+      let contract = system.createEpisodicContract(
+        'alice',
+        {
+          domains: ['coding'],
+        },
+        { retention: RetentionDuration.SESSION }
+      );
       contract = system.submitForReview(contract.contract_id, 'alice');
       contract = system.activateContract(contract.contract_id, 'alice');
       system.sessions.associateContract(session.session_id, contract.contract_id);
@@ -430,9 +474,7 @@ describe('Session Management', () => {
       const auditLog = system.getAuditLog();
 
       // Should have custom events for session operations
-      const customEvents = auditLog.filter(
-        e => e.details?.custom_event_name
-      );
+      const customEvents = auditLog.filter((e) => e.details?.custom_event_name);
 
       expect(customEvents.length).toBeGreaterThan(0);
     });

@@ -6,11 +6,7 @@
  */
 
 import { v4 as uuidv4 } from 'uuid';
-import {
-  ContractType,
-  RetentionDuration,
-  BoundaryMode,
-} from '../types';
+import { ContractType, RetentionDuration, BoundaryMode } from '../types';
 import {
   ConversationState,
   ConversationStep,
@@ -77,14 +73,16 @@ export class ConversationalContractBuilder {
     this.conversations.set(conversationId, state);
 
     return {
-      message: "Let's create a Learning Contract. What would you like the assistant to learn about? You can describe it in your own words, or I can show you some templates.",
+      message:
+        "Let's create a Learning Contract. What would you like the assistant to learn about? You can describe it in your own words, or I can show you some templates.",
       questions: [
         {
           id: 'initial_intent',
           text: 'What should the assistant learn?',
           answerType: 'text',
           required: true,
-          helpText: 'Examples: "Learn coding tips from my Python sessions" or "Never learn anything about my finances"',
+          helpText:
+            'Examples: "Learn coding tips from my Python sessions" or "Never learn anything about my finances"',
         },
       ],
       isComplete: false,
@@ -96,10 +94,7 @@ export class ConversationalContractBuilder {
   /**
    * Process user input in the conversation
    */
-  processInput(
-    conversationId: string,
-    input: string | ConversationAnswer
-  ): BuilderResponse {
+  processInput(conversationId: string, input: string | ConversationAnswer): BuilderResponse {
     const state = this.conversations.get(conversationId);
     if (!state) {
       return this.createErrorResponse('Conversation not found. Please start a new conversation.');
@@ -193,7 +188,9 @@ export class ConversationalContractBuilder {
 
     if (!parseResult.success || !parseResult.intent) {
       return {
-        message: parseResult.error || "I couldn't understand that. Could you describe what you'd like the assistant to learn in different words?",
+        message:
+          parseResult.error ||
+          "I couldn't understand that. Could you describe what you'd like the assistant to learn in different words?",
         questions: [
           {
             id: 'initial_intent',
@@ -268,7 +265,10 @@ export class ConversationalContractBuilder {
     const value = typeof input === 'string' ? input : input.value;
 
     if (typeof value === 'string') {
-      state.parsedIntent.domains = value.split(',').map(d => d.trim()).filter(d => d);
+      state.parsedIntent.domains = value
+        .split(',')
+        .map((d) => d.trim())
+        .filter((d) => d);
     } else if (Array.isArray(value)) {
       state.parsedIntent.domains = value;
     }
@@ -288,7 +288,10 @@ export class ConversationalContractBuilder {
     const value = typeof input === 'string' ? input : input.value;
 
     if (typeof value === 'string') {
-      state.parsedIntent.contexts = value.split(',').map(c => c.trim()).filter(c => c);
+      state.parsedIntent.contexts = value
+        .split(',')
+        .map((c) => c.trim())
+        .filter((c) => c);
     } else if (Array.isArray(value)) {
       state.parsedIntent.contexts = value;
     }
@@ -308,7 +311,10 @@ export class ConversationalContractBuilder {
     const value = typeof input === 'string' ? input : input.value;
 
     if (typeof value === 'string') {
-      state.parsedIntent.tools = value.split(',').map(t => t.trim()).filter(t => t);
+      state.parsedIntent.tools = value
+        .split(',')
+        .map((t) => t.trim())
+        .filter((t) => t);
     } else if (Array.isArray(value)) {
       state.parsedIntent.tools = value;
     }
@@ -361,9 +367,10 @@ export class ConversationalContractBuilder {
     state: ConversationState,
     input: string | ConversationAnswer
   ): BuilderResponse {
-    const value = typeof input === 'string'
-      ? input.toLowerCase() === 'yes' || input.toLowerCase() === 'true'
-      : Boolean(input.value);
+    const value =
+      typeof input === 'string'
+        ? input.toLowerCase() === 'yes' || input.toLowerCase() === 'true'
+        : Boolean(input.value);
 
     state.parsedIntent.allowGeneralization = value;
     state.answers.push({ questionId: 'generalization', value });
@@ -378,9 +385,10 @@ export class ConversationalContractBuilder {
     state: ConversationState,
     input: string | ConversationAnswer
   ): BuilderResponse {
-    const value = typeof input === 'string'
-      ? input.toLowerCase() === 'yes' || input.toLowerCase() === 'true'
-      : Boolean(input.value);
+    const value =
+      typeof input === 'string'
+        ? input.toLowerCase() === 'yes' || input.toLowerCase() === 'true'
+        : Boolean(input.value);
 
     state.parsedIntent.requireRecallApproval = value;
     state.answers.push({ questionId: 'recall', value });
@@ -395,7 +403,8 @@ export class ConversationalContractBuilder {
     state: ConversationState,
     input: string | ConversationAnswer
   ): BuilderResponse {
-    const value = typeof input === 'string' ? input.toLowerCase() : String(input.value).toLowerCase();
+    const value =
+      typeof input === 'string' ? input.toLowerCase() : String(input.value).toLowerCase();
 
     if (value === 'yes' || value === 'confirm' || value === 'true') {
       // Build the final draft
@@ -477,11 +486,31 @@ export class ConversationalContractBuilder {
         text: 'What type of learning would you like to allow?',
         answerType: 'choice',
         choices: [
-          { value: ContractType.OBSERVATION, label: 'Observation Only', description: "Watch but don't store" },
-          { value: ContractType.EPISODIC, label: 'Specific Episodes', description: 'Store specific moments' },
-          { value: ContractType.PROCEDURAL, label: 'Learn Patterns', description: 'Learn reusable tips' },
-          { value: ContractType.STRATEGIC, label: 'Strategic Learning', description: 'Build long-term strategies' },
-          { value: ContractType.PROHIBITED, label: 'Prohibit Learning', description: 'Never learn in this area' },
+          {
+            value: ContractType.OBSERVATION,
+            label: 'Observation Only',
+            description: "Watch but don't store",
+          },
+          {
+            value: ContractType.EPISODIC,
+            label: 'Specific Episodes',
+            description: 'Store specific moments',
+          },
+          {
+            value: ContractType.PROCEDURAL,
+            label: 'Learn Patterns',
+            description: 'Learn reusable tips',
+          },
+          {
+            value: ContractType.STRATEGIC,
+            label: 'Strategic Learning',
+            description: 'Build long-term strategies',
+          },
+          {
+            value: ContractType.PROHIBITED,
+            label: 'Prohibit Learning',
+            description: 'Never learn in this area',
+          },
         ],
         required: true,
       });
@@ -690,19 +719,19 @@ export class ConversationalContractBuilder {
    */
   private getStepMessage(step: ConversationStep): string {
     const messages: Record<ConversationStep, string> = {
-      [ConversationStep.INITIAL]: "What would you like the assistant to learn about?",
-      [ConversationStep.CONTRACT_TYPE]: "What type of learning should be allowed?",
-      [ConversationStep.DOMAINS]: "What subject areas does this apply to?",
-      [ConversationStep.CONTEXTS]: "Are there specific contexts or projects?",
-      [ConversationStep.TOOLS]: "Which tools or environments?",
-      [ConversationStep.RETENTION]: "How long should memories be kept?",
-      [ConversationStep.GENERALIZATION]: "Should learned patterns be applied automatically?",
-      [ConversationStep.RECALL]: "Should the assistant ask before recalling memories?",
+      [ConversationStep.INITIAL]: 'What would you like the assistant to learn about?',
+      [ConversationStep.CONTRACT_TYPE]: 'What type of learning should be allowed?',
+      [ConversationStep.DOMAINS]: 'What subject areas does this apply to?',
+      [ConversationStep.CONTEXTS]: 'Are there specific contexts or projects?',
+      [ConversationStep.TOOLS]: 'Which tools or environments?',
+      [ConversationStep.RETENTION]: 'How long should memories be kept?',
+      [ConversationStep.GENERALIZATION]: 'Should learned patterns be applied automatically?',
+      [ConversationStep.RECALL]: 'Should the assistant ask before recalling memories?',
       [ConversationStep.REVIEW]: "Here's the contract summary. Does this look right?",
-      [ConversationStep.COMPLETE]: "Contract created successfully!",
+      [ConversationStep.COMPLETE]: 'Contract created successfully!',
     };
 
-    return messages[step] || "What would you like to do?";
+    return messages[step] || 'What would you like to do?';
   }
 
   /**

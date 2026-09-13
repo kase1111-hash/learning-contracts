@@ -7,11 +7,7 @@
  */
 
 import { v4 as uuidv4 } from 'uuid';
-import {
-  LearningContract,
-  BoundaryMode,
-  EnforcementResult,
-} from '../types';
+import { LearningContract, BoundaryMode, EnforcementResult } from '../types';
 import { LearningContractsSystem } from '../system';
 
 /**
@@ -192,16 +188,11 @@ export class ContractGovernedStore {
   ): Promise<GovernedResult<StoredMemory>> {
     const mode = boundaryMode ?? this.defaultBoundaryMode;
 
-    const enforcement = this.system.checkMemoryCreation(
-      contractId,
-      mode,
-      input.classification,
-      {
-        domain: input.domain,
-        context: input.context,
-        tool: input.tool,
-      }
-    );
+    const enforcement = this.system.checkMemoryCreation(contractId, mode, input.classification, {
+      domain: input.domain,
+      context: input.context,
+      tool: input.tool,
+    });
 
     if (!enforcement.allowed) {
       return {
@@ -242,11 +233,7 @@ export class ContractGovernedStore {
     input: MemoryInput,
     boundaryMode?: BoundaryMode
   ): Promise<GovernedResult<StoredMemory>> {
-    const contract = this.system.findApplicableContract(
-      input.domain,
-      input.context,
-      input.tool
-    );
+    const contract = this.system.findApplicableContract(input.domain, input.context, input.tool);
 
     if (!contract) {
       return {
@@ -292,9 +279,7 @@ export class ContractGovernedStore {
     const memories = await this.backingStore.recall(query);
 
     // Filter to only memories under this contract
-    const contractMemories = memories.filter(
-      (m) => m.contract_id === contractId
-    );
+    const contractMemories = memories.filter((m) => m.contract_id === contractId);
 
     return {
       allowed: true,
@@ -321,11 +306,7 @@ export class ContractGovernedStore {
    * Get the applicable contract for a given scope, or null if none.
    * Convenience method for checking what contract would govern an operation.
    */
-  findContract(
-    domain?: string,
-    context?: string,
-    tool?: string
-  ): LearningContract | null {
+  findContract(domain?: string, context?: string, tool?: string): LearningContract | null {
     return this.system.findApplicableContract(domain, context, tool);
   }
 }

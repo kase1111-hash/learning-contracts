@@ -20,7 +20,7 @@ function getTokenSecret(): string {
   if (!secret) {
     throw new Error(
       'PURGE_TOKEN_SECRET environment variable is required for purge operations. ' +
-      'Set it to a cryptographically random string (minimum 32 characters).'
+        'Set it to a cryptographically random string (minimum 32 characters).'
     );
   }
   return secret;
@@ -148,10 +148,7 @@ export class MemoryForgetting {
    * Returns the list of affected memory IDs but does NOT mutate any store.
    * The caller must implement actual freezing based on the returned ForgettingResult.
    */
-  freezeMemories(
-    contract: LearningContract,
-    memories: MemoryReference[]
-  ): ForgettingResult {
+  freezeMemories(contract: LearningContract, memories: MemoryReference[]): ForgettingResult {
     if (contract.state !== ContractState.EXPIRED) {
       throw new Error('Can only freeze memories for expired contracts');
     }
@@ -175,18 +172,13 @@ export class MemoryForgetting {
    * Returns the list of affected memory IDs (including derived) but does NOT
    * mutate any store. The caller must implement actual tombstoning.
    */
-  tombstoneMemories(
-    contract: LearningContract,
-    memories: MemoryReference[]
-  ): ForgettingResult {
+  tombstoneMemories(contract: LearningContract, memories: MemoryReference[]): ForgettingResult {
     if (contract.state !== ContractState.REVOKED) {
       throw new Error('Can only tombstone memories for revoked contracts');
     }
 
     // Find all memories created under this contract
-    const directMemories = memories.filter(
-      (m) => m.contract_id === contract.contract_id
-    );
+    const directMemories = memories.filter((m) => m.contract_id === contract.contract_id);
 
     // Find all derived memories (recursive)
     const derivedMemories = this.findDerivedMemories(
@@ -197,11 +189,7 @@ export class MemoryForgetting {
     const affectedIds = directMemories.map((m) => m.memory_id);
     const derivedIds = derivedMemories.map((m) => m.memory_id);
 
-    this.auditLogger.logMemoryTombstoned(
-      contract.contract_id,
-      affectedIds,
-      derivedIds
-    );
+    this.auditLogger.logMemoryTombstoned(contract.contract_id, affectedIds, derivedIds);
 
     return {
       affected_memories: affectedIds,
@@ -243,9 +231,7 @@ export class MemoryForgetting {
     }
 
     // Find all memories to purge
-    const directMemories = memories.filter(
-      (m) => m.contract_id === contract.contract_id
-    );
+    const directMemories = memories.filter((m) => m.contract_id === contract.contract_id);
 
     const derivedMemories = this.findDerivedMemories(
       directMemories.map((m) => m.memory_id),
@@ -310,11 +296,7 @@ export class MemoryForgetting {
 
     const findRecursive = (currentIds: string[]) => {
       for (const memory of allMemories) {
-        if (
-          memory.is_derived &&
-          memory.derived_from &&
-          !seen.has(memory.memory_id)
-        ) {
+        if (memory.is_derived && memory.derived_from && !seen.has(memory.memory_id)) {
           // Check if any of this memory's sources are in our target set
           const hasDerivedSource = memory.derived_from.some((sourceId) =>
             currentIds.includes(sourceId)

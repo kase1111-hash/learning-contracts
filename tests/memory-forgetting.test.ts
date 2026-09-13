@@ -154,9 +154,7 @@ describe('Memory Forgetting', () => {
       forgetting.freezeMemories(contract, memories);
 
       const events = auditLogger.export();
-      const tombstoneEvents = events.filter(
-        (e) => e.details?.action === 'frozen'
-      );
+      const tombstoneEvents = events.filter((e) => e.details?.action === 'frozen');
       expect(tombstoneEvents).toHaveLength(1);
     });
   });
@@ -396,9 +394,7 @@ describe('Memory Forgetting', () => {
     });
 
     it('should return empty array when no heuristics match', () => {
-      const heuristics = [
-        { heuristic_id: 'h1', derived_from: ['mem-5'] },
-      ];
+      const heuristics = [{ heuristic_id: 'h1', derived_from: ['mem-5'] }];
 
       const result = forgetting.invalidateHeuristics(['mem-1'], heuristics);
 
@@ -406,9 +402,7 @@ describe('Memory Forgetting', () => {
     });
 
     it('should return empty array with empty memoryIds', () => {
-      const heuristics = [
-        { heuristic_id: 'h1', derived_from: ['mem-1'] },
-      ];
+      const heuristics = [{ heuristic_id: 'h1', derived_from: ['mem-1'] }];
 
       const result = forgetting.invalidateHeuristics([], heuristics);
 
@@ -422,16 +416,12 @@ describe('Memory Forgetting', () => {
     });
 
     it('should log invalidated heuristics to audit', () => {
-      const heuristics = [
-        { heuristic_id: 'h1', derived_from: ['mem-1'] },
-      ];
+      const heuristics = [{ heuristic_id: 'h1', derived_from: ['mem-1'] }];
 
       forgetting.invalidateHeuristics(['mem-1'], heuristics);
 
       const events = auditLogger.export();
-      const invalidationEvents = events.filter(
-        (e) => e.details?.action === 'invalidated'
-      );
+      const invalidationEvents = events.filter((e) => e.details?.action === 'invalidated');
       expect(invalidationEvents).toHaveLength(1);
     });
 

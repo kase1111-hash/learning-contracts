@@ -17,12 +17,7 @@ import { ContractLifecycleManager } from '../src/contracts/lifecycle';
 import { ContractFactory } from '../src/contracts/factory';
 import { EnforcementEngine } from '../src/enforcement/engine';
 import { EmergencyOverrideManager } from '../src/emergency-override/manager';
-import {
-  AbstractionLevel,
-  BoundaryMode,
-  EnforcementContext,
-  LearningContract,
-} from '../src/types';
+import { AbstractionLevel, BoundaryMode, EnforcementContext, LearningContract } from '../src/types';
 
 describe('EnforcementEngine', () => {
   let auditLogger: AuditLogger;
@@ -90,9 +85,7 @@ describe('EnforcementEngine', () => {
       const result = engine.checkMemoryCreation(ctx, 0);
 
       expect(result.allowed).toBe(false);
-      expect(result.reason).toContain(
-        'Prohibited contract forbids memory creation'
-      );
+      expect(result.reason).toContain('Prohibited contract forbids memory creation');
     });
 
     test('should deny when memory_permissions.may_store is false (observation contract)', () => {
@@ -151,9 +144,7 @@ describe('EnforcementEngine', () => {
       const result = engine.checkMemoryCreation(ctx, 1);
 
       expect(result.allowed).toBe(false);
-      expect(result.reason).toContain(
-        "Context 'project-y' not in contract scope"
-      );
+      expect(result.reason).toContain("Context 'project-y' not in contract scope");
     });
 
     test('should deny when tool is not in scope', () => {
@@ -167,9 +158,7 @@ describe('EnforcementEngine', () => {
       const result = engine.checkMemoryCreation(ctx, 1);
 
       expect(result.allowed).toBe(false);
-      expect(result.reason).toContain(
-        "Tool 'docker' not in contract scope"
-      );
+      expect(result.reason).toContain("Tool 'docker' not in contract scope");
     });
 
     test('should deny when all scope arrays are empty and domain is specified (fail-closed)', () => {
@@ -226,9 +215,7 @@ describe('EnforcementEngine', () => {
       const result = engine.checkAbstraction(ctx, AbstractionLevel.RAW);
 
       expect(result.allowed).toBe(false);
-      expect(result.reason).toContain(
-        'Prohibited contract forbids abstraction'
-      );
+      expect(result.reason).toContain('Prohibited contract forbids abstraction');
     });
 
     test('should deny when generalization is not allowed (episodic contract)', () => {
@@ -273,9 +260,7 @@ describe('EnforcementEngine', () => {
       const result = engine.checkAbstraction(ctx, AbstractionLevel.PATTERN);
 
       expect(result.allowed).toBe(false);
-      expect(result.reason).toContain(
-        "Domain 'cooking' not in contract scope"
-      );
+      expect(result.reason).toContain("Domain 'cooking' not in contract scope");
     });
 
     test('should deny when scope check fails due to context mismatch', () => {
@@ -292,9 +277,7 @@ describe('EnforcementEngine', () => {
       const result = engine.checkAbstraction(ctx, AbstractionLevel.PATTERN);
 
       expect(result.allowed).toBe(false);
-      expect(result.reason).toContain(
-        "Context 'project-beta' not in contract scope"
-      );
+      expect(result.reason).toContain("Context 'project-beta' not in contract scope");
     });
 
     test('should allow valid abstraction within scope and level', () => {
@@ -419,9 +402,7 @@ describe('EnforcementEngine', () => {
       const result = engine.checkRecall(ctx);
 
       expect(result.allowed).toBe(false);
-      expect(result.reason).toContain(
-        "Domain 'cooking' not in contract scope"
-      );
+      expect(result.reason).toContain("Domain 'cooking' not in contract scope");
     });
 
     test('should allow valid recall with owner present and scope matching', () => {
@@ -606,9 +587,10 @@ describe('EnforcementEngine', () => {
     ])(
       'should block %s when emergency override is active',
       (hookName, contractType, needsRequester, hookFn) => {
-        const factory = contractType === 'episodic'
-          ? ContractFactory.createEpisodicContract
-          : ContractFactory.createProceduralContract;
+        const factory =
+          contractType === 'episodic'
+            ? ContractFactory.createEpisodicContract
+            : ContractFactory.createProceduralContract;
         const draft = factory('owner', { domains: ['coding'] });
         if (hookName === 'checkExport') {
           draft.scope.transferable = true;

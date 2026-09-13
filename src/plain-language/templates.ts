@@ -47,7 +47,7 @@ const COMMON_QUESTIONS: Record<string, ConversationQuestion> = {
     answerType: 'confirm',
     defaultValue: false,
     required: false,
-    helpText: 'If yes, you\'ll be asked each time. If no, memories can be recalled automatically.',
+    helpText: "If yes, you'll be asked each time. If no, memories can be recalled automatically.",
   },
 };
 
@@ -58,8 +58,20 @@ const COMMON_QUESTIONS: Record<string, ConversationQuestion> = {
 const CODING_TEMPLATE: ContractTemplate = {
   id: 'coding-best-practices',
   name: 'Coding Best Practices',
-  description: 'Learn and remember reusable coding tips, patterns, and best practices from your programming sessions.',
-  keywords: ['coding', 'programming', 'code', 'best practice', 'tip', 'pattern', 'technique', 'python', 'javascript', 'typescript'],
+  description:
+    'Learn and remember reusable coding tips, patterns, and best practices from your programming sessions.',
+  keywords: [
+    'coding',
+    'programming',
+    'code',
+    'best practice',
+    'tip',
+    'pattern',
+    'technique',
+    'python',
+    'javascript',
+    'typescript',
+  ],
   defaults: {
     contractType: ContractType.PROCEDURAL,
     domains: ['coding'],
@@ -88,7 +100,8 @@ const CODING_TEMPLATE: ContractTemplate = {
     COMMON_QUESTIONS.tools,
     COMMON_QUESTIONS.recallApproval,
   ],
-  exampleSummary: 'You allow the assistant to learn and reuse coding best practices from your Python sessions in personal projects using VS Code. These tips will be stored permanently and applied automatically in similar future sessions. Nothing will be shared outside this system. You can revoke this contract at any time.',
+  exampleSummary:
+    'You allow the assistant to learn and reuse coding best practices from your Python sessions in personal projects using VS Code. These tips will be stored permanently and applied automatically in similar future sessions. Nothing will be shared outside this system. You can revoke this contract at any time.',
 };
 
 /**
@@ -98,8 +111,19 @@ const CODING_TEMPLATE: ContractTemplate = {
 const GAMING_TEMPLATE: ContractTemplate = {
   id: 'gaming-streaming',
   name: 'Gaming & Streaming Moments',
-  description: 'Capture and remember specific gameplay moments, strategies, or highlights from your streams.',
-  keywords: ['gaming', 'game', 'stream', 'streaming', 'gameplay', 'twitch', 'play', 'moment', 'highlight'],
+  description:
+    'Capture and remember specific gameplay moments, strategies, or highlights from your streams.',
+  keywords: [
+    'gaming',
+    'game',
+    'stream',
+    'streaming',
+    'gameplay',
+    'twitch',
+    'play',
+    'moment',
+    'highlight',
+  ],
   defaults: {
     contractType: ContractType.EPISODIC,
     domains: ['gaming'],
@@ -135,7 +159,8 @@ const GAMING_TEMPLATE: ContractTemplate = {
     COMMON_QUESTIONS.retentionDuration,
     COMMON_QUESTIONS.recallApproval,
   ],
-  exampleSummary: 'You allow the assistant to capture and store specific moments from your Fortnite streams on Twitch. Each moment is saved separately — no combining into general strategies. Memories are kept for 30 days, then automatically frozen. Recall requires your approval each time. Nothing is ever shared outside this system.',
+  exampleSummary:
+    'You allow the assistant to capture and store specific moments from your Fortnite streams on Twitch. Each moment is saved separately — no combining into general strategies. Memories are kept for 30 days, then automatically frozen. Recall requires your approval each time. Nothing is ever shared outside this system.',
 };
 
 /**
@@ -145,7 +170,8 @@ const GAMING_TEMPLATE: ContractTemplate = {
 const JOURNAL_TEMPLATE: ContractTemplate = {
   id: 'personal-journal',
   name: 'Personal Journal',
-  description: 'Allow observation of personal reflections for the current session only, without storing any memories.',
+  description:
+    'Allow observation of personal reflections for the current session only, without storing any memories.',
   keywords: ['personal', 'journal', 'diary', 'reflection', 'private', 'thoughts', 'feelings'],
   defaults: {
     contractType: ContractType.OBSERVATION,
@@ -168,7 +194,8 @@ const JOURNAL_TEMPLATE: ContractTemplate = {
       required: true,
     },
   ],
-  exampleSummary: 'You allow the assistant to observe your personal journaling session. It will help you in the moment but will NOT store any memories. Everything is forgotten when the session ends. Your private thoughts remain private.',
+  exampleSummary:
+    'You allow the assistant to observe your personal journaling session. It will help you in the moment but will NOT store any memories. Everything is forgotten when the session ends. Your private thoughts remain private.',
 };
 
 /**
@@ -178,7 +205,8 @@ const JOURNAL_TEMPLATE: ContractTemplate = {
 const WORK_TEMPLATE: ContractTemplate = {
   id: 'work-projects',
   name: 'Work Projects',
-  description: 'Learn helpful patterns from your professional work while keeping sensitive data protected.',
+  description:
+    'Learn helpful patterns from your professional work while keeping sensitive data protected.',
   keywords: ['work', 'professional', 'business', 'job', 'project', 'client', 'office'],
   defaults: {
     contractType: ContractType.PROCEDURAL,
@@ -214,7 +242,8 @@ const WORK_TEMPLATE: ContractTemplate = {
       helpText: 'If yes, additional protections will be applied.',
     },
   ],
-  exampleSummary: 'You allow the assistant to learn general work patterns from your professional projects. No client-specific or confidential data will be stored. Patterns are kept for 90 days and require your approval to recall. Higher trust mode is required for access.',
+  exampleSummary:
+    'You allow the assistant to learn general work patterns from your professional projects. No client-specific or confidential data will be stored. Patterns are kept for 90 days and require your approval to recall. Higher trust mode is required for access.',
 };
 
 /**
@@ -224,8 +253,19 @@ const WORK_TEMPLATE: ContractTemplate = {
 const PROHIBITED_TEMPLATE: ContractTemplate = {
   id: 'prohibited-domains',
   name: 'Prohibited Domains',
-  description: 'Explicitly forbid any learning in specified sensitive domains like medical, financial, or legal.',
-  keywords: ['never', 'prohibit', 'forbid', 'block', 'medical', 'financial', 'legal', 'sensitive', 'off-limits'],
+  description:
+    'Explicitly forbid any learning in specified sensitive domains like medical, financial, or legal.',
+  keywords: [
+    'never',
+    'prohibit',
+    'forbid',
+    'block',
+    'medical',
+    'financial',
+    'legal',
+    'sensitive',
+    'off-limits',
+  ],
   defaults: {
     contractType: ContractType.PROHIBITED,
     domains: [],
@@ -247,7 +287,8 @@ const PROHIBITED_TEMPLATE: ContractTemplate = {
       helpText: 'Examples: medical, financial, legal. These will override all other contracts.',
     },
   ],
-  exampleSummary: 'You PROHIBIT all learning in medical, financial, and legal domains. The assistant will never store any memories or learn any patterns from these areas. This overrides any other contracts. This prohibition cannot be revoked, only amended.',
+  exampleSummary:
+    'You PROHIBIT all learning in medical, financial, and legal domains. The assistant will never store any memories or learn any patterns from these areas. This overrides any other contracts. This prohibition cannot be revoked, only amended.',
 };
 
 /**
@@ -282,7 +323,8 @@ const STUDY_TEMPLATE: ContractTemplate = {
     COMMON_QUESTIONS.tools,
     COMMON_QUESTIONS.recallApproval,
   ],
-  exampleSummary: 'You allow the assistant to capture and store specific learnings from your study sessions on machine learning. Each insight is kept separately for easy recall. Memories are stored permanently until you revoke. You can review stored learnings at any time.',
+  exampleSummary:
+    'You allow the assistant to capture and store specific learnings from your study sessions on machine learning. Each insight is kept separately for easy recall. Memories are stored permanently until you revoke. You can review stored learnings at any time.',
 };
 
 /**
@@ -292,8 +334,17 @@ const STUDY_TEMPLATE: ContractTemplate = {
 const STRATEGIC_TEMPLATE: ContractTemplate = {
   id: 'strategic-planning',
   name: 'Strategic Planning',
-  description: 'Allow deep strategic learning for long-term planning and decision-making. Requires high trust mode.',
-  keywords: ['strategy', 'strategic', 'planning', 'long-term', 'decision', 'big picture', 'comprehensive'],
+  description:
+    'Allow deep strategic learning for long-term planning and decision-making. Requires high trust mode.',
+  keywords: [
+    'strategy',
+    'strategic',
+    'planning',
+    'long-term',
+    'decision',
+    'big picture',
+    'comprehensive',
+  ],
   defaults: {
     contractType: ContractType.STRATEGIC,
     domains: [],
@@ -324,10 +375,12 @@ const STRATEGIC_TEMPLATE: ContractTemplate = {
       answerType: 'confirm',
       defaultValue: false,
       required: true,
-      helpText: 'This means the assistant will only recall strategic learnings in trusted or privileged environments.',
+      helpText:
+        'This means the assistant will only recall strategic learnings in trusted or privileged environments.',
     },
   ],
-  exampleSummary: 'You allow the assistant to build long-term strategic insights for business planning. This deep learning requires trusted mode and your approval to recall. Strategies are built from high-confidence patterns only and reviewed by you. This is a powerful contract for building genuine partnership.',
+  exampleSummary:
+    'You allow the assistant to build long-term strategic insights for business planning. This deep learning requires trusted mode and your approval to recall. Strategies are built from high-confidence patterns only and reviewed by you. This is a powerful contract for building genuine partnership.',
 };
 
 /**
@@ -347,14 +400,14 @@ export const CONTRACT_TEMPLATES: ContractTemplate[] = [
  * Get template by ID
  */
 export function getTemplateById(id: string): ContractTemplate | null {
-  return CONTRACT_TEMPLATES.find(t => t.id === id) || null;
+  return CONTRACT_TEMPLATES.find((t) => t.id === id) || null;
 }
 
 /**
  * Get templates by contract type
  */
 export function getTemplatesByType(type: ContractType): ContractTemplate[] {
-  return CONTRACT_TEMPLATES.filter(t => t.defaults.contractType === type);
+  return CONTRACT_TEMPLATES.filter((t) => t.defaults.contractType === type);
 }
 
 /**
@@ -362,11 +415,15 @@ export function getTemplatesByType(type: ContractType): ContractTemplate[] {
  */
 export function searchTemplates(query: string): ContractTemplate[] {
   const normalizedQuery = query.toLowerCase();
-  return CONTRACT_TEMPLATES.filter(template => {
+  return CONTRACT_TEMPLATES.filter((template) => {
     // Check name and description
-    if (template.name.toLowerCase().includes(normalizedQuery)) {return true;}
-    if (template.description.toLowerCase().includes(normalizedQuery)) {return true;}
+    if (template.name.toLowerCase().includes(normalizedQuery)) {
+      return true;
+    }
+    if (template.description.toLowerCase().includes(normalizedQuery)) {
+      return true;
+    }
     // Check keywords
-    return template.keywords.some(k => k.includes(normalizedQuery));
+    return template.keywords.some((k) => k.includes(normalizedQuery));
   });
 }

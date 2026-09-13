@@ -272,7 +272,9 @@ export class UserManager {
    */
   getUser(userId: string): User | null {
     const user = this.users.get(userId);
-    return user ? { ...user, connection: user.connection ? { ...user.connection } : undefined } : null;
+    return user
+      ? { ...user, connection: user.connection ? { ...user.connection } : undefined }
+      : null;
   }
 
   /**

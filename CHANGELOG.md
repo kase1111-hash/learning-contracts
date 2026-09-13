@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- `LearningContractsSystem` no longer keeps the Node.js process alive. The rate-limiter cleanup interval, the timebound-expiry polling interval, and the emergency-override auto-disable timeout are now `unref()`'d, and a new `system.destroy()` method releases all of them explicitly.
+- Workspace packages (`@learning-contracts/boundary-adapter`, `@learning-contracts/vault-adapter`) now build. Their `tsconfig.json` no longer maps `learning-contracts` to the root sources, which caused `rootDir` errors and emitted compiled files next to the root `src/`. Tests keep resolving against source via a dedicated `tsconfig.test.json`.
+- `examples/basic-usage.ts` compiles again against the current `LearningScope` type and actually runs when executed directly.
+- Lint errors introduced by the ESLint 10 / typescript-eslint 8.57 upgrade (`preserve-caught-error`, unsafe `any` in audit persistence).
+- All source and test files are now Prettier-formatted, so `npm run format:check` passes in CI.
+- `npm audit` reports zero vulnerabilities (`uuid` patched to 13.0.2, dev-dependency advisories resolved).
+
+### Added
+
+- `npm run example:basic` and `npm run example:agent` run the examples directly from TypeScript via `tsx`.
+- `npm run build:all` builds the root package and both workspace packages.
+- CI now builds and tests the workspace packages.
+
 ## [0.1.0-alpha] - 2026-01-01
 
 ### Added

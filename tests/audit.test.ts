@@ -176,12 +176,7 @@ describe('AuditLogger', () => {
     });
 
     test('stores previous and new state on the event', () => {
-      logger.logStateTransition(
-        'contract-001',
-        'alice',
-        ContractState.DRAFT,
-        ContractState.REVIEW
-      );
+      logger.logStateTransition('contract-001', 'alice', ContractState.DRAFT, ContractState.REVIEW);
 
       const event = logger.export()[0];
       expect(event.previous_state).toBe(ContractState.DRAFT);
@@ -374,11 +369,12 @@ describe('AuditLogger', () => {
       expect(events[0].details.memory_ids).toEqual(memoryIds);
       expect(events[0].details.derived_memory_ids).toEqual(derivedIds);
       expect(events[0].details.total_affected).toBe(2);
-      const ownerConfirmation = events[0].details.owner_confirmation as { token: string; timestamp: Date };
+      const ownerConfirmation = events[0].details.owner_confirmation as {
+        token: string;
+        timestamp: Date;
+      };
       expect(ownerConfirmation.token).toBe('token-abc');
-      expect(ownerConfirmation.timestamp).toEqual(
-        new Date('2026-02-01T12:00:00Z')
-      );
+      expect(ownerConfirmation.timestamp).toEqual(new Date('2026-02-01T12:00:00Z'));
     });
   });
 
@@ -485,12 +481,7 @@ describe('AuditLogger', () => {
     });
 
     test('logs custom event with optional contractId', () => {
-      logger.logCustomEvent(
-        'contract_note',
-        { note: 'reviewed' },
-        'alice',
-        'contract-001'
-      );
+      logger.logCustomEvent('contract_note', { note: 'reviewed' }, 'alice', 'contract-001');
 
       const events = logger.export();
       expect(events[0].contract_id).toBe('contract-001');
@@ -574,17 +565,16 @@ describe('AuditLogger', () => {
       // Event 1: contract created (actor: alice)
       logger.logContractCreated(contract, 'alice');
       // Event 2: enforcement check allowed (actor: system)
-      logger.logEnforcementCheck(
-        'memory_creation',
-        makeEnforcementContext(contract),
-        { allowed: true, contract_id: 'contract-001' }
-      );
+      logger.logEnforcementCheck('memory_creation', makeEnforcementContext(contract), {
+        allowed: true,
+        contract_id: 'contract-001',
+      });
       // Event 3: enforcement check denied + Event 4: violation (actor: system)
-      logger.logEnforcementCheck(
-        'export',
-        makeEnforcementContext(contract),
-        { allowed: false, reason: 'Not allowed', contract_id: 'contract-001' }
-      );
+      logger.logEnforcementCheck('export', makeEnforcementContext(contract), {
+        allowed: false,
+        reason: 'Not allowed',
+        contract_id: 'contract-001',
+      });
       // Event 5: memory created on different contract (actor: bob)
       logger.logMemoryCreated('contract-002', 'mem-050', 2, 'bob');
       // Event 6: generalization allowed (actor: system)
@@ -756,25 +746,24 @@ describe('AuditLogger', () => {
       const contract = makeContract();
 
       // Allowed check (no violation)
-      logger.logEnforcementCheck(
-        'memory_creation',
-        makeEnforcementContext(contract),
-        { allowed: true, contract_id: contract.contract_id }
-      );
+      logger.logEnforcementCheck('memory_creation', makeEnforcementContext(contract), {
+        allowed: true,
+        contract_id: contract.contract_id,
+      });
 
       // Denied check (creates violation)
-      logger.logEnforcementCheck(
-        'export',
-        makeEnforcementContext(contract),
-        { allowed: false, reason: 'Denied', contract_id: contract.contract_id }
-      );
+      logger.logEnforcementCheck('export', makeEnforcementContext(contract), {
+        allowed: false,
+        reason: 'Denied',
+        contract_id: contract.contract_id,
+      });
 
       // Another denied check
-      logger.logEnforcementCheck(
-        'abstraction',
-        makeEnforcementContext(contract),
-        { allowed: false, reason: 'Scope too broad', contract_id: contract.contract_id }
-      );
+      logger.logEnforcementCheck('abstraction', makeEnforcementContext(contract), {
+        allowed: false,
+        reason: 'Scope too broad',
+        contract_id: contract.contract_id,
+      });
 
       const violations = logger.getViolations();
       expect(violations).toHaveLength(2);
@@ -785,11 +774,10 @@ describe('AuditLogger', () => {
 
     test('returns empty when no violations exist', () => {
       const contract = makeContract();
-      logger.logEnforcementCheck(
-        'memory_creation',
-        makeEnforcementContext(contract),
-        { allowed: true, contract_id: contract.contract_id }
-      );
+      logger.logEnforcementCheck('memory_creation', makeEnforcementContext(contract), {
+        allowed: true,
+        contract_id: contract.contract_id,
+      });
 
       const violations = logger.getViolations();
       expect(violations).toEqual([]);
@@ -799,17 +787,17 @@ describe('AuditLogger', () => {
       const contract1 = makeContract({ contract_id: 'c-001' });
       const contract2 = makeContract({ contract_id: 'c-002' });
 
-      logger.logEnforcementCheck(
-        'export',
-        makeEnforcementContext(contract1),
-        { allowed: false, reason: 'Denied', contract_id: 'c-001' }
-      );
+      logger.logEnforcementCheck('export', makeEnforcementContext(contract1), {
+        allowed: false,
+        reason: 'Denied',
+        contract_id: 'c-001',
+      });
 
-      logger.logEnforcementCheck(
-        'recall',
-        makeEnforcementContext(contract2),
-        { allowed: false, reason: 'Denied', contract_id: 'c-002' }
-      );
+      logger.logEnforcementCheck('recall', makeEnforcementContext(contract2), {
+        allowed: false,
+        reason: 'Denied',
+        contract_id: 'c-002',
+      });
 
       const violations = logger.getViolations({ contract_id: 'c-001' });
       expect(violations).toHaveLength(1);
@@ -947,11 +935,11 @@ describe('AuditLogger', () => {
       expect(logger.getEventCount()).toBe(2);
 
       // Denied enforcement creates 2 events (check + violation)
-      logger.logEnforcementCheck(
-        'export',
-        makeEnforcementContext(contract),
-        { allowed: false, reason: 'No', contract_id: contract.contract_id }
-      );
+      logger.logEnforcementCheck('export', makeEnforcementContext(contract), {
+        allowed: false,
+        reason: 'No',
+        contract_id: contract.contract_id,
+      });
       expect(logger.getEventCount()).toBe(4);
     });
   });

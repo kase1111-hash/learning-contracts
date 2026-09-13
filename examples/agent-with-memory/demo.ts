@@ -35,35 +35,45 @@ function log(label: string, message: string): void {
 console.log('\n--- Step 1: Create and activate a learning contract ---');
 console.log('Alice allows the agent to learn coding tips in project-alpha.\n');
 
-let contract = system.createEpisodicContract('alice', {
-  domains: ['coding'],
-  contexts: ['project-alpha'],
-  tools: ['editor'],
-}, {
-  classificationCap: 3,
-  retention: RetentionDuration.TIMEBOUND,
-  retentionUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
-});
+let contract = system.createEpisodicContract(
+  'alice',
+  {
+    domains: ['coding'],
+    contexts: ['project-alpha'],
+    tools: ['editor'],
+  },
+  {
+    classificationCap: 3,
+    retention: RetentionDuration.TIMEBOUND,
+    retentionUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+  }
+);
 
 contract = system.submitForReview(contract.contract_id, 'alice');
 contract = system.activateContract(contract.contract_id, 'alice');
 
 log('CONTRACT', `Created and activated: ${contract.contract_id}`);
 log('CONTRACT', `Type: ${contract.contract_type}, State: ${contract.state}`);
-log('CONTRACT', `Scope: domains=[${contract.scope.domains}], contexts=[${contract.scope.contexts}]`);
+log(
+  'CONTRACT',
+  `Scope: domains=[${contract.scope.domains}], contexts=[${contract.scope.contexts}]`
+);
 
 // ─── 2. Agent stores a memory (allowed) ─────────────────────────
 
 console.log('\n--- Step 2: Agent stores a memory (within scope) ---\n');
 
 async function runDemo(): Promise<void> {
-  const storeResult = await governed.store({
-    content: 'In project-alpha, async/await is preferred over .then() chains',
-    classification: 2,
-    domain: 'coding',
-    context: 'project-alpha',
-    tool: 'editor',
-  }, contract.contract_id);
+  const storeResult = await governed.store(
+    {
+      content: 'In project-alpha, async/await is preferred over .then() chains',
+      classification: 2,
+      domain: 'coding',
+      context: 'project-alpha',
+      tool: 'editor',
+    },
+    contract.contract_id
+  );
 
   if (storeResult.allowed) {
     log('STORE', `Memory stored: ${storeResult.result!.memory_id}`);
@@ -76,11 +86,14 @@ async function runDemo(): Promise<void> {
 
   console.log('\n--- Step 3: Agent recalls the memory (within scope) ---\n');
 
-  const recallResult = await governed.recall({
-    domain: 'coding',
-    context: 'project-alpha',
-    requester: 'alice',
-  }, contract.contract_id);
+  const recallResult = await governed.recall(
+    {
+      domain: 'coding',
+      context: 'project-alpha',
+      requester: 'alice',
+    },
+    contract.contract_id
+  );
 
   if (recallResult.allowed && recallResult.result) {
     log('RECALL', `Found ${recallResult.result.length} memory(ies)`);
@@ -95,12 +108,15 @@ async function runDemo(): Promise<void> {
 
   console.log('\n--- Step 4: Agent tries to store outside scope (denied) ---\n');
 
-  const deniedResult = await governed.store({
-    content: 'Alice prefers dark mode',
-    classification: 2,
-    domain: 'personal-preferences',  // NOT in contract scope
-    context: 'project-alpha',
-  }, contract.contract_id);
+  const deniedResult = await governed.store(
+    {
+      content: 'Alice prefers dark mode',
+      classification: 2,
+      domain: 'personal-preferences', // NOT in contract scope
+      context: 'project-alpha',
+    },
+    contract.contract_id
+  );
 
   if (deniedResult.allowed) {
     log('STORE', `Memory stored (unexpected!)`);
@@ -115,7 +131,7 @@ async function runDemo(): Promise<void> {
   const noContractResult = await governed.storeWithDiscovery({
     content: 'Secret financial data',
     classification: 4,
-    domain: 'finance',  // No contract covers finance
+    domain: 'finance', // No contract covers finance
   });
 
   if (noContractResult.allowed) {
@@ -143,11 +159,14 @@ async function runDemo(): Promise<void> {
 
   console.log('\n--- Step 7: Agent tries to recall after revocation (denied) ---\n');
 
-  const postRevokeRecall = await governed.recall({
-    domain: 'coding',
-    context: 'project-alpha',
-    requester: 'alice',
-  }, contract.contract_id);
+  const postRevokeRecall = await governed.recall(
+    {
+      domain: 'coding',
+      context: 'project-alpha',
+      requester: 'alice',
+    },
+    contract.contract_id
+  );
 
   if (postRevokeRecall.allowed) {
     log('RECALL', `Allowed (unexpected!)`);
@@ -180,6 +199,9 @@ async function runDemo(): Promise<void> {
   console.log('  - Complete audit trail preserved');
   console.log('  - Memory store has', store.size(), 'memories remaining');
   console.log();
+
+  // Release timers so the process can exit
+  system.destroy();
 }
 
 runDemo().catch(console.error);

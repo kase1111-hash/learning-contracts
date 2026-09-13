@@ -402,13 +402,9 @@ describe('Multi-User Support', () => {
         permissionManager.setOwner('contract-1', 'alice', permissionManager.getInternalToken());
 
         const expiration = new Date(Date.now() + 60000); // 1 minute from now
-        permissionManager.grantPermission(
-          'contract-1',
-          'alice',
-          'bob',
-          PermissionLevel.DELEGATE,
-          { expires_at: expiration }
-        );
+        permissionManager.grantPermission('contract-1', 'alice', 'bob', PermissionLevel.DELEGATE, {
+          expires_at: expiration,
+        });
 
         const perms = permissionManager.getContractPermissions('contract-1');
         const bobPerm = perms.find((p) => p.user_id === 'bob');
@@ -420,12 +416,7 @@ describe('Multi-User Support', () => {
     describe('Revoking Permissions', () => {
       test('should allow owner to revoke permissions', () => {
         permissionManager.setOwner('contract-1', 'alice', permissionManager.getInternalToken());
-        permissionManager.grantPermission(
-          'contract-1',
-          'alice',
-          'bob',
-          PermissionLevel.DELEGATE
-        );
+        permissionManager.grantPermission('contract-1', 'alice', 'bob', PermissionLevel.DELEGATE);
 
         const result = permissionManager.revokePermission('contract-1', 'alice', 'bob');
 
@@ -435,12 +426,7 @@ describe('Multi-User Support', () => {
 
       test('should not allow non-owner to revoke permissions', () => {
         permissionManager.setOwner('contract-1', 'alice', permissionManager.getInternalToken());
-        permissionManager.grantPermission(
-          'contract-1',
-          'alice',
-          'bob',
-          PermissionLevel.DELEGATE
-        );
+        permissionManager.grantPermission('contract-1', 'alice', 'bob', PermissionLevel.DELEGATE);
 
         const result = permissionManager.revokePermission('contract-1', 'bob', 'charlie');
 
@@ -488,12 +474,7 @@ describe('Multi-User Support', () => {
     describe('Permission Checking', () => {
       test('should check if user has required permission level', () => {
         permissionManager.setOwner('contract-1', 'alice', permissionManager.getInternalToken());
-        permissionManager.grantPermission(
-          'contract-1',
-          'alice',
-          'bob',
-          PermissionLevel.DELEGATE
-        );
+        permissionManager.grantPermission('contract-1', 'alice', 'bob', PermissionLevel.DELEGATE);
 
         // Owner has all permissions
         expect(
@@ -520,18 +501,8 @@ describe('Multi-User Support', () => {
 
       test('should check operation permissions', () => {
         permissionManager.setOwner('contract-1', 'alice', permissionManager.getInternalToken());
-        permissionManager.grantPermission(
-          'contract-1',
-          'alice',
-          'bob',
-          PermissionLevel.DELEGATE
-        );
-        permissionManager.grantPermission(
-          'contract-1',
-          'alice',
-          'charlie',
-          PermissionLevel.READER
-        );
+        permissionManager.grantPermission('contract-1', 'alice', 'bob', PermissionLevel.DELEGATE);
+        permissionManager.grantPermission('contract-1', 'alice', 'charlie', PermissionLevel.READER);
 
         // Owner can do everything
         expect(permissionManager.checkOperation('contract-1', 'alice', 'read').allowed).toBe(true);
@@ -544,9 +515,7 @@ describe('Multi-User Support', () => {
         // Delegate can read and use
         expect(permissionManager.checkOperation('contract-1', 'bob', 'read').allowed).toBe(true);
         expect(permissionManager.checkOperation('contract-1', 'bob', 'use').allowed).toBe(true);
-        expect(permissionManager.checkOperation('contract-1', 'bob', 'modify').allowed).toBe(
-          false
-        );
+        expect(permissionManager.checkOperation('contract-1', 'bob', 'modify').allowed).toBe(false);
         expect(permissionManager.checkOperation('contract-1', 'bob', 'share').allowed).toBe(false);
 
         // Reader can only read
@@ -562,18 +531,8 @@ describe('Multi-User Support', () => {
     describe('Permission Queries', () => {
       test('should get all permissions on a contract', () => {
         permissionManager.setOwner('contract-1', 'alice', permissionManager.getInternalToken());
-        permissionManager.grantPermission(
-          'contract-1',
-          'alice',
-          'bob',
-          PermissionLevel.DELEGATE
-        );
-        permissionManager.grantPermission(
-          'contract-1',
-          'alice',
-          'charlie',
-          PermissionLevel.READER
-        );
+        permissionManager.grantPermission('contract-1', 'alice', 'bob', PermissionLevel.DELEGATE);
+        permissionManager.grantPermission('contract-1', 'alice', 'charlie', PermissionLevel.READER);
 
         const perms = permissionManager.getContractPermissions('contract-1');
 
@@ -592,22 +551,17 @@ describe('Multi-User Support', () => {
           'charlie',
           PermissionLevel.DELEGATE
         );
-        permissionManager.grantPermission(
-          'contract-2',
-          'bob',
-          'charlie',
-          PermissionLevel.READER
-        );
+        permissionManager.grantPermission('contract-2', 'bob', 'charlie', PermissionLevel.READER);
 
         const charlieContracts = permissionManager.getUserContracts('charlie');
 
         expect(charlieContracts.length).toBe(2);
-        expect(
-          charlieContracts.find((c) => c.contractId === 'contract-1')?.level
-        ).toBe(PermissionLevel.DELEGATE);
-        expect(
-          charlieContracts.find((c) => c.contractId === 'contract-2')?.level
-        ).toBe(PermissionLevel.READER);
+        expect(charlieContracts.find((c) => c.contractId === 'contract-1')?.level).toBe(
+          PermissionLevel.DELEGATE
+        );
+        expect(charlieContracts.find((c) => c.contractId === 'contract-2')?.level).toBe(
+          PermissionLevel.READER
+        );
       });
     });
 
@@ -617,18 +571,12 @@ describe('Multi-User Support', () => {
 
         // Grant a permission that's already expired
         const pastDate = new Date(Date.now() - 1000);
-        permissionManager.grantPermission(
-          'contract-1',
-          'alice',
-          'bob',
-          PermissionLevel.DELEGATE,
-          { expires_at: pastDate }
-        );
+        permissionManager.grantPermission('contract-1', 'alice', 'bob', PermissionLevel.DELEGATE, {
+          expires_at: pastDate,
+        });
 
         // Permission should not be returned as active
-        expect(
-          permissionManager.getUserPermissionLevel('contract-1', 'bob')
-        ).toBeUndefined();
+        expect(permissionManager.getUserPermissionLevel('contract-1', 'bob')).toBeUndefined();
 
         const removed = permissionManager.cleanupExpired();
         expect(removed).toBe(1);
@@ -741,14 +689,12 @@ describe('Multi-User Support', () => {
           PermissionLevel.DELEGATE
         );
 
-        const result = system.permissions.revokePermission(
-          contract.contract_id,
-          'alice',
-          'bob'
-        );
+        const result = system.permissions.revokePermission(contract.contract_id, 'alice', 'bob');
 
         expect(result.allowed).toBe(true);
-        expect(system.permissions.getUserPermissionLevel(contract.contract_id, 'bob')).toBeUndefined();
+        expect(
+          system.permissions.getUserPermissionLevel(contract.contract_id, 'bob')
+        ).toBeUndefined();
       });
 
       test('should transfer ownership through the system', () => {
@@ -756,11 +702,7 @@ describe('Multi-User Support', () => {
           domains: ['coding'],
         });
 
-        const result = system.permissions.transferOwnership(
-          contract.contract_id,
-          'alice',
-          'bob'
-        );
+        const result = system.permissions.transferOwnership(contract.contract_id, 'alice', 'bob');
 
         expect(result.allowed).toBe(true);
         expect(system.permissions.getOwner(contract.contract_id)).toBe('bob');
@@ -800,9 +742,9 @@ describe('Multi-User Support', () => {
         expect(system.permissions.checkOperation(contract.contract_id, 'bob', 'use').allowed).toBe(
           true
         );
-        expect(system.permissions.checkOperation(contract.contract_id, 'bob', 'modify').allowed).toBe(
-          false
-        );
+        expect(
+          system.permissions.checkOperation(contract.contract_id, 'bob', 'modify').allowed
+        ).toBe(false);
       });
 
       test('should get contracts for user', () => {

@@ -8,11 +8,7 @@
  * No framework dependency.
  */
 
-import {
-  BoundaryMode,
-  AbstractionLevel,
-  EnforcementResult,
-} from '../types';
+import { BoundaryMode, AbstractionLevel, EnforcementResult } from '../types';
 import { LearningContractsSystem } from '../system';
 
 /**
@@ -148,11 +144,7 @@ export function createEnforcementMiddleware(
     },
 
     checkOrDeny(context: StoreContext): EnforcementResult {
-      const contract = system.findApplicableContract(
-        context.domain,
-        context.context,
-        context.tool
-      );
+      const contract = system.findApplicableContract(context.domain, context.context, context.tool);
 
       if (!contract) {
         return {
@@ -163,16 +155,11 @@ export function createEnforcementMiddleware(
       }
 
       const mode = context.boundaryMode ?? defaultBoundaryMode;
-      return system.checkMemoryCreation(
-        contract.contract_id,
-        mode,
-        context.classification,
-        {
-          domain: context.domain,
-          context: context.context,
-          tool: context.tool,
-        }
-      );
+      return system.checkMemoryCreation(contract.contract_id, mode, context.classification, {
+        domain: context.domain,
+        context: context.context,
+        tool: context.tool,
+      });
     },
   };
 }

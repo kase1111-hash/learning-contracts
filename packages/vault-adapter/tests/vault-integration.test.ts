@@ -2,16 +2,9 @@
  * Memory Vault Integration Tests
  */
 
-import {
-  LearningContractsSystem,
-  BoundaryMode,
-} from 'learning-contracts';
+import { LearningContractsSystem, BoundaryMode } from 'learning-contracts';
 
-import {
-  MockMemoryVaultAdapter,
-  ContractEnforcedVault,
-  ClassificationLevel,
-} from '../src';
+import { MockMemoryVaultAdapter, ContractEnforcedVault, ClassificationLevel } from '../src';
 
 describe('MockMemoryVaultAdapter', () => {
   let adapter: MockMemoryVaultAdapter;
@@ -195,7 +188,8 @@ describe('ContractEnforcedVault', () => {
     vault = new ContractEnforcedVault({
       adapter,
       contractResolver: (id: string) => system.getContract(id),
-      contractFinder: (domain, context, tool) => system.findApplicableContract(domain, context, tool),
+      contractFinder: (domain, context, tool) =>
+        system.findApplicableContract(domain, context, tool),
       boundaryMode: BoundaryMode.NORMAL,
       defaultActor: 'test-agent',
     });
@@ -280,9 +274,13 @@ describe('ContractEnforcedVault', () => {
     });
 
     test('should deny memory storage exceeding classification cap', async () => {
-      let contract = system.createEpisodicContract('alice', {
-        domains: ['test'],
-      }, { classificationCap: 2 });
+      let contract = system.createEpisodicContract(
+        'alice',
+        {
+          domains: ['test'],
+        },
+        { classificationCap: 2 }
+      );
       contract = system.submitForReview(contract.contract_id, 'alice');
       contract = system.activateContract(contract.contract_id, 'alice');
 
@@ -405,7 +403,8 @@ describe('ContractEnforcedVault', () => {
       const trustedVault = new ContractEnforcedVault({
         adapter,
         contractResolver: (id: string) => system.getContract(id),
-        contractFinder: (domain, context, tool) => system.findApplicableContract(domain, context, tool),
+        contractFinder: (domain, context, tool) =>
+          system.findApplicableContract(domain, context, tool),
         boundaryMode: BoundaryMode.TRUSTED,
         defaultActor: 'test-agent',
       });
@@ -462,7 +461,7 @@ describe('ContractEnforcedVault', () => {
       );
 
       expect(tombstones.length).toBe(3);
-      tombstones.forEach(t => {
+      tombstones.forEach((t) => {
         expect(t.reason).toBe('Contract revoked');
         expect(t.tombstoned_by).toBe('alice');
       });
@@ -486,10 +485,7 @@ describe('ContractEnforcedVault', () => {
         contract.contract_id
       );
 
-      const memories = await vault.queryMemories(
-        { contract_id: contract.contract_id },
-        'alice'
-      );
+      const memories = await vault.queryMemories({ contract_id: contract.contract_id }, 'alice');
 
       expect(memories.length).toBe(2);
     });
@@ -553,7 +549,8 @@ describe('ContractEnforcedVault - Direct Construction', () => {
     const vault = new ContractEnforcedVault({
       adapter,
       contractResolver: (id: string) => system.getContract(id),
-      contractFinder: (domain, context, tool) => system.findApplicableContract(domain, context, tool),
+      contractFinder: (domain, context, tool) =>
+        system.findApplicableContract(domain, context, tool),
       boundaryMode: BoundaryMode.NORMAL,
       defaultActor: 'test-agent',
     });
@@ -572,7 +569,8 @@ describe('ContractEnforcedVault - Direct Construction', () => {
     const vault = new ContractEnforcedVault({
       adapter,
       contractResolver: (id: string) => system.getContract(id),
-      contractFinder: (domain, context, tool) => system.findApplicableContract(domain, context, tool),
+      contractFinder: (domain, context, tool) =>
+        system.findApplicableContract(domain, context, tool),
       boundaryMode: BoundaryMode.NORMAL,
       defaultActor: 'test-agent',
     });
@@ -597,7 +595,8 @@ describe('ContractEnforcedVault - Direct Construction', () => {
     const vault = new ContractEnforcedVault({
       adapter,
       contractResolver: (id: string) => system.getContract(id),
-      contractFinder: (domain, context, tool) => system.findApplicableContract(domain, context, tool),
+      contractFinder: (domain, context, tool) =>
+        system.findApplicableContract(domain, context, tool),
       boundaryMode: BoundaryMode.NORMAL,
       defaultActor: 'test-agent',
     });
@@ -618,7 +617,8 @@ describe('ContractEnforcedVault - Direct Construction', () => {
     const vault = new ContractEnforcedVault({
       adapter,
       contractResolver: (id: string) => system.getContract(id),
-      contractFinder: (domain, context, tool) => system.findApplicableContract(domain, context, tool),
+      contractFinder: (domain, context, tool) =>
+        system.findApplicableContract(domain, context, tool),
       boundaryMode: BoundaryMode.NORMAL,
       defaultActor: 'agent',
     });
@@ -631,11 +631,14 @@ describe('ContractEnforcedVault - Direct Construction', () => {
     contract = system.activateContract(contract.contract_id, 'alice');
 
     // Store a memory
-    const storeResult = await vault.storeMemory({
-      content: 'test memory',
-      classification: ClassificationLevel.LOW,
-      domain: 'coding',
-    }, contract.contract_id);
+    const storeResult = await vault.storeMemory(
+      {
+        content: 'test memory',
+        classification: ClassificationLevel.LOW,
+        domain: 'coding',
+      },
+      contract.contract_id
+    );
 
     expect(storeResult.success).toBe(true);
 
@@ -656,7 +659,8 @@ describe('ContractEnforcedVault - Direct Construction', () => {
     const vault = new ContractEnforcedVault({
       adapter,
       contractResolver: (id: string) => system.getContract(id),
-      contractFinder: (domain, context, tool) => system.findApplicableContract(domain, context, tool),
+      contractFinder: (domain, context, tool) =>
+        system.findApplicableContract(domain, context, tool),
       boundaryMode: BoundaryMode.NORMAL,
       defaultActor: 'agent',
     });
@@ -669,11 +673,14 @@ describe('ContractEnforcedVault - Direct Construction', () => {
     contract = system.activateContract(contract.contract_id, 'alice');
 
     // Store a memory
-    const storeResult = await vault.storeMemory({
-      content: 'test memory',
-      classification: ClassificationLevel.LOW,
-      domain: 'coding',
-    }, contract.contract_id);
+    const storeResult = await vault.storeMemory(
+      {
+        content: 'test memory',
+        classification: ClassificationLevel.LOW,
+        domain: 'coding',
+      },
+      contract.contract_id
+    );
 
     expect(storeResult.success).toBe(true);
 

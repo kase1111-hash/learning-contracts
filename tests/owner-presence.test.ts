@@ -2,10 +2,7 @@
  * Owner Presence Validation Tests
  */
 
-import {
-  LearningContractsSystem,
-  BoundaryMode,
-} from '../src';
+import { LearningContractsSystem, BoundaryMode } from '../src';
 
 describe('Owner Presence Validation', () => {
   let system: LearningContractsSystem;
@@ -17,9 +14,13 @@ describe('Owner Presence Validation', () => {
   describe('Enforcement Engine - checkRecall', () => {
     test('should allow recall when requires_owner is false', () => {
       // Create a contract with requires_owner = false
-      let contract = system.createEpisodicContract('alice', {
-        domains: ['coding'],
-      }, { requiresOwner: false });
+      let contract = system.createEpisodicContract(
+        'alice',
+        {
+          domains: ['coding'],
+        },
+        { requiresOwner: false }
+      );
       contract = system.submitForReview(contract.contract_id, 'alice');
       contract = system.activateContract(contract.contract_id, 'alice');
 
@@ -164,9 +165,7 @@ describe('Owner Presence Validation', () => {
       const violations = system.getViolations();
       expect(violations.length).toBeGreaterThan(0);
 
-      const ownerViolation = violations.find(
-        (v) => v.reason?.includes('owner presence')
-      );
+      const ownerViolation = violations.find((v) => v.reason?.includes('owner presence'));
       expect(ownerViolation).toBeDefined();
     });
   });
@@ -188,35 +187,31 @@ describe('Owner Presence Validation', () => {
       bobContract = system.activateContract(bobContract.contract_id, 'bob');
 
       // Alice can recall her contract
-      const aliceRecall = system.checkRecall(
-        aliceContract.contract_id,
-        BoundaryMode.NORMAL,
-        { domain: 'coding', requester: 'alice' }
-      );
+      const aliceRecall = system.checkRecall(aliceContract.contract_id, BoundaryMode.NORMAL, {
+        domain: 'coding',
+        requester: 'alice',
+      });
       expect(aliceRecall.allowed).toBe(true);
 
       // Alice cannot recall Bob's contract
-      const aliceRecallBob = system.checkRecall(
-        bobContract.contract_id,
-        BoundaryMode.NORMAL,
-        { domain: 'design', requester: 'alice' }
-      );
+      const aliceRecallBob = system.checkRecall(bobContract.contract_id, BoundaryMode.NORMAL, {
+        domain: 'design',
+        requester: 'alice',
+      });
       expect(aliceRecallBob.allowed).toBe(false);
 
       // Bob can recall his contract
-      const bobRecall = system.checkRecall(
-        bobContract.contract_id,
-        BoundaryMode.NORMAL,
-        { domain: 'design', requester: 'bob' }
-      );
+      const bobRecall = system.checkRecall(bobContract.contract_id, BoundaryMode.NORMAL, {
+        domain: 'design',
+        requester: 'bob',
+      });
       expect(bobRecall.allowed).toBe(true);
 
       // Bob cannot recall Alice's contract
-      const bobRecallAlice = system.checkRecall(
-        aliceContract.contract_id,
-        BoundaryMode.NORMAL,
-        { domain: 'coding', requester: 'bob' }
-      );
+      const bobRecallAlice = system.checkRecall(aliceContract.contract_id, BoundaryMode.NORMAL, {
+        domain: 'coding',
+        requester: 'bob',
+      });
       expect(bobRecallAlice.allowed).toBe(false);
     });
   });

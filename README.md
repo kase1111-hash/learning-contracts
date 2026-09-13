@@ -47,7 +47,12 @@ if (canStore.allowed) {
 } else {
   console.log('Denied:', canStore.reason);
 }
+
+// 5. When you are done, release the system's timers
+system.destroy();
 ```
+
+The system's internal timers never keep a Node.js process alive on their own, so a script exits normally even without `destroy()`. Call it anyway in long-running hosts, or whenever you create many systems (for example in tests), so nothing is left running.
 
 **What just happened?** You created an explicit consent agreement that governs what an AI can learn. Without an active contract, all learning operations are denied (fail-closed). The contract specifies scope (coding, in project-alpha), classification limits, and a retention window. The enforcement engine checks every memory operation against these rules before it can proceed.
 
@@ -407,6 +412,9 @@ class LearningContractsSystem {
   expireOldContracts(actor?): LearningContract[]
   configureRateLimit(config): void
   getRateLimitStatus(userId): { remaining, resetMs }
+
+  // Lifecycle
+  destroy(): void  // releases all timers; call when you are done with the system
 }
 ```
 
@@ -426,11 +434,15 @@ Learning Contracts exist to prevent both.
 ## Development
 
 ```bash
-npm install          # Install dependencies
-npm run build        # Build
-npm test             # Run tests
-npm run lint         # Lint
-npm run typecheck    # Type check
+npm install            # Install dependencies (also builds dist/ via `prepare`)
+npm run build          # Build the root package
+npm run build:all      # Build the root package and packages/*
+npm test               # Run root tests
+npm run test:all       # Run root tests and workspace package tests
+npm run lint           # Lint
+npm run typecheck      # Type check
+npm run example:basic  # Run examples/basic-usage.ts
+npm run example:agent  # Run examples/agent-with-memory/demo.ts
 ```
 
 ## Connected Repositories

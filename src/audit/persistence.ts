@@ -37,12 +37,14 @@ export class FileAuditPersistence implements AuditPersistenceAdapter {
   async load(): Promise<AuditEvent[]> {
     try {
       const content = await fs.readFile(this.filePath, 'utf-8');
-      const lines = content.trim().split('\n').filter((line) => line.length > 0);
+      const lines = content
+        .trim()
+        .split('\n')
+        .filter((line) => line.length > 0);
       return lines.map((line) => {
-        const parsed = JSON.parse(line);
+        const parsed = JSON.parse(line) as Omit<AuditEvent, 'timestamp'> & { timestamp: string };
         // Restore Date objects from ISO strings
-        parsed.timestamp = new Date(parsed.timestamp);
-        return parsed as AuditEvent;
+        return { ...parsed, timestamp: new Date(parsed.timestamp) };
       });
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') {

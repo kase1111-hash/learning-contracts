@@ -41,6 +41,12 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Build workspace packages
+        run: npm run build --workspaces --if-present
+
+      - name: Test workspace packages
+        run: npm test --workspaces --if-present
+
       - name: Upload coverage to Codecov
         if: matrix.node-version == '20.x'
         uses: codecov/codecov-action@v5
