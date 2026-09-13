@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Removed the `uuid` runtime dependency in favour of Node's built-in `crypto.randomUUID()`. The library now has **no runtime dependencies**. `uuid` 13+ is ESM-only, so the published CommonJS build threw `ERR_REQUIRE_ESM` on Node 18 and on Node 20 before 20.19, despite `engines` promising Node 18 support. CI now smoke-tests `require('./dist')` on every supported Node version.
+- Dev dependencies updated: eslint 10.5, typescript-eslint 8.61, prettier 3.8.4, jest 30.4, ts-jest 29.4.11, @types/node 25.9, globals 17.6, codecov-action v7.
+
 ### Fixed
 
 - `LearningContractsSystem` no longer keeps the Node.js process alive. The rate-limiter cleanup interval, the timebound-expiry polling interval, and the emergency-override auto-disable timeout are now `unref()`'d, and a new `system.destroy()` method releases all of them explicitly.

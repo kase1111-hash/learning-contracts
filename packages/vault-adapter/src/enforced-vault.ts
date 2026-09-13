@@ -13,7 +13,7 @@
  * - All violations are logged for audit
  */
 
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 import {
   MemoryObject,
   MemoryQuery,
@@ -164,7 +164,7 @@ export class ContractEnforcedVault {
     options: ContractEnforcedStoreOptions,
     contract_id?: string
   ): Promise<EnforcedOperationResult<StoreResult>> {
-    const audit_id = uuidv4();
+    const audit_id = randomUUID();
 
     // Find or resolve contract
     const contract = contract_id
@@ -303,7 +303,7 @@ export class ContractEnforcedVault {
   async recallMemory(
     options: ContractEnforcedRecallOptions
   ): Promise<EnforcedOperationResult<RecallResult>> {
-    const audit_id = uuidv4();
+    const audit_id = randomUUID();
 
     // First, get the memory to find its contract
     const memory = await this.adapter.getMemory(options.memory_id);
@@ -471,7 +471,7 @@ export class ContractEnforcedVault {
       tombstones.push(tombstone);
 
       this.logAudit({
-        event_id: uuidv4(),
+        event_id: randomUUID(),
         event_type: 'tombstone',
         timestamp: new Date(),
         contract_id,
@@ -489,7 +489,7 @@ export class ContractEnforcedVault {
    * Query memories with contract filtering
    */
   async queryMemories(query: MemoryQuery, requester: string): Promise<MemoryObject[]> {
-    const audit_id = uuidv4();
+    const audit_id = randomUUID();
 
     // If querying by contract, verify requester has access
     if (query.contract_id) {

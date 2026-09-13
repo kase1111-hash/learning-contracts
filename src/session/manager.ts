@@ -5,7 +5,7 @@
  * when sessions end.
  */
 
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 import {
   Session,
   SessionStatus,
@@ -82,7 +82,7 @@ export class SessionManager {
    */
   startSession(userId: string, metadata?: Record<string, unknown>): Session {
     const session: Session = {
-      session_id: uuidv4(),
+      session_id: randomUUID(),
       user_id: userId,
       created_at: new Date(),
       ended_at: null,

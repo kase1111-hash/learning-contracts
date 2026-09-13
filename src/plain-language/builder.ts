@@ -5,7 +5,7 @@
  * from plain language descriptions.
  */
 
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 import { ContractType, RetentionDuration, BoundaryMode } from '../types';
 import {
   ConversationState,
@@ -57,7 +57,7 @@ export class ConversationalContractBuilder {
    * Start a new conversation
    */
   startConversation(userId: string): BuilderResponse {
-    const conversationId = uuidv4();
+    const conversationId = randomUUID();
     const state: ConversationState = {
       conversationId,
       userId,

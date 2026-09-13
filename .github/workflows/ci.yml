@@ -41,6 +41,11 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Smoke-test the CommonJS build
+        # Guards against ESM-only dependencies: `require('./dist')` must work on
+        # every supported Node version, including ones without require(esm).
+        run: node -e "const { LearningContractsSystem } = require('./dist'); new LearningContractsSystem().destroy(); console.log('dist loads')"
+
       - name: Build workspace packages
         run: npm run build --workspaces --if-present
 

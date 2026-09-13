@@ -5,7 +5,7 @@
  * Draft → Review → Activate → Enforce → Expire | Revoke | Amend
  */
 
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 import {
   LearningContract,
   ContractState,
@@ -37,7 +37,7 @@ export class ContractLifecycleManager {
    */
   createDraft(draft: ContractDraft): LearningContract {
     const contract: LearningContract = {
-      contract_id: uuidv4(),
+      contract_id: randomUUID(),
       created_at: new Date(),
       created_by: draft.created_by,
       state: ContractState.DRAFT,

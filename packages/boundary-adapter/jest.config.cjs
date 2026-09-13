@@ -8,7 +8,6 @@ module.exports = {
   moduleNameMapper: {
     '^learning-contracts$': '<rootDir>/../../src',
   },
-  transformIgnorePatterns: ['/node_modules/(?!uuid)'],
   testTimeout: 10000,
   verbose: true,
   clearMocks: true,

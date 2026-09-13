@@ -13,7 +13,7 @@
  * - All blocked operations are logged to the audit trail
  */
 
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 import {
   EmergencyOverrideConfig,
   EmergencyOverrideStatus,
@@ -62,7 +62,7 @@ export class EmergencyOverrideManager {
       };
     }
 
-    const eventId = uuidv4();
+    const eventId = randomUUID();
     const timestamp = new Date();
 
     this.active = true;
@@ -152,7 +152,7 @@ export class EmergencyOverrideManager {
       this.autoDisableTimeout = undefined;
     }
 
-    const eventId = uuidv4();
+    const eventId = randomUUID();
     const timestamp = new Date();
     const durationMs = this.triggeredAt ? timestamp.getTime() - this.triggeredAt.getTime() : 0;
     const operationsBlockedDuring = this.operationsBlocked;
