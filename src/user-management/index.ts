@@ -12,25 +12,25 @@ export {
   PermissionLevel,
   UserStatus,
   // User types
-  User,
-  UserConnection,
-  ConnectionResult,
-  DisconnectionResult,
+  type User,
+  type UserConnection,
+  type ConnectionResult,
+  type DisconnectionResult,
   // Permission types
-  ContractPermission,
-  PermissionCheckResult,
-  GrantPermissionOptions,
+  type ContractPermission,
+  type PermissionCheckResult,
+  type GrantPermissionOptions,
   // Event types
-  UserConnectEvent,
-  UserDisconnectEvent,
-  ConnectionRejectedEvent,
+  type UserConnectEvent,
+  type UserDisconnectEvent,
+  type ConnectionRejectedEvent,
   // Listener types
-  UserConnectListener,
-  UserDisconnectListener,
-  ConnectionRejectedListener,
+  type UserConnectListener,
+  type UserDisconnectListener,
+  type ConnectionRejectedListener,
   // Config types
-  UserManagerConfig,
-  UserAuditLogger,
+  type UserManagerConfig,
+  type UserAuditLogger,
   // Stats
-  UserManagerStats,
+  type UserManagerStats,
 } from './types';

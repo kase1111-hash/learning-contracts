@@ -18,7 +18,7 @@
 
 export { LearningContractsSystem } from './system';
 export * from './types';
-export { ContractLifecycleManager, ContractDraft } from './contracts/lifecycle';
+export { ContractLifecycleManager, type ContractDraft } from './contracts/lifecycle';
 export { ContractFactory } from './contracts/factory';
 export { ContractValidator } from './contracts/validator';
 export { EnforcementEngine } from './enforcement/engine';
@@ -41,9 +41,9 @@ export type {
 
 export {
   MemoryForgetting,
-  MemoryReference,
+  type MemoryReference,
   MemoryStatus,
-  ForgettingResult,
+  type ForgettingResult,
   generatePurgeToken,
 } from './memory/forgetting';
 

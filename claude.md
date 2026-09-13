@@ -4,10 +4,10 @@ TypeScript library for explicit, enforceable agreements governing what an AI lea
 
 ## Tech Stack
 
-- **Language**: TypeScript 5.0+ (strict mode)
+- **Language**: TypeScript 6.0+ (strict mode, `isolatedModules`, `module: nodenext` emitting CommonJS)
 - **Runtime**: Node.js >= 18.0.0
 - **Testing**: Jest 30+ with ts-jest
-- **Linting**: ESLint 9+ with typescript-eslint (flat config)
+- **Linting**: ESLint 10 with typescript-eslint (flat config)
 - **Formatting**: Prettier
 
 ## Quick Commands
@@ -57,6 +57,8 @@ tests/                   # Test suites for all modules
 - **Line width**: 100 characters
 - **Trailing commas**: ES5 style
 - **Unused variables**: Prefix with `_` to suppress warnings
+- **Type re-exports**: use `export type { X }` or `export { type X }` (required by `isolatedModules`)
+- **Runtime dependencies**: none. Prefer Node built-ins (e.g. `crypto.randomUUID()`); an ESM-only dependency would break the CommonJS build on Node 18.
 
 ## Key Patterns
 

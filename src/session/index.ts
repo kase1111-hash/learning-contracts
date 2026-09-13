@@ -7,8 +7,8 @@
 export * from './types';
 export {
   SessionManager,
-  SessionManagerConfig,
-  SessionContractResolver,
-  SessionContractExpirer,
-  SessionMemoryFreezer,
+  type SessionManagerConfig,
+  type SessionContractResolver,
+  type SessionContractExpirer,
+  type SessionMemoryFreezer,
 } from './manager';
