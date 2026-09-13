@@ -2,12 +2,7 @@
  * Basic Usage Examples for Learning Contracts
  */
 
-import {
-  LearningContractsSystem,
-  BoundaryMode,
-  AbstractionLevel,
-  RetentionDuration,
-} from '../src';
+import { LearningContractsSystem, BoundaryMode, AbstractionLevel, RetentionDuration } from '../src';
 
 // Initialize the system
 const system = new LearningContractsSystem();
@@ -52,12 +47,10 @@ function example2_sessionLearning() {
   active = system.activateContract(active.contract_id, 'bob');
 
   // Try to create a memory
-  const result = system.checkMemoryCreation(
-    active.contract_id,
-    BoundaryMode.NORMAL,
-    2,
-    { domain: 'coding', context: 'debugging-session' }
-  );
+  const result = system.checkMemoryCreation(active.contract_id, BoundaryMode.NORMAL, 2, {
+    domain: 'coding',
+    context: 'debugging-session',
+  });
 
   console.log('Memory creation allowed?', result.allowed);
   console.log('Contract expires after session');
@@ -79,10 +72,7 @@ function example3_proceduralLearning() {
     {
       classificationCap: 3,
       retention: RetentionDuration.PERMANENT,
-      generalizationConditions: [
-        'Only within TypeScript codebases',
-        'No personal data patterns',
-      ],
+      generalizationConditions: ['Only within TypeScript codebases', 'No personal data patterns'],
     }
   );
 
@@ -116,10 +106,7 @@ function example4_strategicLearning() {
     },
     {
       classificationCap: 4,
-      generalizationConditions: [
-        'High-confidence patterns only',
-        'Owner review required',
-      ],
+      generalizationConditions: ['High-confidence patterns only', 'Owner review required'],
     }
   );
 
@@ -127,17 +114,13 @@ function example4_strategicLearning() {
   active = system.activateContract(active.contract_id, 'dave');
 
   // Try to recall with different boundary modes
-  const normalRecall = system.checkRecall(
-    active.contract_id,
-    BoundaryMode.NORMAL,
-    { domain: 'business-strategy' }
-  );
+  const normalRecall = system.checkRecall(active.contract_id, BoundaryMode.NORMAL, {
+    domain: 'business-strategy',
+  });
 
-  const trustedRecall = system.checkRecall(
-    active.contract_id,
-    BoundaryMode.TRUSTED,
-    { domain: 'business-strategy' }
-  );
+  const trustedRecall = system.checkRecall(active.contract_id, BoundaryMode.TRUSTED, {
+    domain: 'business-strategy',
+  });
 
   console.log('Recall with NORMAL mode?', normalRecall.allowed); // false
   console.log('Recall with TRUSTED mode?', trustedRecall.allowed); // true
@@ -158,12 +141,9 @@ function example5_prohibitedDomains() {
   active = system.activateContract(active.contract_id, 'eve');
 
   // Try to create memory (will be denied)
-  const result = system.checkMemoryCreation(
-    active.contract_id,
-    BoundaryMode.NORMAL,
-    1,
-    { domain: 'medical' }
-  );
+  const result = system.checkMemoryCreation(active.contract_id, BoundaryMode.NORMAL, 1, {
+    domain: 'medical',
+  });
 
   console.log('Memory creation allowed?', result.allowed); // false
   console.log('Reason:', result.reason);
@@ -196,11 +176,9 @@ function example6_revocation() {
   console.log('Contract state after revocation:', revoked.state); // REVOKED
 
   // Try to recall (will be denied)
-  const recallCheck = system.checkRecall(
-    revoked.contract_id,
-    BoundaryMode.NORMAL,
-    { domain: 'personal' }
-  );
+  const recallCheck = system.checkRecall(revoked.contract_id, BoundaryMode.NORMAL, {
+    domain: 'personal',
+  });
 
   console.log('Can recall after revocation?', recallCheck.allowed); // false
   console.log('Reason:', recallCheck.reason);
@@ -228,9 +206,8 @@ function example7_amendment() {
     'grace',
     {
       scope: {
+        ...active.scope,
         domains: ['project-alpha', 'project-beta'],
-        contexts: [],
-        tools: [],
       },
     },
     'Expanding to include project-beta'
@@ -276,9 +253,7 @@ function example8_auditTrail() {
   // Print history
   console.log('\nAudit history:');
   history.forEach((event) => {
-    console.log(
-      `- ${event.event_type} by ${event.actor} at ${event.timestamp.toISOString()}`
-    );
+    console.log(`- ${event.event_type} by ${event.actor} at ${event.timestamp.toISOString()}`);
   });
 }
 
@@ -307,12 +282,7 @@ function example9_scopeEnforcement() {
   ];
 
   tests.forEach((test, i) => {
-    const result = system.checkMemoryCreation(
-      active.contract_id,
-      BoundaryMode.NORMAL,
-      2,
-      test
-    );
+    const result = system.checkMemoryCreation(active.contract_id, BoundaryMode.NORMAL, 2, test);
     console.log(`Test ${i + 1}:`, test, '→', result.allowed);
   });
 }
@@ -346,10 +316,7 @@ function example10_findingContracts() {
 
   console.log('Found contract for coding?', !!codingContract);
   console.log('Found contract for medical?', !!medicalContract);
-  console.log(
-    'Medical contract type:',
-    medicalContract?.contract_type
-  ); // PROHIBITED
+  console.log('Medical contract type:', medicalContract?.contract_type); // PROHIBITED
 }
 
 // Run all examples
@@ -366,10 +333,15 @@ function runAllExamples() {
   example10_findingContracts();
 
   console.log('\n=== All examples completed ===');
+
+  // Release timers so the process can exit
+  system.destroy();
 }
 
-// Uncomment to run
-// runAllExamples();
+// Run when executed directly (npm run example:basic); import silently otherwise
+if (require.main === module) {
+  runAllExamples();
+}
 
 export {
   example1_observation,

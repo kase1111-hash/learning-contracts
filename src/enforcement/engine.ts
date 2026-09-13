@@ -41,10 +41,7 @@ export class EnforcementEngine {
    * Hook 1: Before Memory Creation
    * Checks if memory storage is permitted under the contract
    */
-  checkMemoryCreation(
-    context: EnforcementContext,
-    classification: number
-  ): EnforcementResult {
+  checkMemoryCreation(context: EnforcementContext, classification: number): EnforcementResult {
     const contract = context.contract;
 
     // Check emergency override first
@@ -62,30 +59,21 @@ export class EnforcementEngine {
 
     // Contract must be active and not expired
     if (!this.lifecycleManager.isEnforceable(contract)) {
-      const result = this.deny(
-        contract.contract_id,
-        'Contract is not active or has expired'
-      );
+      const result = this.deny(contract.contract_id, 'Contract is not active or has expired');
       this.auditLogger.logEnforcementCheck('memory_creation', context, result);
       return result;
     }
 
     // Prohibited contracts forbid all memory creation
     if (contract.contract_type === ContractType.PROHIBITED) {
-      const result = this.deny(
-        contract.contract_id,
-        'Prohibited contract forbids memory creation'
-      );
+      const result = this.deny(contract.contract_id, 'Prohibited contract forbids memory creation');
       this.auditLogger.logEnforcementCheck('memory_creation', context, result);
       return result;
     }
 
     // Check if memory storage is allowed
     if (!contract.memory_permissions.may_store) {
-      const result = this.deny(
-        contract.contract_id,
-        'Contract does not permit memory storage'
-      );
+      const result = this.deny(contract.contract_id, 'Contract does not permit memory storage');
       this.auditLogger.logEnforcementCheck('memory_creation', context, result);
       return result;
     }
@@ -137,30 +125,21 @@ export class EnforcementEngine {
 
     // Contract must be active and not expired
     if (!this.lifecycleManager.isEnforceable(contract)) {
-      const result = this.deny(
-        contract.contract_id,
-        'Contract is not active or has expired'
-      );
+      const result = this.deny(contract.contract_id, 'Contract is not active or has expired');
       this.auditLogger.logEnforcementCheck('abstraction', context, result);
       return result;
     }
 
     // Prohibited contracts forbid all abstraction
     if (contract.contract_type === ContractType.PROHIBITED) {
-      const result = this.deny(
-        contract.contract_id,
-        'Prohibited contract forbids abstraction'
-      );
+      const result = this.deny(contract.contract_id, 'Prohibited contract forbids abstraction');
       this.auditLogger.logEnforcementCheck('abstraction', context, result);
       return result;
     }
 
     // Check if generalization is allowed
     if (!contract.generalization_rules.allowed) {
-      const result = this.deny(
-        contract.contract_id,
-        'Contract does not permit generalization'
-      );
+      const result = this.deny(contract.contract_id, 'Contract does not permit generalization');
       this.auditLogger.logEnforcementCheck('abstraction', context, result);
       return result;
     }
@@ -209,10 +188,7 @@ export class EnforcementEngine {
 
     // Contract must be active (expired contracts freeze memory)
     if (contract.state === ContractState.EXPIRED) {
-      const result = this.deny(
-        contract.contract_id,
-        'Contract has expired - memory is frozen'
-      );
+      const result = this.deny(contract.contract_id, 'Contract has expired - memory is frozen');
       this.auditLogger.logEnforcementCheck('recall', context, result);
       return result;
     }
@@ -249,10 +225,9 @@ export class EnforcementEngine {
     }
 
     // Check boundary mode requirement
-    if (!this.isBoundaryModeSufficient(
-      context.boundary_mode,
-      contract.recall_rules.boundary_mode_min
-    )) {
+    if (
+      !this.isBoundaryModeSufficient(context.boundary_mode, contract.recall_rules.boundary_mode_min)
+    ) {
       const result = this.deny(
         contract.contract_id,
         `Boundary mode ${context.boundary_mode} does not meet minimum of ${contract.recall_rules.boundary_mode_min}`
@@ -295,20 +270,14 @@ export class EnforcementEngine {
 
     // Contract must be active and not expired
     if (!this.lifecycleManager.isEnforceable(contract)) {
-      const result = this.deny(
-        contract.contract_id,
-        'Contract is not active or has expired'
-      );
+      const result = this.deny(contract.contract_id, 'Contract is not active or has expired');
       this.auditLogger.logEnforcementCheck('export', context, result);
       return result;
     }
 
     // Check transferability
     if (!contract.scope.transferable) {
-      const result = this.deny(
-        contract.contract_id,
-        'Contract prohibits memory transfer'
-      );
+      const result = this.deny(contract.contract_id, 'Contract prohibits memory transfer');
       this.auditLogger.logEnforcementCheck('export', context, result);
       return result;
     }
@@ -378,10 +347,7 @@ export class EnforcementEngine {
   /**
    * Checks if abstraction level is within allowed maximum
    */
-  private isAbstractionAllowed(
-    target: AbstractionLevel,
-    max: AbstractionLevel
-  ): boolean {
+  private isAbstractionAllowed(target: AbstractionLevel, max: AbstractionLevel): boolean {
     const levels = [
       AbstractionLevel.RAW,
       AbstractionLevel.PATTERN,
@@ -398,10 +364,7 @@ export class EnforcementEngine {
   /**
    * Checks if current boundary mode meets minimum requirement
    */
-  private isBoundaryModeSufficient(
-    current: BoundaryMode,
-    minimum: BoundaryMode
-  ): boolean {
+  private isBoundaryModeSufficient(current: BoundaryMode, minimum: BoundaryMode): boolean {
     const modes = [
       BoundaryMode.RESTRICTED,
       BoundaryMode.NORMAL,

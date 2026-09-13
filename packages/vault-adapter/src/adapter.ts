@@ -269,7 +269,7 @@ export class MockMemoryVaultAdapter extends BaseMemoryVaultAdapter {
     if (process.env.NODE_ENV === 'production') {
       throw new Error(
         'MockMemoryVaultAdapter is for testing only and cannot be used in production. ' +
-        'Use a real MemoryVaultAdapter implementation instead.'
+          'Use a real MemoryVaultAdapter implementation instead.'
       );
     }
   }
@@ -293,9 +293,10 @@ export class MockMemoryVaultAdapter extends BaseMemoryVaultAdapter {
     }
 
     const memory_id = `mem_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const content = typeof options.content === 'string'
-      ? new TextEncoder().encode(options.content)
-      : options.content;
+    const content =
+      typeof options.content === 'string'
+        ? new TextEncoder().encode(options.content)
+        : options.content;
 
     const contentHash = await this.hashContent(content);
 
@@ -309,7 +310,14 @@ export class MockMemoryVaultAdapter extends BaseMemoryVaultAdapter {
     const derivedFrom = metadata.derived_from as string[] | undefined;
 
     // Remove extension fields from value_metadata to avoid duplication
-    const extensionFields = ['contract_id', 'domain', 'context', 'tool', 'is_derived', 'derived_from'];
+    const extensionFields = [
+      'contract_id',
+      'domain',
+      'context',
+      'tool',
+      'is_derived',
+      'derived_from',
+    ];
     const cleanMetadata = Object.fromEntries(
       Object.entries(metadata).filter(([key]) => !extensionFields.includes(key))
     );
@@ -382,35 +390,35 @@ export class MockMemoryVaultAdapter extends BaseMemoryVaultAdapter {
 
     // Filter by contract_id
     if (query.contract_id) {
-      results = results.filter(m => m.contract_id === query.contract_id);
+      results = results.filter((m) => m.contract_id === query.contract_id);
     }
 
     // Filter by domain
     if (query.domain) {
-      results = results.filter(m => m.domain === query.domain);
+      results = results.filter((m) => m.domain === query.domain);
     }
 
     // Filter by context
     if (query.context) {
-      results = results.filter(m => m.context === query.context);
+      results = results.filter((m) => m.context === query.context);
     }
 
     // Filter by classification
     if (query.classification !== undefined) {
-      results = results.filter(m => m.classification === query.classification);
+      results = results.filter((m) => m.classification === query.classification);
     }
 
     // Filter by date range
     if (query.created_after) {
-      results = results.filter(m => m.created_at >= query.created_after!);
+      results = results.filter((m) => m.created_at >= query.created_after!);
     }
     if (query.created_before) {
-      results = results.filter(m => m.created_at <= query.created_before!);
+      results = results.filter((m) => m.created_at <= query.created_before!);
     }
 
     // Exclude tombstoned unless requested
     if (!query.include_tombstoned) {
-      results = results.filter(m => !this.tombstones.has(m.memory_id));
+      results = results.filter((m) => !this.tombstones.has(m.memory_id));
     }
 
     // Apply pagination
@@ -520,18 +528,20 @@ export class MockMemoryVaultAdapter extends BaseMemoryVaultAdapter {
 
   listEncryptionProfiles(): Promise<EncryptionProfile[]> {
     this.recordActivity();
-    return Promise.resolve([{
-      profile_id: 'default',
-      cipher: 'AES-256-GCM',
-      key_source: KeySource.HUMAN_PASSPHRASE,
-      rotation_policy: 'manual',
-      exportable: false,
-    }]);
+    return Promise.resolve([
+      {
+        profile_id: 'default',
+        cipher: 'AES-256-GCM',
+        key_source: KeySource.HUMAN_PASSPHRASE,
+        rotation_policy: 'manual',
+        exportable: false,
+      },
+    ]);
   }
 
   getPendingRecallRequests(): Promise<RecallRequest[]> {
     this.recordActivity();
-    return Promise.resolve(Array.from(this.pendingRequests.values()).filter(r => !r.approved));
+    return Promise.resolve(Array.from(this.pendingRequests.values()).filter((r) => !r.approved));
   }
 
   approveRecallRequest(request_id: string, approver: string): Promise<RecallRequest> {

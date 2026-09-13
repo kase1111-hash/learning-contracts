@@ -5,12 +5,7 @@
  * Supports both in-memory and persistent storage through adapters.
  */
 
-import {
-  LearningContract,
-  ContractState,
-  ContractType,
-  RetentionDuration,
-} from '../types';
+import { LearningContract, ContractState, ContractType, RetentionDuration } from '../types';
 import { StorageAdapter } from './adapter';
 import { MemoryStorageAdapter } from './memory-adapter';
 
@@ -137,9 +132,12 @@ export class ContractRepository {
 
     // Persist to storage adapter in background
     if (deleted && this.initialized) {
-      const writePromise = this.adapter.delete(contractId).then(() => {}).catch((error) => {
-        console.error(`Failed to delete contract ${contractId}:`, error);
-      });
+      const writePromise = this.adapter
+        .delete(contractId)
+        .then(() => {})
+        .catch((error) => {
+          console.error(`Failed to delete contract ${contractId}:`, error);
+        });
       this.pendingWrites.push(writePromise);
     }
 
@@ -192,22 +190,16 @@ export class ContractRepository {
     }
 
     if (options.domain) {
-      results = results.filter((c) =>
-        c.scope.domains.includes(options.domain!)
-      );
+      results = results.filter((c) => c.scope.domains.includes(options.domain!));
     }
 
     if (options.context) {
-      results = results.filter((c) =>
-        c.scope.contexts.includes(options.context!)
-      );
+      results = results.filter((c) => c.scope.contexts.includes(options.context!));
     }
 
     if (options.active_only) {
       results = results.filter(
-        (c) =>
-          c.state === ContractState.ACTIVE &&
-          (!c.expiration || c.expiration > new Date())
+        (c) => c.state === ContractState.ACTIVE && (!c.expiration || c.expiration > new Date())
       );
     }
 
@@ -217,11 +209,7 @@ export class ContractRepository {
   /**
    * Gets active contracts for a specific scope
    */
-  getActiveContractsForScope(
-    domain?: string,
-    context?: string,
-    tool?: string
-  ): LearningContract[] {
+  getActiveContractsForScope(domain?: string, context?: string, tool?: string): LearningContract[] {
     const activeContracts = this.query({ active_only: true });
 
     return activeContracts.filter((contract) => {
@@ -231,22 +219,18 @@ export class ContractRepository {
       if (domain) {
         matches =
           matches &&
-          (contract.scope.domains.length === 0 ||
-            contract.scope.domains.includes(domain));
+          (contract.scope.domains.length === 0 || contract.scope.domains.includes(domain));
       }
 
       if (context) {
         matches =
           matches &&
-          (contract.scope.contexts.length === 0 ||
-            contract.scope.contexts.includes(context));
+          (contract.scope.contexts.length === 0 || contract.scope.contexts.includes(context));
       }
 
       if (tool) {
         matches =
-          matches &&
-          (contract.scope.tools.length === 0 ||
-            contract.scope.tools.includes(tool));
+          matches && (contract.scope.tools.length === 0 || contract.scope.tools.includes(tool));
       }
 
       return matches;
@@ -303,10 +287,7 @@ export class ContractRepository {
   getExpiredContracts(): LearningContract[] {
     const now = new Date();
     return this.getAll().filter(
-      (c) =>
-        c.state === ContractState.ACTIVE &&
-        c.expiration &&
-        c.expiration < now
+      (c) => c.state === ContractState.ACTIVE && c.expiration && c.expiration < now
     );
   }
 

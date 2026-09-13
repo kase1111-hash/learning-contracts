@@ -113,18 +113,14 @@ export class SessionManager {
    * Get all active sessions
    */
   getActiveSessions(): Session[] {
-    return Array.from(this.sessions.values()).filter(
-      (s) => s.status === SessionStatus.ACTIVE
-    );
+    return Array.from(this.sessions.values()).filter((s) => s.status === SessionStatus.ACTIVE);
   }
 
   /**
    * Get all sessions for a user
    */
   getUserSessions(userId: string): Session[] {
-    return Array.from(this.sessions.values()).filter(
-      (s) => s.user_id === userId
-    );
+    return Array.from(this.sessions.values()).filter((s) => s.user_id === userId);
   }
 
   /**
@@ -176,9 +172,7 @@ export class SessionManager {
 
     const session = this.sessions.get(sessionId);
     if (session) {
-      session.contract_ids = session.contract_ids.filter(
-        (id) => id !== contractId
-      );
+      session.contract_ids = session.contract_ids.filter((id) => id !== contractId);
     }
 
     this.contractToSession.delete(contractId);
@@ -208,10 +202,7 @@ export class SessionManager {
   /**
    * End a session and clean up associated contracts
    */
-  endSession(
-    sessionId: string,
-    options: SessionCleanupOptions = {}
-  ): SessionEndResult {
+  endSession(sessionId: string, options: SessionCleanupOptions = {}): SessionEndResult {
     const session = this.sessions.get(sessionId);
     if (!session) {
       return {
@@ -304,9 +295,7 @@ export class SessionManager {
     this.expireContract(contractId, actor);
 
     // Now clean up memories if provided
-    const memories = options.memories?.filter(
-      (m) => m.contract_id === contractId
-    ) ?? [];
+    const memories = options.memories?.filter((m) => m.contract_id === contractId) ?? [];
 
     if (memories.length > 0) {
       // Refresh contract to get updated state
@@ -330,17 +319,10 @@ export class SessionManager {
   /**
    * End all sessions for a user
    */
-  endUserSessions(
-    userId: string,
-    options: SessionCleanupOptions = {}
-  ): SessionEndResult[] {
-    const userSessions = this.getActiveSessions().filter(
-      (s) => s.user_id === userId
-    );
+  endUserSessions(userId: string, options: SessionCleanupOptions = {}): SessionEndResult[] {
+    const userSessions = this.getActiveSessions().filter((s) => s.user_id === userId);
 
-    return userSessions.map((session) =>
-      this.endSession(session.session_id, options)
-    );
+    return userSessions.map((session) => this.endSession(session.session_id, options));
   }
 
   /**

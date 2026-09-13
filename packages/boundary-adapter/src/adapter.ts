@@ -143,7 +143,9 @@ export abstract class BaseBoundaryDaemonAdapter implements BoundaryDaemonAdapter
   abstract checkRecall(request: RecallGateRequest): Promise<RecallGateResult>;
   abstract checkTool(request: ToolGateRequest): Promise<ToolGateResult>;
   abstract requestModeTransition(request: ModeTransitionRequest): Promise<ModeTransitionResult>;
-  abstract performOverrideCeremony(request: OverrideCeremonyRequest): Promise<OverrideCeremonyResult>;
+  abstract performOverrideCeremony(
+    request: OverrideCeremonyRequest
+  ): Promise<OverrideCeremonyResult>;
   abstract triggerLockdown(reason: string, actor: string): Promise<BoundaryStatus>;
   abstract getTripwireEvents(since?: Date): Promise<TripwireEvent[]>;
   abstract getAuditLog(limit?: number, since?: Date): Promise<BoundaryAuditEntry[]>;
@@ -250,7 +252,7 @@ export class MockBoundaryDaemonAdapter extends BaseBoundaryDaemonAdapter {
       max_classification: BOUNDARY_CLASSIFICATION_CAPS[this.currentMode],
       healthy: true,
       active_tripwires: this.tripwireEvents.filter(
-        t => t.timestamp > new Date(Date.now() - 3600000) // Last hour
+        (t) => t.timestamp > new Date(Date.now() - 3600000) // Last hour
       ),
       last_check: new Date(),
       in_lockdown: this.inLockdown,
@@ -498,7 +500,7 @@ export class MockBoundaryDaemonAdapter extends BaseBoundaryDaemonAdapter {
 
   getTripwireEvents(since?: Date): Promise<TripwireEvent[]> {
     if (since) {
-      return Promise.resolve(this.tripwireEvents.filter(t => t.timestamp >= since));
+      return Promise.resolve(this.tripwireEvents.filter((t) => t.timestamp >= since));
     }
     return Promise.resolve([...this.tripwireEvents]);
   }
@@ -507,7 +509,7 @@ export class MockBoundaryDaemonAdapter extends BaseBoundaryDaemonAdapter {
     let entries = [...this.auditEntries];
 
     if (since) {
-      entries = entries.filter(e => e.timestamp >= since);
+      entries = entries.filter((e) => e.timestamp >= since);
     }
 
     entries.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());

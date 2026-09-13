@@ -176,11 +176,7 @@ export interface UserAuditLogger {
     level: PermissionLevel,
     grantedBy: string
   ): void;
-  logPermissionRevoked(
-    contractId: string,
-    revokedFrom: string,
-    revokedBy: string
-  ): void;
+  logPermissionRevoked(contractId: string, revokedFrom: string, revokedBy: string): void;
 }
 
 /**

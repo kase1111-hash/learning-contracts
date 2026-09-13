@@ -83,9 +83,9 @@ interface EncryptedStorageFileFormat {
   version: number;
   encrypted: true;
   updated_at: string;
-  salt: string;      // Hex-encoded salt for key derivation
-  iv: string;        // Hex-encoded initialization vector
-  authTag: string;   // Hex-encoded authentication tag
+  salt: string; // Hex-encoded salt for key derivation
+  iv: string; // Hex-encoded initialization vector
+  authTag: string; // Hex-encoded authentication tag
   ciphertext: string; // Base64-encoded encrypted data
 }
 
@@ -96,7 +96,7 @@ interface EncryptedStorageFileFormat {
 // same IV (probabilistic collision after 2^48 encryptions with random 96-bit IVs).
 const ENCRYPTION_ALGORITHM = 'aes-256-gcm';
 const KEY_LENGTH = 32; // 256 bits
-const IV_LENGTH = 12;  // 96 bits for GCM
+const IV_LENGTH = 12; // 96 bits for GCM
 
 // WHY 100,000 iterations: NIST SP 800-132 recommends a minimum of 10,000 for
 // PBKDF2-HMAC-SHA256. We use 100k as a balance between brute-force resistance
@@ -308,7 +308,7 @@ export class FileStorageAdapter implements StorageAdapter {
         if (!this.constantTimeCompare(calculatedChecksum, data.checksum)) {
           throw new Error(
             'Contract file integrity check failed - possible tampering detected. ' +
-            'The file checksum does not match the expected value.'
+              'The file checksum does not match the expected value.'
           );
         }
       }
@@ -325,7 +325,8 @@ export class FileStorageAdapter implements StorageAdapter {
         this.contracts.clear();
       } else {
         throw new Error(
-          `Failed to load storage file: ${error instanceof Error ? error.message : String(error)}`
+          `Failed to load storage file: ${error instanceof Error ? error.message : String(error)}`,
+          { cause: error }
         );
       }
     }
@@ -360,9 +361,7 @@ export class FileStorageAdapter implements StorageAdapter {
       const calculatedChecksum = createHash('sha256').update(contractsJson).digest('hex');
 
       if (!this.constantTimeCompare(calculatedChecksum, data.checksum)) {
-        throw new Error(
-          'Contract file integrity check failed - possible tampering detected.'
-        );
+        throw new Error('Contract file integrity check failed - possible tampering detected.');
       }
     }
 
@@ -414,9 +413,7 @@ export class FileStorageAdapter implements StorageAdapter {
         ? JSON.stringify(encryptedData, null, 2)
         : JSON.stringify(encryptedData);
     } else {
-      content = this.prettyPrint
-        ? JSON.stringify(innerData, null, 2)
-        : JSON.stringify(innerData);
+      content = this.prettyPrint ? JSON.stringify(innerData, null, 2) : JSON.stringify(innerData);
     }
 
     // Atomic write: write to temp file, then rename
@@ -436,7 +433,8 @@ export class FileStorageAdapter implements StorageAdapter {
         // Ignore cleanup errors
       }
       throw new Error(
-        `Failed to save storage file: ${error instanceof Error ? error.message : String(error)}`
+        `Failed to save storage file: ${error instanceof Error ? error.message : String(error)}`,
+        { cause: error }
       );
     }
   }

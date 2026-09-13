@@ -41,17 +41,12 @@ if not exist "node_modules" (
 echo Running Learning Contracts example...
 echo.
 
-REM Run the basic usage example
-node dist/examples/basic-usage.js 2>nul
+REM Run the basic usage example straight from the TypeScript source
+call npm run example:basic
 if %ERRORLEVEL% neq 0 (
-    REM If example doesn't exist, run a quick verification instead
     echo.
-    echo Verifying Learning Contracts module...
-    node -e "const lc = require('./dist'); console.log('Learning Contracts v0.1.0-alpha loaded successfully'); console.log('Available exports:', Object.keys(lc).join(', '));"
-    if %ERRORLEVEL% neq 0 (
-        echo ERROR: Failed to load Learning Contracts module
-        exit /b 1
-    )
+    echo ERROR: Example failed to run
+    exit /b 1
 )
 
 echo.

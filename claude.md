@@ -15,7 +15,11 @@ TypeScript library for explicit, enforceable agreements governing what an AI lea
 ```bash
 npm install          # Install dependencies
 npm run build        # Compile TypeScript to dist/
-npm test             # Run all tests
+npm run build:all    # Also build packages/* (requires root build first; this does both)
+npm test             # Run root tests
+npm run test:all     # Root tests + workspace package tests
+npm run example:basic  # Run examples/basic-usage.ts via tsx
+npm run example:agent  # Run examples/agent-with-memory/demo.ts via tsx
 npm run test:watch   # Watch mode
 npm run lint         # Check code
 npm run lint:fix     # Auto-fix lint issues
@@ -83,6 +87,10 @@ tests/                   # Test suites for all modules
 4. `checkExport()` - During export (transfer prohibition)
 
 Violations result in **hard failure**, not warnings.
+
+## Process Lifecycle
+
+`LearningContractsSystem` owns timers (rate-limiter cleanup, expiry polling, override auto-disable). They are `unref()`'d so they never keep a process alive, and `system.destroy()` releases them explicitly. Any new timer added to the library must follow the same rule: `unref()` it and clear it in a `destroy()`/`stop()` method.
 
 ## Git Commits
 

@@ -147,9 +147,7 @@ describe('ContractValidator', () => {
       });
       const result = ContractValidator.validate(contract);
       expect(result.valid).toBe(false);
-      expect(result.errors).toContain(
-        'Observation contracts must not allow memory storage'
-      );
+      expect(result.errors).toContain('Observation contracts must not allow memory storage');
     });
 
     test('should error when observation contract allows generalization', () => {
@@ -167,9 +165,7 @@ describe('ContractValidator', () => {
       });
       const result = ContractValidator.validate(contract);
       expect(result.valid).toBe(false);
-      expect(result.errors).toContain(
-        'Observation contracts must not allow generalization'
-      );
+      expect(result.errors).toContain('Observation contracts must not allow generalization');
     });
 
     // -- Episodic type-specific rules --
@@ -184,9 +180,7 @@ describe('ContractValidator', () => {
       });
       const result = ContractValidator.validate(contract);
       expect(result.valid).toBe(false);
-      expect(result.errors).toContain(
-        'Episodic contracts must not allow generalization'
-      );
+      expect(result.errors).toContain('Episodic contracts must not allow generalization');
     });
 
     // -- Procedural type-specific rules --
@@ -341,9 +335,7 @@ describe('ContractValidator', () => {
       });
       const result = ContractValidator.validate(contract);
       expect(result.valid).toBe(false);
-      expect(result.errors).toContain(
-        'Prohibited contracts must not allow memory storage'
-      );
+      expect(result.errors).toContain('Prohibited contracts must not allow memory storage');
     });
 
     test('should error when prohibited contract allows generalization', () => {
@@ -361,9 +353,7 @@ describe('ContractValidator', () => {
       });
       const result = ContractValidator.validate(contract);
       expect(result.valid).toBe(false);
-      expect(result.errors).toContain(
-        'Prohibited contracts must not allow generalization'
-      );
+      expect(result.errors).toContain('Prohibited contracts must not allow generalization');
     });
 
     // -- Scope validation --
@@ -437,9 +427,7 @@ describe('ContractValidator', () => {
       });
       const result = ContractValidator.validate(contract);
       expect(result.valid).toBe(false);
-      expect(result.errors).toContain(
-        'Classification cap must be between 0 and 5'
-      );
+      expect(result.errors).toContain('Classification cap must be between 0 and 5');
     });
 
     test('should error when classification_cap is greater than 5', () => {
@@ -452,9 +440,7 @@ describe('ContractValidator', () => {
       });
       const result = ContractValidator.validate(contract);
       expect(result.valid).toBe(false);
-      expect(result.errors).toContain(
-        'Classification cap must be between 0 and 5'
-      );
+      expect(result.errors).toContain('Classification cap must be between 0 and 5');
     });
 
     test('should error when timebound retention has no retention_until', () => {
@@ -468,9 +454,7 @@ describe('ContractValidator', () => {
       });
       const result = ContractValidator.validate(contract);
       expect(result.valid).toBe(false);
-      expect(result.errors).toContain(
-        'Timebound retention requires retention_until timestamp'
-      );
+      expect(result.errors).toContain('Timebound retention requires retention_until timestamp');
     });
 
     test('should warn when retention_until is in the past', () => {
@@ -537,9 +521,7 @@ describe('ContractValidator', () => {
       });
       const result = ContractValidator.validate(contract);
       expect(result.valid).toBe(false);
-      expect(result.errors).toContain(
-        'Expiration date cannot be before creation date'
-      );
+      expect(result.errors).toContain('Expiration date cannot be before creation date');
     });
 
     // -- Happy path: fully valid contract --
@@ -568,14 +550,11 @@ describe('ContractValidator', () => {
       [ContractState.AMENDED, ContractState.REVIEW],
     ];
 
-    test.each(validTransitions)(
-      'should allow transition from %s to %s',
-      (from, to) => {
-        const result = ContractValidator.validateTransition(from, to);
-        expect(result.valid).toBe(true);
-        expect(result.errors).toHaveLength(0);
-      }
-    );
+    test.each(validTransitions)('should allow transition from %s to %s', (from, to) => {
+      const result = ContractValidator.validateTransition(from, to);
+      expect(result.valid).toBe(true);
+      expect(result.errors).toHaveLength(0);
+    });
 
     // Invalid transitions
     const invalidTransitions: [ContractState, ContractState][] = [
@@ -586,18 +565,15 @@ describe('ContractValidator', () => {
       [ContractState.REVIEW, ContractState.REVOKED],
     ];
 
-    test.each(invalidTransitions)(
-      'should reject transition from %s to %s',
-      (from, to) => {
-        const result = ContractValidator.validateTransition(from, to);
-        expect(result.valid).toBe(false);
-        expect(result.errors).toEqual(
-          expect.arrayContaining([
-            expect.stringContaining(`Invalid transition from ${from} to ${to}`),
-          ])
-        );
-      }
-    );
+    test.each(invalidTransitions)('should reject transition from %s to %s', (from, to) => {
+      const result = ContractValidator.validateTransition(from, to);
+      expect(result.valid).toBe(false);
+      expect(result.errors).toEqual(
+        expect.arrayContaining([
+          expect.stringContaining(`Invalid transition from ${from} to ${to}`),
+        ])
+      );
+    });
   });
 });
 
@@ -637,9 +613,7 @@ describe('ContractLifecycleManager', () => {
         created_by: '',
       });
 
-      expect(() => lifecycleManager.createDraft(draft)).toThrow(
-        /Invalid contract draft/
-      );
+      expect(() => lifecycleManager.createDraft(draft)).toThrow(/Invalid contract draft/);
     });
 
     test('should default revocable to true when not provided', () => {
@@ -675,9 +649,9 @@ describe('ContractLifecycleManager', () => {
       const reviewed = lifecycleManager.submitForReview(contract, 'bob');
       const activated = lifecycleManager.activate(reviewed, 'carol');
 
-      expect(() =>
-        lifecycleManager.submitForReview(activated, 'dave')
-      ).toThrow(/Invalid state transition/);
+      expect(() => lifecycleManager.submitForReview(activated, 'dave')).toThrow(
+        /Invalid state transition/
+      );
     });
   });
 
@@ -736,9 +710,7 @@ describe('ContractLifecycleManager', () => {
     test('should throw when expiring a non-ACTIVE contract', () => {
       const contract = lifecycleManager.createDraft(createValidDraft());
 
-      expect(() => lifecycleManager.expire(contract, 'system')).toThrow(
-        /Invalid state transition/
-      );
+      expect(() => lifecycleManager.expire(contract, 'system')).toThrow(/Invalid state transition/);
     });
   });
 
@@ -772,17 +744,17 @@ describe('ContractLifecycleManager', () => {
       const reviewed = lifecycleManager.submitForReview(contract, 'bob');
       const activated = lifecycleManager.activate(reviewed, 'carol');
 
-      expect(() =>
-        lifecycleManager.revoke(activated, 'alice', 'Trying to revoke')
-      ).toThrow('Contract is not revocable');
+      expect(() => lifecycleManager.revoke(activated, 'alice', 'Trying to revoke')).toThrow(
+        'Contract is not revocable'
+      );
     });
 
     test('should throw when revoking a non-ACTIVE contract', () => {
       const contract = lifecycleManager.createDraft(createValidDraft());
 
-      expect(() =>
-        lifecycleManager.revoke(contract, 'alice', 'Too early')
-      ).toThrow(/Invalid state transition/);
+      expect(() => lifecycleManager.revoke(contract, 'alice', 'Too early')).toThrow(
+        /Invalid state transition/
+      );
     });
   });
 
@@ -815,12 +787,7 @@ describe('ContractLifecycleManager', () => {
       const reviewed = lifecycleManager.submitForReview(contract, 'bob');
       const activated = lifecycleManager.activate(reviewed, 'carol');
 
-      const { newDraft } = lifecycleManager.amend(
-        activated,
-        'alice',
-        {},
-        'Minor tweak'
-      );
+      const { newDraft } = lifecycleManager.amend(activated, 'alice', {}, 'Minor tweak');
 
       expect(newDraft.metadata).toBeDefined();
       expect(newDraft.metadata!.amended_from).toBe(activated.contract_id);
@@ -854,9 +821,9 @@ describe('ContractLifecycleManager', () => {
     test('should throw when amending a non-ACTIVE contract', () => {
       const contract = lifecycleManager.createDraft(createValidDraft());
 
-      expect(() =>
-        lifecycleManager.amend(contract, 'alice', {}, 'Nope')
-      ).toThrow(/Invalid state transition/);
+      expect(() => lifecycleManager.amend(contract, 'alice', {}, 'Nope')).toThrow(
+        /Invalid state transition/
+      );
     });
   });
 
@@ -1022,11 +989,15 @@ describe('ContractFactory', () => {
 
     test('should use explicit retention and retentionUntil when provided', () => {
       const customDate = new Date('2030-06-15T00:00:00Z');
-      const draft = ContractFactory.createEpisodicContract('bob', {}, {
-        retention: RetentionDuration.TIMEBOUND,
-        retentionUntil: customDate,
-        classificationCap: 5,
-      });
+      const draft = ContractFactory.createEpisodicContract(
+        'bob',
+        {},
+        {
+          retention: RetentionDuration.TIMEBOUND,
+          retentionUntil: customDate,
+          classificationCap: 5,
+        }
+      );
 
       expect(draft.memory_permissions.retention).toBe(RetentionDuration.TIMEBOUND);
       expect(draft.memory_permissions.retention_until).toBe(customDate);
@@ -1034,27 +1005,39 @@ describe('ContractFactory', () => {
     });
 
     test('should not set retentionUntil default when retention is SESSION', () => {
-      const draft = ContractFactory.createEpisodicContract('bob', {}, {
-        retention: RetentionDuration.SESSION,
-      });
+      const draft = ContractFactory.createEpisodicContract(
+        'bob',
+        {},
+        {
+          retention: RetentionDuration.SESSION,
+        }
+      );
 
       expect(draft.memory_permissions.retention).toBe(RetentionDuration.SESSION);
       expect(draft.memory_permissions.retention_until).toBeUndefined();
     });
 
     test('should not set retentionUntil default when retention is PERMANENT', () => {
-      const draft = ContractFactory.createEpisodicContract('bob', {}, {
-        retention: RetentionDuration.PERMANENT,
-      });
+      const draft = ContractFactory.createEpisodicContract(
+        'bob',
+        {},
+        {
+          retention: RetentionDuration.PERMANENT,
+        }
+      );
 
       expect(draft.memory_permissions.retention).toBe(RetentionDuration.PERMANENT);
       expect(draft.memory_permissions.retention_until).toBeUndefined();
     });
 
     test('should allow overriding requiresOwner', () => {
-      const draft = ContractFactory.createEpisodicContract('bob', {}, {
-        requiresOwner: false,
-      });
+      const draft = ContractFactory.createEpisodicContract(
+        'bob',
+        {},
+        {
+          requiresOwner: false,
+        }
+      );
 
       expect(draft.recall_rules.requires_owner).toBe(false);
     });
@@ -1110,9 +1093,7 @@ describe('ContractFactory', () => {
       expect(draft.scope.max_abstraction).toBe(AbstractionLevel.PATTERN);
       expect(draft.memory_permissions.classification_cap).toBe(5);
       expect(draft.memory_permissions.retention).toBe(RetentionDuration.TIMEBOUND);
-      expect(draft.generalization_rules.conditions).toEqual([
-        'Only in lab environments',
-      ]);
+      expect(draft.generalization_rules.conditions).toEqual(['Only in lab environments']);
     });
   });
 
@@ -1157,9 +1138,7 @@ describe('ContractFactory', () => {
       expect(draft.scope.tools).toEqual(['analytics']);
       expect(draft.scope.max_abstraction).toBe(AbstractionLevel.HEURISTIC);
       expect(draft.memory_permissions.classification_cap).toBe(2);
-      expect(draft.generalization_rules.conditions).toEqual([
-        'Board approval required',
-      ]);
+      expect(draft.generalization_rules.conditions).toEqual(['Board approval required']);
     });
   });
 

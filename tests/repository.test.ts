@@ -11,12 +11,7 @@ import { ContractLifecycleManager } from '../src/contracts/lifecycle';
 import { ContractFactory } from '../src/contracts/factory';
 import { ContractRepository } from '../src/storage/repository';
 import { MemoryStorageAdapter } from '../src/storage/memory-adapter';
-import {
-  ContractState,
-  ContractType,
-  LearningContract,
-  RetentionDuration,
-} from '../src/types';
+import { ContractState, ContractType, LearningContract, RetentionDuration } from '../src/types';
 
 // ---------------------------------------------------------------------------
 // Helpers

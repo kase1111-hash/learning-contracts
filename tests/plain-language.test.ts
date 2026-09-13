@@ -304,14 +304,14 @@ describe('Contract Templates', () => {
     const results = searchTemplates('coding');
 
     expect(results.length).toBeGreaterThan(0);
-    expect(results.some(t => t.id === 'coding-best-practices')).toBe(true);
+    expect(results.some((t) => t.id === 'coding-best-practices')).toBe(true);
   });
 
   test('should search templates by description', () => {
     const results = searchTemplates('gameplay');
 
     expect(results.length).toBeGreaterThan(0);
-    expect(results.some(t => t.id === 'gaming-streaming')).toBe(true);
+    expect(results.some((t) => t.id === 'gaming-streaming')).toBe(true);
   });
 });
 
@@ -333,9 +333,7 @@ describe('LearningContractsSystem - Plain Language Integration', () => {
 
   describe('parseNaturalLanguage', () => {
     test('should parse natural language input', () => {
-      const result = system.parser.parse(
-        'Learn coding patterns from my Python sessions'
-      );
+      const result = system.parser.parse('Learn coding patterns from my Python sessions');
 
       expect(result.success).toBe(true);
       expect(result.intent!.domains).toContain('coding');

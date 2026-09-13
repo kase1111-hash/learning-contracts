@@ -4,11 +4,7 @@
  * Types for the conversational contract creation and management interface.
  */
 
-import {
-  ContractType,
-  RetentionDuration,
-  BoundaryMode,
-} from '../types';
+import { ContractType, RetentionDuration, BoundaryMode } from '../types';
 
 /**
  * Intent extracted from natural language

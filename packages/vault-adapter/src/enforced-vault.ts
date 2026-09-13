@@ -31,12 +31,7 @@ import {
   VaultRecallOptions,
   VaultTombstoneOptions,
 } from './adapter';
-import {
-  LearningContract,
-  ContractState,
-  ContractType,
-  BoundaryMode,
-} from 'learning-contracts';
+import { LearningContract, ContractState, ContractType, BoundaryMode } from 'learning-contracts';
 
 /**
  * Result of a contract-enforced operation
@@ -226,9 +221,10 @@ export class ContractEnforcedVault {
     }
 
     // Perform the store operation
-    const content = typeof options.content === 'string'
-      ? new TextEncoder().encode(options.content)
-      : options.content;
+    const content =
+      typeof options.content === 'string'
+        ? new TextEncoder().encode(options.content)
+        : options.content;
 
     const storeOptions: VaultStoreOptions = {
       content,
@@ -337,9 +333,7 @@ export class ContractEnforcedVault {
     }
 
     // Get the contract for this memory
-    const contract = memory.contract_id
-      ? this.resolveContract(memory.contract_id)
-      : null;
+    const contract = memory.contract_id ? this.resolveContract(memory.contract_id) : null;
 
     if (!contract) {
       const enforcement: EnforcementCheckResult = {
@@ -494,10 +488,7 @@ export class ContractEnforcedVault {
   /**
    * Query memories with contract filtering
    */
-  async queryMemories(
-    query: MemoryQuery,
-    requester: string
-  ): Promise<MemoryObject[]> {
+  async queryMemories(query: MemoryQuery, requester: string): Promise<MemoryObject[]> {
     const audit_id = uuidv4();
 
     // If querying by contract, verify requester has access
@@ -591,8 +582,10 @@ export class ContractEnforcedVault {
       };
     }
 
-    // Check classification cap
-    if (options.classification > contract.memory_permissions.classification_cap) {
+    // Check classification cap (the vault's ClassificationLevel enum is numeric,
+    // the contract cap is a plain number)
+    const requestedClassification: number = options.classification;
+    if (requestedClassification > contract.memory_permissions.classification_cap) {
       return {
         allowed: false,
         contract_id: contract.contract_id,

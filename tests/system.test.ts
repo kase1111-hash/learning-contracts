@@ -17,6 +17,26 @@ describe('LearningContractsSystem', () => {
     system = new LearningContractsSystem();
   });
 
+  afterEach(() => {
+    system.destroy();
+  });
+
+  describe('Lifecycle', () => {
+    test('destroy stops the expiry manager and clears override timers', () => {
+      system.expiry.start();
+      expect(system.expiry.isRunning()).toBe(true);
+
+      system.destroy();
+
+      expect(system.expiry.isRunning()).toBe(false);
+    });
+
+    test('destroy is idempotent', () => {
+      system.destroy();
+      expect(() => system.destroy()).not.toThrow();
+    });
+  });
+
   describe('Contract Creation', () => {
     test('should create an observation contract', () => {
       const contract = system.createObservationContract('alice', {
@@ -93,11 +113,7 @@ describe('LearningContractsSystem', () => {
       contract = system.submitForReview(contract.contract_id, 'alice');
       contract = system.activateContract(contract.contract_id, 'alice');
 
-      const revoked = system.revokeContract(
-        contract.contract_id,
-        'alice',
-        'No longer needed'
-      );
+      const revoked = system.revokeContract(contract.contract_id, 'alice', 'No longer needed');
 
       expect(revoked.state).toBe(ContractState.REVOKED);
     });
@@ -113,7 +129,15 @@ describe('LearningContractsSystem', () => {
       const result = system.amendContract(
         contract.contract_id,
         'alice',
-        { scope: { domains: ['updated'], contexts: [], tools: [], max_abstraction: AbstractionLevel.RAW, transferable: false } },
+        {
+          scope: {
+            domains: ['updated'],
+            contexts: [],
+            tools: [],
+            max_abstraction: AbstractionLevel.RAW,
+            transferable: false,
+          },
+        },
         'Expanding scope'
       );
 
@@ -132,12 +156,9 @@ describe('LearningContractsSystem', () => {
       contract = system.submitForReview(contract.contract_id, 'alice');
       contract = system.activateContract(contract.contract_id, 'alice');
 
-      const result = system.checkMemoryCreation(
-        contract.contract_id,
-        BoundaryMode.NORMAL,
-        2,
-        { domain: 'coding' }
-      );
+      const result = system.checkMemoryCreation(contract.contract_id, BoundaryMode.NORMAL, 2, {
+        domain: 'coding',
+      });
 
       expect(result.allowed).toBe(true);
     });
@@ -150,31 +171,29 @@ describe('LearningContractsSystem', () => {
       contract = system.submitForReview(contract.contract_id, 'alice');
       contract = system.activateContract(contract.contract_id, 'alice');
 
-      const result = system.checkMemoryCreation(
-        contract.contract_id,
-        BoundaryMode.NORMAL,
-        1,
-        { domain: 'finance' }
-      );
+      const result = system.checkMemoryCreation(contract.contract_id, BoundaryMode.NORMAL, 1, {
+        domain: 'finance',
+      });
 
       expect(result.allowed).toBe(false);
       expect(result.reason).toContain('does not permit memory storage');
     });
 
     test('should deny memory creation if classification exceeds cap', () => {
-      let contract = system.createEpisodicContract('alice', {
-        domains: ['test'],
-      }, { classificationCap: 2 });
+      let contract = system.createEpisodicContract(
+        'alice',
+        {
+          domains: ['test'],
+        },
+        { classificationCap: 2 }
+      );
 
       contract = system.submitForReview(contract.contract_id, 'alice');
       contract = system.activateContract(contract.contract_id, 'alice');
 
-      const result = system.checkMemoryCreation(
-        contract.contract_id,
-        BoundaryMode.NORMAL,
-        5,
-        { domain: 'test' }
-      );
+      const result = system.checkMemoryCreation(contract.contract_id, BoundaryMode.NORMAL, 5, {
+        domain: 'test',
+      });
 
       expect(result.allowed).toBe(false);
       expect(result.reason).toContain('exceeds cap');
@@ -188,12 +207,9 @@ describe('LearningContractsSystem', () => {
       contract = system.submitForReview(contract.contract_id, 'alice');
       contract = system.activateContract(contract.contract_id, 'alice');
 
-      const result = system.checkMemoryCreation(
-        contract.contract_id,
-        BoundaryMode.NORMAL,
-        2,
-        { domain: 'finance' }
-      );
+      const result = system.checkMemoryCreation(contract.contract_id, BoundaryMode.NORMAL, 2, {
+        domain: 'finance',
+      });
 
       expect(result.allowed).toBe(false);
       expect(result.reason).toContain('not in contract scope');
@@ -268,11 +284,10 @@ describe('LearningContractsSystem', () => {
       contract = system.submitForReview(contract.contract_id, 'alice');
       contract = system.activateContract(contract.contract_id, 'alice');
 
-      const result = system.checkRecall(
-        contract.contract_id,
-        BoundaryMode.TRUSTED,
-        { domain: 'test', requester: 'alice' }
-      );
+      const result = system.checkRecall(contract.contract_id, BoundaryMode.TRUSTED, {
+        domain: 'test',
+        requester: 'alice',
+      });
 
       expect(result.allowed).toBe(true);
     });
@@ -285,11 +300,10 @@ describe('LearningContractsSystem', () => {
       contract = system.submitForReview(contract.contract_id, 'alice');
       contract = system.activateContract(contract.contract_id, 'alice');
 
-      const result = system.checkRecall(
-        contract.contract_id,
-        BoundaryMode.NORMAL,
-        { domain: 'test', requester: 'alice' }
-      );
+      const result = system.checkRecall(contract.contract_id, BoundaryMode.NORMAL, {
+        domain: 'test',
+        requester: 'alice',
+      });
 
       expect(result.allowed).toBe(false);
       expect(result.reason).toContain('does not meet minimum');
@@ -304,11 +318,10 @@ describe('LearningContractsSystem', () => {
       contract = system.activateContract(contract.contract_id, 'alice');
       contract = system.revokeContract(contract.contract_id, 'alice', 'Test');
 
-      const result = system.checkRecall(
-        contract.contract_id,
-        BoundaryMode.NORMAL,
-        { domain: 'test', requester: 'alice' }
-      );
+      const result = system.checkRecall(contract.contract_id, BoundaryMode.NORMAL, {
+        domain: 'test',
+        requester: 'alice',
+      });
 
       expect(result.allowed).toBe(false);
       expect(result.reason).toContain('revoked');
@@ -324,10 +337,7 @@ describe('LearningContractsSystem', () => {
       contract = system.submitForReview(contract.contract_id, 'alice');
       contract = system.activateContract(contract.contract_id, 'alice');
 
-      const result = system.checkExport(
-        contract.contract_id,
-        BoundaryMode.NORMAL
-      );
+      const result = system.checkExport(contract.contract_id, BoundaryMode.NORMAL);
 
       expect(result.allowed).toBe(false);
       expect(result.reason).toContain('prohibits memory transfer');
@@ -370,12 +380,7 @@ describe('LearningContractsSystem', () => {
       contract = system.submitForReview(contract.contract_id, 'alice');
       contract = system.activateContract(contract.contract_id, 'alice');
 
-      system.checkMemoryCreation(
-        contract.contract_id,
-        BoundaryMode.NORMAL,
-        1,
-        { domain: 'test' }
-      );
+      system.checkMemoryCreation(contract.contract_id, BoundaryMode.NORMAL, 1, { domain: 'test' });
 
       const violations = system.getViolations();
       expect(violations.length).toBeGreaterThan(0);

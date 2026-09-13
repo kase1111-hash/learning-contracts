@@ -74,11 +74,10 @@ export class EmergencyOverrideManager {
     // Set up auto-disable if configured
     if (this.config.maxDurationMs && this.config.maxDurationMs > 0) {
       this.autoDisableTimeout = setTimeout(() => {
-        this.disableOverride(
-          'system',
-          'Auto-disabled after maximum duration exceeded'
-        );
+        this.disableOverride('system', 'Auto-disabled after maximum duration exceeded');
       }, this.config.maxDurationMs);
+      // Do not keep the host process alive waiting for auto-disable
+      this.autoDisableTimeout.unref?.();
     }
 
     const event: OverrideTriggerEvent = {
@@ -155,9 +154,7 @@ export class EmergencyOverrideManager {
 
     const eventId = uuidv4();
     const timestamp = new Date();
-    const durationMs = this.triggeredAt
-      ? timestamp.getTime() - this.triggeredAt.getTime()
-      : 0;
+    const durationMs = this.triggeredAt ? timestamp.getTime() - this.triggeredAt.getTime() : 0;
     const operationsBlockedDuring = this.operationsBlocked;
 
     const event: OverrideDisableEvent = {

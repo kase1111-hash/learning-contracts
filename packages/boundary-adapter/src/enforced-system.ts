@@ -169,13 +169,9 @@ export class BoundaryEnforcedSystem {
    * Subscribe to daemon events
    */
   private subscribeToEvents(): void {
-    this.unsubscribeModeChange = this.adapter.onModeChange(
-      this.handleModeChange.bind(this)
-    );
+    this.unsubscribeModeChange = this.adapter.onModeChange(this.handleModeChange.bind(this));
 
-    this.unsubscribeTripwire = this.adapter.onTripwire(
-      this.handleTripwire.bind(this)
-    );
+    this.unsubscribeTripwire = this.adapter.onTripwire(this.handleTripwire.bind(this));
   }
 
   /**
@@ -186,7 +182,7 @@ export class BoundaryEnforcedSystem {
     this.currentMode = status.mode;
 
     // Check all active contracts against current mode
-    await this.evaluateAllContracts();
+    this.evaluateAllContracts();
   }
 
   /**
@@ -302,7 +298,9 @@ export class BoundaryEnforcedSystem {
    */
   suspendContract(contractId: string, reason: string): ContractSuspensionEvent | null {
     const contract = this.resolveContract(contractId);
-    if (!contract) {return null;}
+    if (!contract) {
+      return null;
+    }
 
     return this.doSuspendContract(contract, reason, this.currentMode, this.currentMode);
   }
@@ -312,7 +310,9 @@ export class BoundaryEnforcedSystem {
    */
   resumeContract(contractId: string, reason: string): ContractResumeEvent | null {
     const suspended = this.suspendedContracts.get(contractId);
-    if (!suspended) {return null;}
+    if (!suspended) {
+      return null;
+    }
 
     // Check if current mode allows resume
     if (!this.canContractOperate(this.resolveContract(contractId)!)) {
@@ -438,12 +438,7 @@ export class BoundaryEnforcedSystem {
 
       // Check if contract can still operate
       if (!this.canContractOperate(contract)) {
-        this.doSuspendContract(
-          contract,
-          `Boundary downgrade: ${reason}`,
-          previousMode,
-          newMode
-        );
+        this.doSuspendContract(contract, `Boundary downgrade: ${reason}`, previousMode, newMode);
       }
     }
   }
@@ -459,7 +454,9 @@ export class BoundaryEnforcedSystem {
     // Check suspended contracts that can now resume
     for (const suspended of this.suspendedContracts.values()) {
       const contract = this.resolveContract(suspended.contract_id);
-      if (!contract) {continue;}
+      if (!contract) {
+        continue;
+      }
 
       if (this.canContractOperate(contract)) {
         this.doResumeContract(suspended, `Boundary upgrade: ${reason}`);
@@ -470,7 +467,7 @@ export class BoundaryEnforcedSystem {
   /**
    * Evaluate all active contracts against current mode
    */
-  private async evaluateAllContracts(): Promise<void> {
+  private evaluateAllContracts(): void {
     const activeContracts = this.getActiveContracts();
 
     for (const contract of activeContracts) {
@@ -543,10 +540,7 @@ export class BoundaryEnforcedSystem {
   /**
    * Perform contract resumption
    */
-  private doResumeContract(
-    suspended: SuspendedContract,
-    reason: string
-  ): ContractResumeEvent {
+  private doResumeContract(suspended: SuspendedContract, reason: string): ContractResumeEvent {
     const event: ContractResumeEvent = {
       event_id: uuidv4(),
       contract_id: suspended.contract_id,

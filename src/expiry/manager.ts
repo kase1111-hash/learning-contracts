@@ -63,6 +63,8 @@ export class TimeboundExpiryManager {
     this.intervalId = setInterval(() => {
       this.runExpiryCycle();
     }, this.config.checkIntervalMs);
+    // Do not keep the host process alive just for expiry polling
+    this.intervalId.unref?.();
   }
 
   /**
@@ -112,9 +114,8 @@ export class TimeboundExpiryManager {
             errors.push(result.error);
           }
         } catch (error) {
-          const prefix = error instanceof ContractError
-            ? `Contract error (${error.code})`
-            : 'System error';
+          const prefix =
+            error instanceof ContractError ? `Contract error (${error.code})` : 'System error';
           const errorMessage = `${prefix}: Failed to expire contract ${contract.contract_id}: ${
             error instanceof Error ? error.message : String(error)
           }`;
@@ -281,9 +282,10 @@ export class TimeboundExpiryManager {
    * Get manager statistics
    */
   getStats(): ExpiryManagerStats {
-    const nextCheckAt = this.isRunning() && this.lastCheckAt
-      ? new Date(this.lastCheckAt.getTime() + this.config.checkIntervalMs)
-      : null;
+    const nextCheckAt =
+      this.isRunning() && this.lastCheckAt
+        ? new Date(this.lastCheckAt.getTime() + this.config.checkIntervalMs)
+        : null;
 
     return {
       isRunning: this.isRunning(),

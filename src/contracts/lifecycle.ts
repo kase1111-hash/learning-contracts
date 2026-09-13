@@ -53,9 +53,7 @@ export class ContractLifecycleManager {
     // Validate the draft
     const validation = ContractValidator.validate(contract);
     if (!validation.valid) {
-      throw new Error(
-        `Invalid contract draft: ${validation.errors.join(', ')}`
-      );
+      throw new Error(`Invalid contract draft: ${validation.errors.join(', ')}`);
     }
 
     this.auditLogger.logContractCreated(contract, draft.created_by);
@@ -93,9 +91,7 @@ export class ContractLifecycleManager {
     // Re-validate before activation
     const validation = ContractValidator.validate(contract);
     if (!validation.valid) {
-      throw new Error(
-        `Cannot activate invalid contract: ${validation.errors.join(', ')}`
-      );
+      throw new Error(`Cannot activate invalid contract: ${validation.errors.join(', ')}`);
     }
 
     const updated = {
@@ -139,11 +135,7 @@ export class ContractLifecycleManager {
    * Revokes a contract
    * Revocation does NOT delete audit traces
    */
-  revoke(
-    contract: LearningContract,
-    actor: string,
-    reason: string
-  ): LearningContract {
+  revoke(contract: LearningContract, actor: string, reason: string): LearningContract {
     if (!contract.revocable) {
       throw new Error('Contract is not revocable');
     }
@@ -197,10 +189,8 @@ export class ContractLifecycleManager {
       created_by: actor,
       contract_type: changes.contract_type ?? contract.contract_type,
       scope: changes.scope ?? contract.scope,
-      memory_permissions:
-        changes.memory_permissions ?? contract.memory_permissions,
-      generalization_rules:
-        changes.generalization_rules ?? contract.generalization_rules,
+      memory_permissions: changes.memory_permissions ?? contract.memory_permissions,
+      generalization_rules: changes.generalization_rules ?? contract.generalization_rules,
       recall_rules: changes.recall_rules ?? contract.recall_rules,
       expiration: changes.expiration ?? contract.expiration,
       revocable: changes.revocable ?? contract.revocable,
@@ -235,28 +225,17 @@ export class ContractLifecycleManager {
    * Checks if contract is currently enforceable
    */
   isEnforceable(contract: LearningContract): boolean {
-    return (
-      contract.state === ContractState.ACTIVE &&
-      !this.isExpired(contract)
-    );
+    return contract.state === ContractState.ACTIVE && !this.isExpired(contract);
   }
 
   /**
    * Validates a state transition
    */
-  private validateTransition(
-    contract: LearningContract,
-    toState: ContractState
-  ): void {
-    const validation = ContractValidator.validateTransition(
-      contract.state,
-      toState
-    );
+  private validateTransition(contract: LearningContract, toState: ContractState): void {
+    const validation = ContractValidator.validateTransition(contract.state, toState);
 
     if (!validation.valid) {
-      throw new Error(
-        `Invalid state transition: ${validation.errors.join(', ')}`
-      );
+      throw new Error(`Invalid state transition: ${validation.errors.join(', ')}`);
     }
   }
 }

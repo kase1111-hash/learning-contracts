@@ -208,7 +208,10 @@ export class CentralErrorHandler {
         // Calculate delay
         let delay = strategy.base_delay_ms;
         if (strategy.exponential_backoff) {
-          delay = Math.min(strategy.base_delay_ms * Math.pow(2, attempt - 1), strategy.max_delay_ms);
+          delay = Math.min(
+            strategy.base_delay_ms * Math.pow(2, attempt - 1),
+            strategy.max_delay_ms
+          );
         }
 
         // Log retry attempt

@@ -35,14 +35,18 @@ describe('ContractGovernedStore', () => {
       classificationCap?: number;
     } = {}
   ) {
-    let contract = system.createEpisodicContract(createdBy, {
-      domains,
-      contexts: options.contexts ?? [],
-      tools: options.tools ?? [],
-    }, {
-      classificationCap: options.classificationCap ?? 3,
-      retention: options.retention ?? RetentionDuration.PERMANENT,
-    });
+    let contract = system.createEpisodicContract(
+      createdBy,
+      {
+        domains,
+        contexts: options.contexts ?? [],
+        tools: options.tools ?? [],
+      },
+      {
+        classificationCap: options.classificationCap ?? 3,
+        retention: options.retention ?? RetentionDuration.PERMANENT,
+      }
+    );
     contract = system.submitForReview(contract.contract_id, createdBy);
     contract = system.activateContract(contract.contract_id, createdBy);
     return contract;
@@ -54,12 +58,15 @@ describe('ContractGovernedStore', () => {
     test('should allow storing memory within contract scope', async () => {
       const contract = activateContract('alice', ['coding'], { contexts: ['project-x'] });
 
-      const result = await governed.store({
-        content: 'Use async/await',
-        classification: 2,
-        domain: 'coding',
-        context: 'project-x',
-      }, contract.contract_id);
+      const result = await governed.store(
+        {
+          content: 'Use async/await',
+          classification: 2,
+          domain: 'coding',
+          context: 'project-x',
+        },
+        contract.contract_id
+      );
 
       expect(result.allowed).toBe(true);
       expect(result.result).toBeDefined();
@@ -71,11 +78,14 @@ describe('ContractGovernedStore', () => {
     test('should deny storing memory outside domain scope', async () => {
       const contract = activateContract('alice', ['coding']);
 
-      const result = await governed.store({
-        content: 'Financial data',
-        classification: 2,
-        domain: 'finance', // not in scope
-      }, contract.contract_id);
+      const result = await governed.store(
+        {
+          content: 'Financial data',
+          classification: 2,
+          domain: 'finance', // not in scope
+        },
+        contract.contract_id
+      );
 
       expect(result.allowed).toBe(false);
       expect(result.enforcement.reason).toBeDefined();
@@ -86,11 +96,14 @@ describe('ContractGovernedStore', () => {
     test('should deny storing memory with classification exceeding cap', async () => {
       const contract = activateContract('alice', ['coding'], { classificationCap: 2 });
 
-      const result = await governed.store({
-        content: 'Top secret code',
-        classification: 4, // exceeds cap of 2
-        domain: 'coding',
-      }, contract.contract_id);
+      const result = await governed.store(
+        {
+          content: 'Top secret code',
+          classification: 4, // exceeds cap of 2
+          domain: 'coding',
+        },
+        contract.contract_id
+      );
 
       expect(result.allowed).toBe(false);
       expect(store.size()).toBe(0);
@@ -100,11 +113,14 @@ describe('ContractGovernedStore', () => {
       const contract = activateContract('alice', ['coding']);
       system.revokeContract(contract.contract_id, 'alice', 'Done');
 
-      const result = await governed.store({
-        content: 'Test',
-        classification: 1,
-        domain: 'coding',
-      }, contract.contract_id);
+      const result = await governed.store(
+        {
+          content: 'Test',
+          classification: 1,
+          domain: 'coding',
+        },
+        contract.contract_id
+      );
 
       expect(result.allowed).toBe(false);
     });
@@ -112,11 +128,14 @@ describe('ContractGovernedStore', () => {
     test('should deny storing under draft contract', async () => {
       const draft = system.createEpisodicContract('alice', { domains: ['coding'] });
 
-      const result = await governed.store({
-        content: 'Test',
-        classification: 1,
-        domain: 'coding',
-      }, draft.contract_id);
+      const result = await governed.store(
+        {
+          content: 'Test',
+          classification: 1,
+          domain: 'coding',
+        },
+        draft.contract_id
+      );
 
       expect(result.allowed).toBe(false);
     });
@@ -176,17 +195,23 @@ describe('ContractGovernedStore', () => {
       const contract = activateContract('alice', ['coding']);
 
       // Store a memory first
-      await governed.store({
-        content: 'Important pattern',
-        classification: 2,
-        domain: 'coding',
-      }, contract.contract_id);
+      await governed.store(
+        {
+          content: 'Important pattern',
+          classification: 2,
+          domain: 'coding',
+        },
+        contract.contract_id
+      );
 
       // Recall
-      const result = await governed.recall({
-        domain: 'coding',
-        requester: 'alice',
-      }, contract.contract_id);
+      const result = await governed.recall(
+        {
+          domain: 'coding',
+          requester: 'alice',
+        },
+        contract.contract_id
+      );
 
       expect(result.allowed).toBe(true);
       expect(result.result).toHaveLength(1);
@@ -196,17 +221,23 @@ describe('ContractGovernedStore', () => {
     test('should deny recall under revoked contract', async () => {
       const contract = activateContract('alice', ['coding']);
 
-      await governed.store({
-        content: 'Data',
-        classification: 1,
-        domain: 'coding',
-      }, contract.contract_id);
+      await governed.store(
+        {
+          content: 'Data',
+          classification: 1,
+          domain: 'coding',
+        },
+        contract.contract_id
+      );
 
       system.revokeContract(contract.contract_id, 'alice', 'Done');
 
-      const result = await governed.recall({
-        domain: 'coding',
-      }, contract.contract_id);
+      const result = await governed.recall(
+        {
+          domain: 'coding',
+        },
+        contract.contract_id
+      );
 
       expect(result.allowed).toBe(false);
     });
@@ -215,22 +246,31 @@ describe('ContractGovernedStore', () => {
       const contract1 = activateContract('alice', ['coding']);
       const contract2 = activateContract('bob', ['coding']);
 
-      await governed.store({
-        content: 'From contract 1',
-        classification: 1,
-        domain: 'coding',
-      }, contract1.contract_id);
+      await governed.store(
+        {
+          content: 'From contract 1',
+          classification: 1,
+          domain: 'coding',
+        },
+        contract1.contract_id
+      );
 
-      await governed.store({
-        content: 'From contract 2',
-        classification: 1,
-        domain: 'coding',
-      }, contract2.contract_id);
+      await governed.store(
+        {
+          content: 'From contract 2',
+          classification: 1,
+          domain: 'coding',
+        },
+        contract2.contract_id
+      );
 
-      const result = await governed.recall({
-        domain: 'coding',
-        requester: 'alice', // required: episodic contracts require owner for recall
-      }, contract1.contract_id);
+      const result = await governed.recall(
+        {
+          domain: 'coding',
+          requester: 'alice', // required: episodic contracts require owner for recall
+        },
+        contract1.contract_id
+      );
 
       expect(result.allowed).toBe(true);
       expect(result.result).toHaveLength(1);
@@ -244,17 +284,23 @@ describe('ContractGovernedStore', () => {
     test('should forget all memories under a contract', async () => {
       const contract = activateContract('alice', ['coding']);
 
-      await governed.store({
-        content: 'Memory 1',
-        classification: 1,
-        domain: 'coding',
-      }, contract.contract_id);
+      await governed.store(
+        {
+          content: 'Memory 1',
+          classification: 1,
+          domain: 'coding',
+        },
+        contract.contract_id
+      );
 
-      await governed.store({
-        content: 'Memory 2',
-        classification: 1,
-        domain: 'coding',
-      }, contract.contract_id);
+      await governed.store(
+        {
+          content: 'Memory 2',
+          classification: 1,
+          domain: 'coding',
+        },
+        contract.contract_id
+      );
 
       expect(store.size()).toBe(2);
 
@@ -268,17 +314,23 @@ describe('ContractGovernedStore', () => {
       const contract1 = activateContract('alice', ['coding']);
       const contract2 = activateContract('bob', ['coding']);
 
-      await governed.store({
-        content: 'Alice memory',
-        classification: 1,
-        domain: 'coding',
-      }, contract1.contract_id);
+      await governed.store(
+        {
+          content: 'Alice memory',
+          classification: 1,
+          domain: 'coding',
+        },
+        contract1.contract_id
+      );
 
-      await governed.store({
-        content: 'Bob memory',
-        classification: 1,
-        domain: 'coding',
-      }, contract2.contract_id);
+      await governed.store(
+        {
+          content: 'Bob memory',
+          classification: 1,
+          domain: 'coding',
+        },
+        contract2.contract_id
+      );
 
       expect(store.size()).toBe(2);
 
