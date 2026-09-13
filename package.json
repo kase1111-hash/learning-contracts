@@ -57,16 +57,16 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/jest": "^30.0.0",
-    "@types/node": "^25.5.0",
+    "@types/node": "^25.9.3",
     "@types/uuid": "^11.0.0",
-    "eslint": "^10.0.3",
-    "globals": "^17.4.0",
-    "jest": "^30.3.0",
-    "prettier": "^3.8.1",
-    "ts-jest": "^29.1.0",
+    "eslint": "^10.5.0",
+    "globals": "^17.6.0",
+    "jest": "^30.4.2",
+    "prettier": "^3.8.4",
+    "ts-jest": "^29.4.11",
     "tsx": "^4.23.13",
     "typescript": "^5.0.0",
-    "typescript-eslint": "^8.57.1"
+    "typescript-eslint": "^8.61.0"
   },
   "dependencies": {
     "uuid": "^13.0.0"
