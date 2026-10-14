@@ -12,6 +12,10 @@ updates:
       - "dependencies"
     reviewers:
       - "kase1111-hash"
+    ignore:
+      # ts-jest 29 requires typescript <7; revisit once ts-jest supports TS 7
+      - dependency-name: "typescript"
+        versions: [">=7.0.0"]
 
   - package-ecosystem: "github-actions"
     directory: "/"
